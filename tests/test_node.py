@@ -95,6 +95,10 @@ def test_a_failing_ps_is_an_error_not_a_dead_process(monkeypatch):
                         lambda *a, **k: sp.CompletedProcess(a[0], 2, stdout="", stderr="ps: permission denied"))
     with pytest.raises(NodeError, match="ps failed"):
         nodes.process_command(12345)
+    monkeypatch.setattr(nodes.subprocess, "run",  # exit 1 WITH an error message is a failure, not "gone"
+                        lambda *a, **k: sp.CompletedProcess(a[0], 1, stdout="", stderr="ps: process id too large"))
+    with pytest.raises(NodeError, match="too large"):
+        nodes.process_command(2**40)
 
 
 def test_stop_never_kills_a_process_that_is_not_our_node(cache):
@@ -107,10 +111,18 @@ def test_stop_never_kills_a_process_that_is_not_our_node(cache):
     assert nodes.stop("fork") == "not running (no PID file)"
 
 
+def dead_pid() -> int:
+    """A PID in the valid range that has just exited."""
+    import subprocess
+    p = subprocess.Popen(["true"])
+    p.wait()
+    return p.pid
+
+
 def test_stop_cleans_a_pid_file_whose_process_is_gone(cache):
     path = nodes.pid_file("fork")
     path.parent.mkdir(parents=True)
-    path.write_text(json.dumps({"pid": 2**22 + 12345, "ports": {"ws": 59944}}))
+    path.write_text(json.dumps({"pid": dead_pid(), "ports": {"ws": 59944}}))
     assert "gone" in nodes.stop("fork") and not path.exists()
 
 
@@ -313,4 +325,4 @@ def test_ensure_no_peers_stops_a_peered_fork(cache, monkeypatch):
 
 @pytest.mark.skipif(sys.platform == "win32", reason="posix ps")
 def test_process_command_of_a_missing_pid_is_none():
-    assert nodes.process_command(2**22 + 54321) is None
+    assert nodes.process_command(dead_pid()) is None

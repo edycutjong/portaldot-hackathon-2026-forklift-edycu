@@ -335,7 +335,13 @@ def _genesis_top(path: str | None) -> dict | None:
     """The raw genesis ``{key: value}`` of a chain spec file, or None if there is none at ``path``."""
     if not path or not Path(path).is_file():
         return None
-    return json.loads(Path(path).read_text())["genesis"]["raw"]["top"]
+    try:
+        top = json.loads(Path(path).read_text())["genesis"]["raw"]["top"]
+    except (TypeError, KeyError) as exc:
+        raise ValueError(f"{path} is not a raw chain spec") from exc
+    if not isinstance(top, dict):
+        raise ValueError(f"{path} is not a raw chain spec")
+    return top
 
 
 def _load_fork_manifest(name: str, manifest_path: Path | None) -> dict:

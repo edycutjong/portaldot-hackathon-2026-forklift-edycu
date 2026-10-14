@@ -294,8 +294,8 @@ def process_command(pid: int) -> str | None:
     out = res.stdout.strip()
     if res.returncode == 0 and out:
         return out
-    if res.returncode == 1 or (res.returncode == 0 and not out):
-        return None  # ps: no such process
+    if res.returncode in (0, 1) and not res.stderr.strip():
+        return None  # ps: no such process (exit 1, silent)
     raise NodeError(f"ps failed for PID {pid}: {res.stderr.strip()[:200]}")
 
 
@@ -309,9 +309,9 @@ def owns(record: dict, command: str | None) -> bool:
     if not command:
         return False
     binary, args = record.get("binary"), record.get("args")
-    if isinstance(binary, str) and isinstance(args, list):
-        # Exact: the command line we launched (survives spaces in paths).
-        return command == " ".join([binary, *map(str, args)])
+    if isinstance(binary, str) and isinstance(args, list) and command == " ".join([binary, *map(str, args)]):
+        return True  # exact: the command line we launched (survives spaces in paths)
+    # Token match: records without args, or a ps that escapes characters in paths.
     tokens = command.split()
     pairs = set(zip(tokens, tokens[1:]))
     head = tokens[:2]
