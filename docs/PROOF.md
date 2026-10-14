@@ -10,7 +10,7 @@ No fork is involved yet: profile `mainnet-read (spec 1002)`.
 
 | Pin block | Block hash | Keys lifted | MMR range skipped (derived) | Key pages | Seconds (keys / values / total) | Runs, same root | manifest_root | Evidence |
 |---|---|---|---|---|---|---|---|---|
-| #2,725,639 | `0xc6fb8d8a10ae3045b7cb6b0f24ddacc538006a1fae975ec343c8654fb55a8212` | 16,332 | 5,451,269 | 18 | 7.59 / 12.76 / 20.34 | 2, yes | `0x29f18c9250683ce3da0b6ee821674de99036bbc67afc32f42647d687b4c584e7` | `evidence/lift-2725639.json` |
+| #2,725,639 | `0xc6fb8d8a10ae3045b7cb6b0f24ddacc538006a1fae975ec343c8654fb55a8212` | 16,332 | 5,451,269 | 19 | 7.37 / 12.08 / 19.45 | 3, yes | `0x29f18c9250683ce3da0b6ee821674de99036bbc67afc32f42647d687b4c584e7` | `evidence/lift-2725639.json` |
 | #2,725,653 | `0x1f4071dc75d69aff5bcab6fd0dd6aa3d5d5a4dc46f801a939569c27724bb55b0` | 16,316 | 5,451,297 | 18 | 7.61 / 11.97 / 19.58 | 1, yes | `0xe6e7f10e8bef25d1e8cf035884606f4339781f23496d92b2bd475514c185469d` | `evidence/lift-2725653.json` |
 
 ## Completeness (I1b)
@@ -26,4 +26,4 @@ The lifted key **set** compared with an independent listing of every key at the 
 
 | Date (UTC) | Pin block | Keys | keys s | values s | total s | Host | Evidence |
 |---|---|---|---|---|---|---|---|
-| 2026-10-14T09:32:36+00:00 | #2,725,639 | 16,332 | 8.1 | 12.79 | 20.89 | Darwin arm64, Python 3.11.1 | `evidence/bench-lift-2026-10-14.json` |
+| 2026-10-14T09:40:27+00:00 | #2,725,639 | 16,332 | 8.11 | 12.19 | 20.3 | Darwin arm64, Python 3.11.1 | `evidence/bench-lift-2026-10-14.json` |

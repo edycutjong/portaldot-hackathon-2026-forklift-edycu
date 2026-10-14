@@ -212,6 +212,17 @@
       "key_pages": 18,
       "manifest_root": "0x29f18c9250683ce3da0b6ee821674de99036bbc67afc32f42647d687b4c584e7",
       "resumed_from_cursor": null
+    },
+    {
+      "recorded_utc": "2026-10-14T09:39:44+00:00",
+      "seconds": {
+        "keys_s": 7.37,
+        "values_s": 12.08,
+        "total_s": 19.45
+      },
+      "key_pages": 19,
+      "manifest_root": "0x29f18c9250683ce3da0b6ee821674de99036bbc67afc32f42647d687b4c584e7",
+      "resumed_from_cursor": null
     }
   ]
 }
