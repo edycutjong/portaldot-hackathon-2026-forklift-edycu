@@ -206,10 +206,9 @@ class Runtime:
         kind, spec = next(iter(entry["type"].items()))
         value_type = spec if kind == "Plain" else spec["value"]
         if raw_hex is None:
-            if entry["modifier"] == "Default" and entry["fallback"] not in (None, "0x00", "0x"):
-                raw_hex = entry["fallback"]
-            else:
-                return None
+            if entry["modifier"] != "Default":
+                return None  # Optional item, absent
+            raw_hex = _bytes_hex(entry.get("default"))  # what the runtime reads for an absent key
         return self.decode(value_type, raw_hex)
 
     def error_name(self, module_index: int, error_index: int) -> str:
@@ -220,6 +219,17 @@ class Runtime:
                     return f"{m['name']}.{errors[error_index]['name']}"
                 return f"{m['name']}.<error {error_index}>"
         return f"<module {module_index}>.<error {error_index}>"
+
+
+def _bytes_hex(value: Any) -> str:
+    """The SDK hands metadata byte fields back as hex or as a latin-1 string: normalise to hex."""
+    if value is None:
+        return "0x"
+    if isinstance(value, (bytes, bytearray)):
+        return "0x" + bytes(value).hex()
+    if isinstance(value, str) and value.startswith("0x"):
+        return value
+    return "0x" + str(value).encode("latin-1").hex()
 
 
 def hash_key(hasher: str, key: bytes) -> bytes:
@@ -276,7 +286,30 @@ class Event:
         return f"{self.pallet}.{self.name}"
 
     def as_json(self) -> dict:
-        return {"event": self.full_name, "attributes": self.attributes}
+        return {"event": self.full_name, "attributes": readable_attributes(self.attributes)}
+
+
+def _is_account_type(type_string: str) -> bool:
+    return "AccountId" in type_string or "LookupSource" in type_string or "Lookup as StaticLookup" in type_string
+
+
+def as_ss58(value: Any) -> Any:
+    """A 32-byte account id as hex → SS58 (format 42); anything else unchanged."""
+    if isinstance(value, str) and value.startswith("0x") and len(value) == 66:
+        return public_to_ss58(bytes.fromhex(value[2:]))
+    return value
+
+
+def readable_attributes(attributes: Any) -> Any:
+    """Event attributes with account ids shown as SS58 (by their declared type, never by length alone)."""
+    if not isinstance(attributes, list):
+        return attributes
+    out = []
+    for a in attributes:
+        if isinstance(a, dict) and "type" in a and _is_account_type(str(a["type"])):
+            a = {**a, "value": as_ss58(a.get("value"))}
+        out.append(a)
+    return out
 
 
 def events_at(client: RpcClient, rt: Runtime, block_hash: str) -> list[Event]:
@@ -450,7 +483,7 @@ def fetch_extrinsic(client: RpcClient, rt: Runtime, extrinsic_id: str) -> dict:
     ok, err = _outcome(rt, mine)
     return {"extrinsic_id": extrinsic_id, "block_number": number, "block_hash": block_hash,
             "tx_hash": "0x" + blake2_256(bytes.fromhex(xt_hex[2:])).hex(),
-            "signer": xt.get("address") or xt.get("account_id"),
+            "signer": as_ss58(xt.get("address") or xt.get("account_id")),
             "call": {"pallet": xt.get("call", {}).get("call_module"),
                      "function": xt.get("call", {}).get("call_function")},
             "success": ok, "error": err, "events": [e.as_json() for e in mine]}

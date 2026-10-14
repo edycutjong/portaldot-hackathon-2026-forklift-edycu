@@ -454,6 +454,219 @@ def verify_plate(report, m: dict) -> str:
     return "\n".join(lines)
 
 
+def _fork_endpoint(name: str, endpoint: str | None) -> tuple[str, dict | None]:
+    """The fork to act on: --endpoint, else the running fork --name (its PID file and manifest)."""
+    from forklift.node import NodeError, read_pid
+
+    try:
+        rec = read_pid(name)
+    except NodeError as exc:
+        raise click.UsageError(str(exc)) from None
+    manifest = None
+    if rec and rec.get("manifest") and Path(rec["manifest"]).is_file():
+        manifest = json.loads(Path(rec["manifest"]).read_text())
+    if endpoint is None:
+        if not rec:
+            raise click.UsageError(f"no running fork named {name!r}; start one with `forklift up` or pass --endpoint")
+        endpoint = rec["endpoint"]
+    elif manifest and (manifest.get("node") or {}).get("endpoint") != endpoint:
+        manifest = None  # --endpoint names another chain: do not label it with --name's manifest
+    return endpoint, manifest
+
+
+def _could_not_run(exc: BaseException, as_json: bool, what: str) -> None:
+    from forklift.rpc import WriteGuardError
+
+    kind = "write_refused" if isinstance(exc, WriteGuardError) else f"{what}_failed"
+    if as_json:
+        click.echo(json.dumps({"error": kind, "message": str(exc)}))
+    else:
+        click.echo(f"{what} could not run: {exc}", err=True)
+    sys.exit(1)
+
+
+def _act_errors() -> tuple[type[BaseException], ...]:
+    from forklift.rpc import RpcError, RpcUnavailable, WriteGuardError
+    from forklift.tx import TxError
+
+    return (RpcError, RpcUnavailable, WriteGuardError, TxError, OSError, KeyError, ValueError)
+
+
+def record_tx(row: dict, manifest: dict | None, endpoint: str, name: str, evidence_dir: Path) -> Path:
+    """Append one transaction to ``evidence/txs-<block>.json`` (one file per mainnet pin)."""
+    import datetime as dt
+
+    if manifest is None:
+        raise click.UsageError("--evidence needs the fork's manifest (start it with `forklift up`, act with --name)")
+    src, fork, node = manifest["source"], manifest["fork"], manifest.get("node") or {}
+    path = evidence_dir / f"txs-{src['block_number']}.json"
+    prior = json.loads(path.read_text()) if path.exists() else {}
+    rows = prior.get("rows", [])
+    rows.append({"recorded_utc": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+                 "label": fork["label"], "fork_name": name, "fork_endpoint": endpoint,
+                 "fork_genesis_hash": fork["genesis_hash"],
+                 "persistent_base_path": node.get("base_path") is not None, **row})
+    ev = {"pin": {"block_number": src["block_number"], "block_hash": src["block_hash"]},
+          "source_endpoint": src["endpoint"], "manifest_root": manifest["manifest_root"],
+          "keys_lifted": manifest["load"]["keys_lifted"],
+          "note": "block numbers and hashes are on the fork named in each row, not on mainnet",
+          "reproduce": "forklift tx <extrinsic_id> --endpoint <fork_endpoint> re-reads a row from the fork",
+          "rows": rows}
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(ev, indent=2) + "\n")
+    return path
+
+
+def _fmt_value(v) -> str:
+    if isinstance(v, dict) and "data" in v and isinstance(v["data"], dict) and "free" in v["data"]:
+        from forklift.tx import fmt_pot
+
+        return f"free {fmt_pot(v['data']['free'])} · reserved {fmt_pot(v['data']['reserved'])} · nonce {v['nonce']}"
+    return json.dumps(v, default=str)
+
+
+def act_plate(r) -> str:
+    inc = r.inclusion
+    lines = [
+        f"call    {r.call}  as {r.who}",
+        f"tx      {inc.tx_hash}",
+        f"block   #{inc.block_number:,} {inc.block_hash}  extrinsic {inc.extrinsic_id}"
+        f"{' · finalized' if inc.finalized else ''} · {inc.seconds} s",
+        f"result  {'Ok' if r.dispatch_ok else 'Err ' + str(r.dispatch_error)}",
+    ]
+    for e in r.inner_events:
+        attrs = e["attributes"]
+        shown = ", ".join(str(a.get("value")) if isinstance(a, dict) else str(a) for a in attrs) \
+            if isinstance(attrs, list) else str(attrs)
+        lines.append(f"event   {e['event']}({shown})")
+    for k, d in r.as_json()["changed"].items():
+        lines.append(f"changed {k}\n        before {_fmt_value(d['before'])}\n        after  {_fmt_value(d['after'])}")
+    for w in r.warnings:
+        lines.append(f"WARNING {w}")
+    if r.kind == "as":
+        from forklift.act import SUDO_AS_NOTE
+
+        lines.append(f"note    {SUDO_AS_NOTE}")
+    return "\n".join(lines)
+
+
+def _act_options(f):
+    f = click.option("--json", "as_json", is_flag=True, help="Print the result as JSON.")(f)
+    f = click.option("--evidence", "evidence_dir", type=click.Path(path_type=Path), default=None,
+                     help="Also record the transaction in <DIR>/txs-<block>.json.")(f)
+    f = click.option("--endpoint", default=None,
+                     help="Fork WebSocket endpoint (loopback only) [default: the running fork --name].")(f)
+    f = click.option("--name", default="fork", show_default=True, help="Running fork to act on.")(f)
+    return f
+
+
+def _finish_act(r, manifest: dict | None, endpoint: str, name: str, evidence_dir: Path | None,
+                as_json: bool) -> None:
+    out = r.as_json()
+    if evidence_dir is not None:
+        row = {"kind": r.kind, "call": r.call, "who": r.who, **{k: out["extrinsic"][k] for k in (
+            "extrinsic_id", "block_number", "block_hash", "tx_hash", "success", "finalized", "seconds")},
+            "dispatch": out["dispatch"], "changed": out["changed"], "inner_events": out["inner_events"],
+            "warnings": out["warnings"]}
+        out["evidence"] = str(record_tx(row, manifest, endpoint, name, evidence_dir))
+    click.echo(json.dumps(out, indent=2, default=str) if as_json else act_plate(r))
+    sys.exit(r.exit_code)
+
+
+@main.command("fund")
+@click.argument("who")
+@click.argument("amount", required=False)
+@click.option("--planck", type=click.IntRange(min=0), default=None, help="Exact amount in planck instead of POT.")
+@_act_options
+def fund_cmd(who: str, amount: str | None, planck: int | None, name: str, endpoint: str | None,
+             evidence_dir: Path | None, as_json: bool) -> None:
+    """Set WHO's free balance on the fork to AMOUNT POT (Sudo → Balances.set_balance; reserved kept).
+
+    1 POT = 10^14 planck. Exit 0 on success, 5 if the call returned an error,
+    1 if it could not run (unreachable fork, rejected transaction, write-guard).
+    """
+    from forklift import act, tx
+
+    if (amount is None) == (planck is None):
+        raise click.UsageError("give exactly one of AMOUNT (POT) or --planck")
+    try:
+        value = planck if planck is not None else tx.pot_to_planck(amount)
+        tx.ss58_to_public(who)
+    except ValueError as exc:
+        raise click.UsageError(str(exc)) from None
+    endpoint, manifest = _fork_endpoint(name, endpoint)
+    try:
+        with RpcClient(endpoint, fork=True) as client:
+            r = act.fund(client, tx.Runtime.load(client), who, value)
+    except _act_errors() as exc:
+        _could_not_run(exc, as_json, "fund")
+    _finish_act(r, manifest, endpoint, name, evidence_dir, as_json)
+
+
+@main.command("as")
+@click.argument("who")
+@click.argument("call")
+@click.argument("args", required=False)
+@_act_options
+def as_cmd(who: str, call: str, args: str | None, name: str, endpoint: str | None, evidence_dir: Path | None,
+           as_json: bool) -> None:
+    """Dispatch CALL (Pallet.call) with WHO's origin on the fork (Sudo → sudo_as).
+
+    ARGS is a JSON object of named arguments or a JSON array in metadata order;
+    balances are in planck, accounts in SS58. Prints Sudo.SudoAsDone decoded, the
+    call's own events, and what changed for WHO. sudo_as skips the fee, the nonce
+    and signed extensions; calls into Vesting, Proxy announcements and Scheduler
+    print a warning (block numbers restart at 1 on a fork).
+    Exit 0 on success, 5 if the call returned an error, 1 if it could not run.
+    """
+    from forklift import act, tx
+
+    try:
+        pallet, function = act.parse_call(call)
+        tx.ss58_to_public(who)
+    except ValueError as exc:
+        raise click.UsageError(str(exc)) from None
+    endpoint, manifest = _fork_endpoint(name, endpoint)
+    try:
+        with RpcClient(endpoint, fork=True) as client:
+            rt = tx.Runtime.load(client)
+            try:
+                call_args = act.parse_args(rt, pallet, function, args)
+            except (KeyError, ValueError) as exc:
+                raise click.UsageError(str(exc).strip("'\"")) from None
+            r = act.act_as(client, rt, who, pallet, function, call_args)
+    except click.UsageError:
+        raise
+    except _act_errors() as exc:
+        _could_not_run(exc, as_json, "as")
+    _finish_act(r, manifest, endpoint, name, evidence_dir, as_json)
+
+
+@main.command("tx")
+@click.argument("extrinsic_id")
+@click.option("--name", default="fork", show_default=True, help="Running fork to read from.")
+@click.option("--endpoint", default=None, help="Fork WebSocket endpoint [default: the running fork --name].")
+@click.option("--json", "as_json", is_flag=True, help="Print the extrinsic as JSON.")
+def tx_cmd(extrinsic_id: str, name: str, endpoint: str | None, as_json: bool) -> None:
+    """Re-read an extrinsic on the fork by its id BLOCK-INDEX: hash, call, events, outcome (read-only)."""
+    from forklift import tx
+
+    endpoint, _ = _fork_endpoint(name, endpoint)
+    try:
+        with RpcClient(endpoint) as client:  # read-only client: this command never writes
+            got = tx.fetch_extrinsic(client, tx.Runtime.load(client), extrinsic_id)
+    except _act_errors() as exc:
+        _could_not_run(exc, as_json, "tx")
+    if as_json:
+        click.echo(json.dumps(got, indent=2, default=str))
+    else:
+        click.echo(f"extrinsic {got['extrinsic_id']}  #{got['block_number']:,} {got['block_hash']}\n"
+                   f"tx        {got['tx_hash']}\n"
+                   f"call      {got['call']['pallet']}.{got['call']['function']}  signed by {got['signer']}\n"
+                   f"result    {'Ok' if got['success'] else 'Failed ' + str(got['error'])}\n"
+                   + "\n".join(f"event     {e['event']}" for e in got["events"]))
+
+
 EXIT_USAGE = 64  # click's default (2) is reserved for "verify found a mismatch"
 
 
