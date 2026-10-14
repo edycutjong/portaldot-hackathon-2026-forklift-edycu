@@ -84,7 +84,7 @@ def run_up(endpoint: str, at, *, name: str = "fork", runtime: str = "fast", port
         raise LiftError(f"cannot read system_properties: {exc}", cursor=None, phase="source",
                         block_hash=src["block_hash"]) from exc
     sp = splice_state(storage, dev["genesis"]["raw"]["top"], runtime=runtime)
-    spec = fork_chain_spec(dev, sp.top, block_number=src["block_number"], runtime=runtime,
+    spec = fork_chain_spec(dev, sp.top, block_number=src["block_number"], runtime=runtime, fork_name=name,
                            properties=properties if isinstance(properties, dict) and properties else None)
     fork_dir = cache / "forks" / name
     spec_path = fork_dir / "fork.json"
@@ -116,7 +116,8 @@ def run_up(endpoint: str, at, *, name: str = "fork", runtime: str = "fast", port
         "chain_spec": str(spec_path),
     }
     m["node"] = {"binary": binary.version, "sha256": binary.sha256, "known_build": binary.known,
-                 "path": binary.path, "runtime_mode": runtime, "name": name, "endpoint": None,
+                 "path": binary.path, "dev_spec": str(nodes.dev_spec_path(binary.sha256)),
+                 "runtime_mode": runtime, "name": name, "endpoint": None,
                  "ports": ports, "base_path": str(base_path) if base_path else None, "boot": None}
     manifest_path = fork_dir / "fork.manifest.json"
     try:
@@ -127,15 +128,18 @@ def run_up(endpoint: str, at, *, name: str = "fork", runtime: str = "fast", port
     cfg = nodes.NodeConfig(name=name, chain_spec=spec_path, ports=ports, base_path=base_path,
                            chain_name=spec["name"])
     log_path = fork_dir / "node.log"
-    if base_path is None and log_path.exists():
-        log_path.unlink()  # a fresh --tmp fork gets a fresh log
+    if base_path is None:
+        log_path.unlink(missing_ok=True)  # a fresh --tmp fork gets a fresh log
     t_start = time.monotonic()
     proc = nodes.start(binary_path, cfg, log_path)
     try:
         boot = nodes.wait_boot(proc, cfg, log_path, t0=t_start)
         nodes.ensure_no_peers(boot, name)
     except BaseException:
-        nodes.stop(name)
+        try:
+            nodes.stop(name)
+        except Exception:  # noqa: BLE001  never mask the boot failure with a cleanup failure
+            pass
         raise
     m["fork"]["genesis_hash"] = boot.genesis_hash
     m["node"]["endpoint"] = boot.endpoint

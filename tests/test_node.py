@@ -72,6 +72,31 @@ def test_owns_is_token_exact_and_follows_the_recorded_binary_and_chain():
     assert not nodes.owns(rec, "/opt/pd --dev --ws-port 3000")
 
 
+def test_owns_matches_the_exact_recorded_command_line_even_with_spaces():
+    rec = {"ports": {"ws": 59944}, "binary": "/Users/Jo Smith/.cache/forklift/bin/portaldot_dev",
+           "args": ["--chain", "/Users/Jo Smith/.cache/forklift/forks/fork/fork.json", "--ws-port", "59944"]}
+    cmd = " ".join([rec["binary"], *rec["args"]])
+    assert nodes.owns(rec, cmd)
+    assert not nodes.owns(rec, cmd.replace("59944", "59945"))
+    assert not nodes.owns(rec, "/x/portaldot_dev --dev --tmp --ws-port 19944")
+
+
+def test_unreadable_pid_records_are_ignored(cache):
+    path = nodes.pid_file("fork")
+    path.parent.mkdir(parents=True)
+    for bad in ("{}", "[]", '{"pid": "12", "ports": {"ws": 1}}', "not json"):
+        path.write_text(bad)
+        assert nodes.read_pid("fork") is None and nodes.running("fork") is None
+
+
+def test_a_failing_ps_is_an_error_not_a_dead_process(monkeypatch):
+    import subprocess as sp
+    monkeypatch.setattr(nodes.subprocess, "run",
+                        lambda *a, **k: sp.CompletedProcess(a[0], 2, stdout="", stderr="ps: permission denied"))
+    with pytest.raises(NodeError, match="ps failed"):
+        nodes.process_command(12345)
+
+
 def test_stop_never_kills_a_process_that_is_not_our_node(cache):
     # A PID file that points at this very test process (not a portaldot_dev): stop must leave it alone.
     path = nodes.pid_file("fork")

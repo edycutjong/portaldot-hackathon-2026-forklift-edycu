@@ -210,6 +210,9 @@ def up_cmd(at: str, runtime: str, endpoint: str, name: str, base_path: Path | No
 
     try:
         ports = resolve_ports(ws_port, rpc_port, p2p_port)
+    except NodeError as exc:
+        raise click.UsageError(str(exc)) from None
+    try:
         m = run_up(endpoint, _parse_at(at), name=name, runtime=runtime, ports=ports,
                    base_path=base_path.expanduser().resolve() if base_path else None,
                    node_bin=node_bin, relift=relift)
@@ -217,9 +220,11 @@ def up_cmd(at: str, runtime: str, endpoint: str, name: str, base_path: Path | No
         err = {"error": "lift_failed", "phase": exc.phase, "message": str(exc), "last_cursor": exc.cursor}
         click.echo(json.dumps(err) if as_json else f"lift failed during {exc.phase}: {exc}", err=not as_json)
         sys.exit(EXIT_LIFT_FAILED)
-    except (NodeError, SpliceError) as exc:
+    except (NodeError, SpliceError, OSError) as exc:
         if isinstance(exc, SpliceError):
             exc = NodeError(f"splice failed: {exc}")
+        elif isinstance(exc, OSError):
+            exc = NodeError(f"{type(exc).__name__}: {exc}")
         _node_failed(exc, as_json)
     if evidence_dir is not None:
         m["_paths"]["evidence"] = str(record_fork(m, evidence_dir))
@@ -273,12 +278,16 @@ def record_fork(m: dict, evidence_dir: Path) -> Path:
 @click.option("--name", default="fork", show_default=True, help="Name the fork was started with.")
 def down_cmd(name: str) -> None:
     """Stop a fork started by `forklift up` (only the PID it recorded, only if it is still that node)."""
-    from forklift.node import NodeError, stop
+    from forklift.node import NodeError, pid_file, stop
 
+    try:
+        pid_file(name)
+    except NodeError as exc:
+        raise click.UsageError(str(exc)) from None
     try:
         click.echo(f"{name}: {stop(name)}")
     except NodeError as exc:
-        raise click.UsageError(str(exc)) from None
+        _node_failed(exc, False)
 
 
 def record_verify(report, m: dict, evidence_dir: Path, endpoint: str) -> Path:
@@ -320,6 +329,13 @@ def record_verify(report, m: dict, evidence_dir: Path, endpoint: str) -> Path:
     evidence_dir.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(ev, indent=2) + "\n")
     return path
+
+
+def _genesis_top(path: str | None) -> dict | None:
+    """The raw genesis ``{key: value}`` of a chain spec file, or None if there is none at ``path``."""
+    if not path or not Path(path).is_file():
+        return None
+    return json.loads(Path(path).read_text())["genesis"]["raw"]["top"]
 
 
 def _load_fork_manifest(name: str, manifest_path: Path | None) -> dict:
@@ -367,13 +383,21 @@ def verify_cmd(sample: int, seed: int | None, name: str, manifest_path: Path | N
     if not endpoint:
         raise click.UsageError("the manifest has no fork endpoint; pass --endpoint")
     source = source or m["source"]["endpoint"]
-    spliced = None
+    node = m.get("node") or {}
     spec_path = (m.get("fork") or {}).get("chain_spec")
+    dev_path = node.get("dev_spec")
+    if not dev_path and node.get("sha256"):
+        from forklift.node import dev_spec_path
+
+        dev_path = str(dev_spec_path(node["sha256"]))
     try:
-        if spec_path and Path(spec_path).is_file():
-            spliced = json.loads(Path(spec_path).read_text())["genesis"]["raw"]["top"]
+        spliced = _genesis_top(spec_path)
+        dev = _genesis_top(dev_path)
+        if dev is None:
+            click.echo(f"warning: dev chain spec not found ({dev_path}): dev-kept keys are counted, not checked",
+                       err=True)
         with RpcClient(source) as main_c, RpcClient(endpoint) as fork_c:
-            report = verify(m, main_c, fork_c, sample=sample, seed=seed, spliced=spliced)
+            report = verify(m, main_c, fork_c, sample=sample, seed=seed, spliced=spliced, dev=dev)
     except (VerifyError, RpcError, RpcUnavailable, OSError, ValueError, KeyError) as exc:
         click.echo(json.dumps({"error": "verify_failed", "message": str(exc)}) if as_json
                    else f"verify could not run: {exc}", err=not as_json)
@@ -404,8 +428,8 @@ def verify_plate(report, m: dict) -> str:
         f"fork    best #{report.fork_head['best']:,} · finalized #{report.fork_head['finalized']:,}",
         f"sample  {report.draws} draws from mainnet (seed {report.seed}) → {report.unique_keys} keys: "
         + ", ".join(f"{k} {v}" for k, v in report.classes.items())
-        + ("" if chk["compared_with_mainnet"]["dev_kept_checked_against_splice"]
-           else " (dev-kept not checked: chain spec not found)"),
+        + ("" if chk["compared_with_mainnet"]["dev_kept_checked_against_dev_genesis"]
+           else " (dev-kept not checked: dev chain spec not found)"),
         f"keys    fork genesis {chk['genesis_key_set']['fork_keys']:,} keys, set hash "
         f"{'matches' if chk['genesis_key_set']['ok'] else 'DIFFERS from'} the splice",
         f"issue   fork {_n(chk['issuance']['fork'])} = mainnet {_n(chk['issuance']['mainnet'])}"

@@ -243,10 +243,15 @@ def genesis_key_set_hash(keys) -> str:
 
 
 def fork_chain_spec(dev_spec: dict, top: dict[str, str], *, block_number: int, runtime: str,
-                    properties: dict | None = None) -> dict:
-    """The dev spec with the spliced genesis, its own id and no boot nodes (never peers with anything)."""
+                    properties: dict | None = None, fork_name: str | None = None) -> dict:
+    """The dev spec with the spliced genesis, its own id and no boot nodes (never peers with anything).
+
+    The fork's name goes into the chain name (what ``system_chain`` answers), so two forks of the same
+    pin are told apart at readiness. Names do not enter genesis: the genesis hash depends on state only.
+    """
     spec = {k: v for k, v in dev_spec.items() if k != "genesis"}
-    spec["name"] = f"Forklift fork of Portaldot mainnet #{block_number} ({runtime})"
+    label = runtime if fork_name is None else f"{runtime}, {fork_name}"
+    spec["name"] = f"Forklift fork of Portaldot mainnet #{block_number} ({label})"
     spec["id"] = f"forklift_1002_{block_number}_{runtime}"
     spec["protocolId"] = f"forklift-{block_number}"
     spec["bootNodes"] = []

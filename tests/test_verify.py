@@ -65,21 +65,21 @@ def head_aware(chain):
     return handler
 
 
-def run(m, mainnet, fork, sample=60, seed=1, spliced=None):
+def run(m, mainnet, fork, sample=60, seed=1, spliced=None, dev=None):
     main_c = RpcClient("wss://mainnet.portaldot.io", connect=fake_connect(mainnet))
     fork_c = RpcClient("ws://127.0.0.1:59944", connect=fake_connect(head_aware(fork)))
-    return verify(m, main_c, fork_c, sample=sample, seed=seed, index=INDEX, spliced=spliced)
+    return verify(m, main_c, fork_c, sample=sample, seed=seed, index=INDEX, spliced=spliced, dev=dev)
 
 
 def test_clean_fork_verifies_with_every_class_explained():
     m, mainnet, fork, sp = manifest_and_chains()
-    r = run(m, mainnet, fork, spliced=dict(sp.top))
+    r = run(m, mainnet, fork, spliced=dict(sp.top), dev=dev_genesis())
     assert r.ok and r.exit_code == 0
     assert set(r.classes) <= {"identical", "dev-kept", "override"}
     assert r.classes["identical"] and r.classes["dev-kept"]
     assert all(c["ok"] for c in r.checks.values())
     assert r.checks["overrides"]["count"] == 5
-    assert r.checks["compared_with_mainnet"]["dev_kept_checked_against_splice"]
+    assert r.checks["compared_with_mainnet"]["dev_kept_checked_against_dev_genesis"]
     assert r.fork_head == {"best": 7, "finalized": 0}
 
 
@@ -144,11 +144,11 @@ def test_a_fork_with_another_genesis_is_refused_not_compared():
         run(m, mainnet, fork)
 
 
-def test_a_dev_kept_key_must_hold_the_spliced_dev_value():
+def test_a_dev_kept_key_must_hold_the_dev_genesis_value():
     babe = item("Babe", "Authorities")
     m, mainnet, fork, sp = manifest_and_chains(lambda top: top.__setitem__(babe, "0xcafe"))  # mainnet's value leaked
     m["load"]["per_item"] = {"Babe.Authorities": 1, "System.Account": 1}
-    r = run(m, mainnet, fork, sample=40, spliced=dict(sp.top))
+    r = run(m, mainnet, fork, sample=40, dev=dev_genesis())
     assert [mm["item"] for mm in r.mismatches] == ["Babe.Authorities"] and r.exit_code == 2
     assert classify(babe, "0xcafe", "0xcafe", {}, {babe: "0xdeadbeef"}) == "mismatch"
     assert classify(babe, "0xcafe", "0xdeadbeef", {}, {babe: "0xdeadbeef"}) == "dev-kept"
@@ -160,7 +160,7 @@ def test_a_dev_kept_key_must_hold_the_spliced_dev_value():
 def test_a_sample_that_compares_nothing_with_mainnet_fails():
     m, mainnet, fork, sp = manifest_and_chains()
     m["load"]["per_item"] = {"Babe.Authorities": 1, "Grandpa.SetIdSession": 1}  # dev-kept items only
-    r = run(m, mainnet, fork, sample=10, spliced=dict(sp.top))
+    r = run(m, mainnet, fork, sample=10, dev=dev_genesis())
     assert not r.mismatches and not r.checks["compared_with_mainnet"]["ok"] and r.exit_code == 2
 
 

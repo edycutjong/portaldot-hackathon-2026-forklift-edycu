@@ -73,7 +73,9 @@ def draw_key(client: RpcClient, block_hash: str, prefix: bytes, rng: random.Rand
     picked at random from the next ``window`` keys, wrapping to the item's first
     keys at the end. Taking just the first key after the start would never reach
     past the first key of a group in a nested map (``Staking.ErasStakers`` keys
-    share an era group prefix), so the pick is from a window instead.
+    share an era group prefix), so the pick is from a window instead. Bound: a
+    random start never falls inside a group, so only the first ``window`` keys
+    of each group are reachable (at #2,725,639 a group is one era: 10 validators).
     """
     start = prefix + rng.randbytes(16)
     page = list(client.call("state_getKeysPaged", [_h(prefix), window, _h(start), block_hash]) or [])
@@ -125,14 +127,14 @@ def _override_matches(expected: str, fork_value: str | None) -> bool:
 
 
 def classify(key: str, mainnet_value: str | None, fork_value: str | None, overrides: dict[str, dict],
-             spliced: dict[str, str] | None = None) -> str:
-    """With ``spliced`` (the fork's genesis as written to its chain spec), a dev-kept key must also hold
-    exactly the spliced dev value (or be absent, like the mainnet-only keys under a dev prefix)."""
+             dev: dict[str, str] | None = None) -> str:
+    """With ``dev`` (the node's own dev genesis, ``build-spec --dev --raw``), a dev-kept key must hold
+    exactly its dev value, or be absent like the mainnet-only keys under a dev prefix."""
     if key in overrides:
         return "override" if _override_matches(overrides[key]["value"], fork_value) else "mismatch"
     rule = rule_of(_b(key))
     if rule.startswith("dev:"):
-        if spliced is not None and fork_value != spliced.get(key):
+        if dev is not None and fork_value != dev.get(key):
             return "mismatch"
         return "dev-kept"
     if rule.startswith("reset:"):
@@ -171,9 +173,11 @@ class Report:
 
 
 def verify(manifest: dict, mainnet: RpcClient, fork: RpcClient, *, sample: int = 200, seed: int | None = None,
-           index: StorageIndex | None = None, spliced: dict[str, str] | None = None) -> Report:
-    """``spliced``: the fork's genesis ``{key: value}`` from its chain spec, if at hand. It lets dev-kept
-    keys be checked against their dev value and names the keys behind a key-set difference."""
+           index: StorageIndex | None = None, spliced: dict[str, str] | None = None,
+           dev: dict[str, str] | None = None) -> Report:
+    """``dev``: the node's dev genesis, if at hand; dev-kept keys are checked against it (independently of
+    the splice's output). ``spliced``: the fork's chain-spec genesis, if at hand; it names the keys behind
+    a key-set difference."""
     src, fk = manifest["source"], manifest["fork"]
     if not fk or not fk.get("genesis_hash"):
         raise VerifyError("the manifest describes no booted fork (fork.genesis_hash is empty)")
@@ -197,7 +201,7 @@ def verify(manifest: dict, mainnet: RpcClient, fork: RpcClient, *, sample: int =
     mismatches = []
     rows = []
     for k in keys:
-        c = classify(k, on_main[k], on_fork[k], overrides, spliced)
+        c = classify(k, on_main[k], on_fork[k], overrides, dev)
         classes[c] += 1
         name = index.item_of(_b(k))
         rows.append({"key": k, "item": name, "class": c})
@@ -245,7 +249,7 @@ def verify(manifest: dict, mainnet: RpcClient, fork: RpcClient, *, sample: int =
     # Dev-kept and override draws do not compare with mainnet: at least one draw must.
     checks["compared_with_mainnet"] = {"ok": classes["identical"] + classes["mismatch"] >= 1,
                                        "keys": classes["identical"] + classes["mismatch"],
-                                       "dev_kept_checked_against_splice": spliced is not None}
+                                       "dev_kept_checked_against_dev_genesis": dev is not None}
     ok = not mismatches and all(c["ok"] for c in checks.values())
     head = {"best": int(fork.call("chain_getHeader")["number"], 16),
             "finalized": int(fork.call("chain_getHeader", [fork.call("chain_getFinalizedHead")])["number"], 16)}

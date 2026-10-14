@@ -171,6 +171,8 @@ def test_fork_chain_spec_never_peers_and_has_its_own_id():
     assert spec["properties"]["tokenSymbol"] == "POT"
     assert spec["genesis"]["raw"]["top"] == dict(sorted(s.top.items()))
     assert dev_spec["genesis"]["raw"]["top"] == {}  # input not mutated
+    named = fork_chain_spec(dev_spec, s.top, block_number=2725639, runtime="fast", fork_name="soak")
+    assert named["name"].endswith("(fast, soak)") and named["genesis"] == spec["genesis"]
 
 
 def test_genesis_key_set_hash_is_order_independent_and_sensitive():

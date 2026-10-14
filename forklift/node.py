@@ -199,15 +199,16 @@ def inspect_binary(path: Path) -> Binary:
     version = (out.stdout or out.stderr).strip()
     if out.returncode != 0 or not version:
         raise NodeError(f"{path} --version failed: {version[:200]}", hint=_hint(version))
-    digest = sha256_file(path)
+    try:
+        digest = sha256_file(path)
+    except OSError as exc:
+        raise NodeError(f"cannot read {path}: {exc}") from exc
     return Binary(str(path), digest, version, KNOWN_BINARIES.get(digest))
 
 
 def dev_spec(binary: Path, sha256: str, cache: Path | None = None) -> Path:
     """The binary's own ``build-spec --dev --raw``, cached per binary sha256."""
-    out_dir = (cache or default_cache()) / "dev-spec"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    path = out_dir / f"dev-raw-{sha256[:16]}.json"
+    path = dev_spec_path(sha256, cache)
     if path.is_file() and path.stat().st_size > 0:
         return path
     try:
@@ -217,9 +218,17 @@ def dev_spec(binary: Path, sha256: str, cache: Path | None = None) -> Path:
     if res.returncode != 0 or not res.stdout.strip():
         raise NodeError(f"build-spec --dev --raw failed: {res.stderr.decode(errors='replace')[-400:]}")
     tmp = path.with_suffix(".part")
-    tmp.write_bytes(res.stdout)
-    tmp.replace(path)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp.write_bytes(res.stdout)
+        tmp.replace(path)
+    except OSError as exc:
+        raise NodeError(f"cannot write {path}: {exc}") from exc
     return path
+
+
+def dev_spec_path(sha256: str, cache: Path | None = None) -> Path:
+    return (cache or default_cache()) / "dev-spec" / f"dev-raw-{sha256[:16]}.json"
 
 
 @dataclass
@@ -263,16 +272,31 @@ def pid_file(name: str) -> Path:
 def read_pid(name: str) -> dict | None:
     path = pid_file(name)
     try:
-        return json.loads(path.read_text())
+        rec = json.loads(path.read_text())
     except (OSError, ValueError):
         return None
+    # A record we cannot read is not ours to act on.
+    ok = (isinstance(rec, dict) and isinstance(rec.get("pid"), int) and isinstance(rec.get("ports"), dict)
+          and isinstance(rec["ports"].get("ws"), int))
+    return rec if ok else None
 
 
 def process_command(pid: int) -> str | None:
-    """The command line of ``pid``, or None if no such process."""
-    res = subprocess.run(["ps", "-p", str(pid), "-o", "command="], capture_output=True, text=True)
+    """The full command line of ``pid``, or None if there is no such process.
+
+    Raises NodeError if ``ps`` itself fails: "cannot tell" must never read as "gone".
+    """
+    try:
+        res = subprocess.run(["ps", "-ww", "-p", str(pid), "-o", "command="], capture_output=True, text=True,
+                             timeout=30)
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise NodeError(f"cannot run ps to check PID {pid}: {exc}") from exc
     out = res.stdout.strip()
-    return out if res.returncode == 0 and out else None
+    if res.returncode == 0 and out:
+        return out
+    if res.returncode == 1 or (res.returncode == 0 and not out):
+        return None  # ps: no such process
+    raise NodeError(f"ps failed for PID {pid}: {res.stderr.strip()[:200]}")
 
 
 def owns(record: dict, command: str | None) -> bool:
@@ -284,6 +308,10 @@ def owns(record: dict, command: str | None) -> bool:
     """
     if not command:
         return False
+    binary, args = record.get("binary"), record.get("args")
+    if isinstance(binary, str) and isinstance(args, list):
+        # Exact: the command line we launched (survives spaces in paths).
+        return command == " ".join([binary, *map(str, args)])
     tokens = command.split()
     pairs = set(zip(tokens, tokens[1:]))
     head = tokens[:2]
@@ -309,11 +337,14 @@ def start(binary: Path, cfg: NodeConfig, log_path: Path) -> subprocess.Popen:
     busy = [f"{k} {v}" for k, v in cfg.ports.items() if not port_free(v)]
     if busy:
         raise NodeError(f"port(s) in use: {', '.join(busy)}", hint="a port is already in use: pick other ports")
-    log_path.parent.mkdir(parents=True, exist_ok=True)
     args = node_args(binary, cfg)
-    with open(log_path, "ab") as log:
-        proc = subprocess.Popen(args, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
-                                start_new_session=True)
+    try:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(log_path, "ab") as log:
+            proc = subprocess.Popen(args, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
+                                    start_new_session=True)
+    except OSError as exc:
+        raise NodeError(f"cannot start {binary}: {exc}", hint=_hint(str(exc))) from exc
     rec = {"pid": proc.pid, "name": cfg.name, "binary": str(binary), "ports": cfg.ports,
            "endpoint": cfg.ws_endpoint, "chain_spec": str(cfg.chain_spec),
            "base_path": str(cfg.base_path) if cfg.base_path else None,
