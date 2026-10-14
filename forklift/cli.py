@@ -233,6 +233,141 @@ def down_cmd(name: str) -> None:
         raise click.UsageError(str(exc)) from None
 
 
+def record_verify(report, m: dict, evidence_dir: Path, endpoint: str) -> Path:
+    """Write or extend ``evidence/verify-<block>.json``: one run per verify, with its seed to reproduce it."""
+    import datetime as dt
+
+    src, fork = m["source"], m["fork"]
+    path = evidence_dir / f"verify-{src['block_number']}.json"
+    prior = json.loads(path.read_text()) if path.exists() else {}
+    if prior and prior["pin"]["block_hash"] != src["block_hash"]:
+        path = evidence_dir / f"verify-{src['block_number']}-{src['block_hash'][2:10]}.json"
+        prior = json.loads(path.read_text()) if path.exists() else {}
+    runs = prior.get("runs", [])
+    runs.append({
+        "recorded_utc": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+        "label": fork["label"],
+        "fork_genesis_hash": fork["genesis_hash"],
+        "fork_endpoint": endpoint,
+        "seed": report.seed,
+        "draws": report.draws,
+        "unique_keys": report.unique_keys,
+        "classes": report.classes,
+        "mismatches": report.mismatches,
+        "checks": report.checks,
+        "exit_code": report.exit_code,
+    })
+    ev = {
+        "pin": {"block_number": src["block_number"], "block_hash": src["block_hash"]},
+        "source_endpoint": src["endpoint"],
+        "spec_version": src["spec_version"],
+        "keys_lifted": m["load"]["keys_lifted"],
+        "manifest_root": m["manifest_root"],
+        "accounting": fork["accounting"],
+        "overrides": [{"name": o["name"], "reason": o["reason"]} for o in m["overrides"]],
+        "reproduce": "forklift verify --sample <draws> --seed <seed> against a fork of this pin",
+        "runs": runs,
+    }
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(ev, indent=2) + "\n")
+    return path
+
+
+def _load_fork_manifest(name: str, manifest_path: Path | None) -> dict:
+    from forklift.node import NodeError, read_pid
+
+    if manifest_path is None:
+        try:
+            rec = read_pid(name)
+        except NodeError as exc:
+            raise click.UsageError(str(exc)) from None
+        if not rec or not rec.get("manifest"):
+            raise click.UsageError(f"no running fork named {name!r} with a manifest; pass --manifest")
+        manifest_path = Path(rec["manifest"])
+    try:
+        return json.loads(Path(manifest_path).read_text())
+    except (OSError, ValueError) as exc:
+        raise click.UsageError(f"cannot read {manifest_path}: {exc}") from None
+
+
+@main.command("verify")
+@click.option("--sample", "sample", type=click.IntRange(1, 100_000), default=200, show_default=True,
+              help="Keys to draw from mainnet (inside storage maps, weighted by per-item counts).")
+@click.option("--seed", type=int, default=None, help="Random seed of the draw (printed; reuse it to reproduce).")
+@click.option("--name", default="fork", show_default=True, help="Fork to check (from its PID file).")
+@click.option("--manifest", "manifest_path", type=click.Path(path_type=Path), default=None,
+              help="fork.manifest.json to check instead of --name's.")
+@click.option("--endpoint", default=None, help="Fork WebSocket endpoint [default: the manifest's].")
+@click.option("--from", "source", default=None, help="Mainnet archive node [default: the manifest's source].")
+@click.option("--evidence", "evidence_dir", type=click.Path(path_type=Path), default=None,
+              help="Also record this run in <DIR>/verify-<block>.json.")
+@click.option("--json", "as_json", is_flag=True, help="Print the report as JSON.")
+def verify_cmd(sample: int, seed: int | None, name: str, manifest_path: Path | None, endpoint: str | None,
+               source: str | None, evidence_dir: Path | None, as_json: bool) -> None:
+    """Check the fork at genesis against mainnet at the pin, from keys drawn on mainnet.
+
+    Exit 0 when every sampled key is identical or explained (dev-kept, override,
+    reset) and the key-set, issuance and runtime checks pass; exit 2 otherwise,
+    naming every mismatch; exit 1 if the check could not run.
+    """
+    from forklift.rpc import RpcError, RpcUnavailable
+    from forklift.verify import VerifyError, verify
+
+    m = _load_fork_manifest(name, manifest_path)
+    endpoint = endpoint or (m.get("node") or {}).get("endpoint")
+    if not endpoint:
+        raise click.UsageError("the manifest has no fork endpoint; pass --endpoint")
+    source = source or m["source"]["endpoint"]
+    spliced = None
+    spec_path = (m.get("fork") or {}).get("chain_spec")
+    try:
+        with RpcClient(source) as main_c, RpcClient(endpoint) as fork_c:
+            if spec_path and Path(spec_path).is_file():
+                spliced = list(json.loads(Path(spec_path).read_text())["genesis"]["raw"]["top"])
+            report = verify(m, main_c, fork_c, sample=sample, seed=seed, spliced_keys=spliced)
+    except (VerifyError, RpcError, RpcUnavailable, OSError, ValueError, KeyError) as exc:
+        click.echo(json.dumps({"error": "verify_failed", "message": str(exc)}) if as_json
+                   else f"verify could not run: {exc}", err=not as_json)
+        sys.exit(1)
+    if evidence_dir is not None:
+        record_verify(report, m, evidence_dir, endpoint)
+    if as_json:
+        out = {"ok": report.ok, "exit_code": report.exit_code, "label": m["fork"]["label"],
+               "pin": {"block_number": m["source"]["block_number"], "block_hash": m["source"]["block_hash"]},
+               "fork_genesis_hash": m["fork"]["genesis_hash"], "seed": report.seed, "draws": report.draws,
+               "unique_keys": report.unique_keys, "classes": report.classes, "mismatches": report.mismatches,
+               "checks": report.checks, "sample": report.sample}
+        click.echo(json.dumps(out, indent=2))
+    else:
+        click.echo(verify_plate(report, m))
+    sys.exit(report.exit_code)
+
+
+def verify_plate(report, m: dict) -> str:
+    src, fork, chk = m["source"], m["fork"], report.checks
+    lines = [
+        f"verify  {fork['label']} genesis {fork['genesis_hash']}",
+        f"        vs {src['endpoint']} #{src['block_number']:,} {src['block_hash']}",
+        f"sample  {report.draws} draws from mainnet (seed {report.seed}) → {report.unique_keys} keys: "
+        + ", ".join(f"{k} {v}" for k, v in report.classes.items()),
+        f"keys    fork genesis {chk['genesis_key_set']['fork_keys']:,} keys, set hash "
+        f"{'matches' if chk['genesis_key_set']['ok'] else 'DIFFERS from'} the splice",
+        f"issue   fork {int(chk['issuance']['fork'] or 0):,} = mainnet {int(chk['issuance']['mainnet'] or 0):,}"
+        f" + {int(chk['issuance']['added']):,}: {'ok' if chk['issuance']['ok'] else 'MISMATCH'}",
+        f"over    {chk['overrides']['count']} named overrides read on both sides: "
+        f"{'ok' if chk['overrides']['ok'] else 'MISMATCH'}",
+        f"code    mainnet {chk['runtime']['mainnet_code_hash']} · fork {chk['runtime']['fork_code_hash']}"
+        f" ({chk['runtime']['fork_runtime']}): {'ok' if chk['runtime']['ok'] else 'MISMATCH'}",
+    ]
+    for mm in report.mismatches:
+        lines.append(f"MISMATCH {mm['item']}  {mm['key']}\n         mainnet {mm['mainnet']}\n         fork    {mm['fork']}")
+    for side in ("missing_on_fork", "extra_on_fork"):
+        if chk["genesis_key_set"].get(side):
+            lines.append(f"{side.replace('_', ' ')}: {', '.join(chk['genesis_key_set'][side])}")
+    lines.append("OK      nothing unexplained" if report.ok else "FAIL    unexplained differences (exit 2)")
+    return "\n".join(lines)
+
+
 EXIT_USAGE = 64  # click's default (2) is reserved for "verify found a mismatch"
 
 
