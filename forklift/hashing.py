@@ -14,6 +14,10 @@ def twox128(name: str | bytes) -> bytes:
     return b"".join(xxhash.xxh64_intdigest(data, seed=s).to_bytes(8, "little") for s in (0, 1))
 
 
+def blake2_128(data: bytes) -> bytes:
+    return hashlib.blake2b(data, digest_size=16).digest()
+
+
 def blake2_256(data: bytes) -> bytes:
     return hashlib.blake2b(data, digest_size=32).digest()
 
