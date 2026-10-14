@@ -8,6 +8,7 @@ from click.testing import CliRunner
 
 from forklift import act, cli, receipt, tx
 from forklift.cli import main
+from forklift.hashing import blake2_256
 from forklift.rpc import RpcClient, WriteGuardError
 from tests.fakes import fake_connect
 
@@ -133,10 +134,10 @@ def test_stale_answer_after_a_resend_waits_for_the_block_scan():
     from forklift.rpc import RpcError
 
     class C:
-        reconnects = 0
+        resent_writes = 0
 
         def call(self, method, params):
-            self.reconnects = 1  # the client re-sent once inside this call
+            self.resent_writes = 1  # an earlier attempt reached the node, the client re-sent once
             raise RpcError(method, {"code": 1010, "message": "Invalid Transaction: Transaction is outdated"})
 
     assert tx._send(C(), "0x00", "0xexpected") == "0xexpected"
@@ -147,3 +148,106 @@ def test_stale_answer_after_a_resend_waits_for_the_block_scan():
 
     with pytest.raises(RpcError):
         tx._send(First(), "0x00", "0xexpected")
+
+
+def test_resent_writes_counts_only_attempts_that_reached_the_socket():
+    from forklift.rpc import RpcUnavailable
+
+    def drop_after_send(method, params):
+        if method == "chain_getBlockHash":
+            return GENESIS
+        raise OSError("reset after the request went out")
+
+    c = RpcClient("ws://127.0.0.1:59944", fork=True, connect=fake_connect(drop_after_send), sleep=lambda s: None,
+                  retries=1)
+    with pytest.raises(RpcUnavailable):
+        c.call("author_submitExtrinsic", ["0x00"])
+    assert c.resent_writes == 1
+
+    def refuse_connect(endpoint, timeout):
+        raise OSError("connection refused")  # nothing ever reaches the node
+
+    c = RpcClient("ws://127.0.0.1:59944", fork=True, connect=refuse_connect, sleep=lambda s: None, retries=1)
+    c._fork_checked = True
+    with pytest.raises(RpcUnavailable):
+        c.call("author_submitExtrinsic", ["0x00"])
+    assert c.resent_writes == 0
+
+
+class _Chain:
+    """Heights → block hashes that can change between polls; the extrinsic sits in one block hash."""
+
+    def __init__(self, script, home):
+        self.script, self.home, self.poll = script, home, 0
+
+    def view(self):
+        return self.script[min(self.poll, len(self.script) - 1)]
+
+    def __call__(self, method, params):
+        v = self.view()
+        if method == "chain_getHeader":
+            if params and params[0] == "fin":
+                return {"number": hex(max(v))}
+            return {"number": hex(max(v))}
+        if method == "chain_getBlockHash":
+            return GENESIS if params == [0] else v.get(params[0])
+        if method == "author_submitExtrinsic":
+            self.poll = 1
+            return "0x" + blake2_256(bytes.fromhex(params[0][2:])).hex()
+        if method == "chain_getBlock":
+            return {"block": {"extrinsics": ["0x00", "0x0102"] if params[0] == self.home else ["0x00"]}}
+        if method == "chain_getFinalizedHead":
+            return "fin"
+        if method == "state_getStorage":
+            return None
+        raise AssertionError(method)
+
+
+def _submit_on(chain, monkeypatch):
+    monkeypatch.setattr(tx, "events_at", lambda c, rt, h: [tx.Event(0, "ApplyExtrinsic", 1, "System",
+                                                                     "ExtrinsicSuccess", [])])
+    def sleep(_):
+        chain.poll += 1
+    return tx.submit(RpcClient("ws://127.0.0.1:59944", fork=True, connect=fake_connect(chain)), None,
+                     bytes.fromhex("0102"), sleep=sleep)
+
+
+def test_scan_steps_back_when_the_best_chain_gets_shorter(monkeypatch):
+    chain = _Chain([{8: "a8"}, {8: "a8", 9: "a9", 10: "a10"}, {8: "b8"}, {8: "b8", 9: "b9"}], home="b9")
+    inc = _submit_on(chain, monkeypatch)
+    assert (inc.block_number, inc.block_hash) == (9, "b9")
+
+
+def test_scan_notices_a_same_height_reorg(monkeypatch):
+    chain = _Chain([{5: "a5"}, {5: "a5", 6: "a6"}, {5: "a5", 6: "b6"}], home="b6")
+    inc = _submit_on(chain, monkeypatch)
+    assert (inc.block_number, inc.block_hash) == (6, "b6")
+
+
+def test_bind_fork_refuses_a_manifest_without_a_genesis():
+    from forklift.cli import _bind_fork
+
+    client = RpcClient("ws://127.0.0.1:59944", fork=True, connect=fake_connect(lambda m, p: GENESIS))
+    with pytest.raises(WriteGuardError, match="no genesis"):
+        _bind_fork(client, {"fork": {}})
+
+
+def test_a_landed_tx_whose_evidence_cannot_be_written_keeps_its_exit_code(fork, monkeypatch, tmp_path):
+    def fake_run(client, rt, manifest, *, on_step, **kw):
+        bad = _inc(4, ok=False, err="x")
+        on_step({"kind": "rent_top_up", "inclusion": bad, "amount": 1})
+        raise receipt.ReceiptDispatchError("rent top-up failed", bad, "rent_top_up")
+
+    monkeypatch.setattr(receipt, "run_receipt", fake_run)
+    blocker = tmp_path / "file-not-dir"
+    blocker.write_text("")
+    res = CliRunner().invoke(main, ["receipt", "--name", "f", "--evidence", str(blocker / "ev")])
+    assert res.exit_code == 5
+    assert "NOT recorded" in res.stderr and "extrinsic 4-1" in res.stderr
+
+
+def test_tx_id_must_look_like_block_index(fork, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["forklift", "tx", "abc", "--name", "f"])
+    with pytest.raises(SystemExit) as ex:
+        cli.run()
+    assert ex.value.code == 64

@@ -28,3 +28,12 @@ also equal the genesis in that fork's manifest, so a different chain on the same
 written to or recorded as this fork. A refusal exits `1` with `"error": "write_refused"` before
 anything is sent. `lift`, `verify` (mainnet side) and `tx` use a
 read-only client that can only send an allowlist of read methods.
+
+## Evidence is never allowed to hide a result
+
+With `--evidence DIR`, a transaction that already landed but cannot be written to
+`DIR/txs-<block>.json` (unwritable directory, corrupt file) prints
+`warning: … landed as extrinsic <block>-<index> (tx <hash>) but was NOT recorded …` on stderr and
+keeps the command's real exit code; the JSON output then has `"evidence": null`. `verify --evidence`
+does the same for its report. Each landed `receipt` step (instantiate, rent top-up, attest) is recorded
+as soon as it lands, so a later failure cannot lose an earlier transaction.

@@ -139,6 +139,8 @@ class RpcClient:
         self.requests = 0
         self.reconnects = 0
         self._fork_checked = False
+        self._sent = False
+        self.resent_writes = 0  # writes sent again after an earlier attempt had already reached the socket
 
     def __enter__(self) -> "RpcClient":
         return self
@@ -163,6 +165,7 @@ class RpcClient:
         conn = self._ensure()
         req_id = next(self._ids)
         conn.send(json.dumps({"jsonrpc": "2.0", "id": req_id, "method": method, "params": params}))
+        self._sent = True
         deadline = time.monotonic() + self.timeout
         while True:
             remaining = deadline - time.monotonic()
@@ -204,19 +207,24 @@ class RpcClient:
         params = list(params or [])
         retryable = _retryable()
         last: BaseException | None = None
+        reached_socket = False
         for attempt in range(self.retries + 1):
             if attempt:
                 self._sleep(self.backoff * 2 ** (attempt - 1))
                 self.reconnects += 1
             if attempt and self.fork and is_write_method(method):
                 self._check_fork_genesis()  # a write re-sent on a new connection is guarded again (I3)
+                if reached_socket:
+                    self.resent_writes += 1
             try:
                 self.requests += 1
+                self._sent = False
                 return self._once(method, params)
             except RpcError:
                 raise
             except retryable as exc:
                 last = exc
+                reached_socket = reached_socket or self._sent
                 self.close()
         raise RpcUnavailable(
             f"{method} on {self.endpoint} failed after {self.retries + 1} attempts: {last!r}"

@@ -98,7 +98,7 @@ def main() -> int:
                     clients[ep] = (c, tx.Runtime.load(c), genesis)
                 c, rt, genesis = clients[ep]
                 if genesis != row.get("fork_genesis_hash"):
-                    results.append({"extrinsic_id": row["extrinsic_id"], "kind": row["kind"], "ok": False,
+                    results.append({"extrinsic_id": row.get("extrinsic_id"), "kind": row.get("kind"), "ok": False,
                                     "checks": {"same_fork": False}, "genesis": genesis})
                     continue
                 try:
@@ -122,7 +122,8 @@ def main() -> int:
         dest = a.evidence / path.name.replace("txs-", "refetch-")
         dest.write_text(json.dumps(out, indent=2) + "\n")
         for r in results:
-            print(f"{r['extrinsic_id']:>8}  {r['kind']:<12} {'ok' if r['ok'] else 'DIFFERS ' + json.dumps(r['checks'])}")
+            print(f"{str(r.get('extrinsic_id')):>8}  {str(r.get('kind')):<12} "
+                  f"{'ok' if r['ok'] else 'DIFFERS ' + json.dumps(r['checks'])}")
         print(f"wrote {dest.relative_to(ROOT) if dest.is_relative_to(ROOT) else dest}: "
               f"{len(results)} rows, {'all identical' if ok else 'DIFFERENCES'}")
     return code

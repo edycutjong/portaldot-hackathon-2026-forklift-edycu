@@ -418,11 +418,11 @@ POOL_ANCIENT_BIRTH = 1016
 def _send(client: RpcClient, xt_hex: str, expected: str) -> str:
     from forklift.rpc import RpcError
 
-    reconnects = getattr(client, "reconnects", 0)
+    resent_before = getattr(client, "resent_writes", 0)
     try:
         tx_hash = client.call("author_submitExtrinsic", [xt_hex])
     except RpcError as exc:
-        resent = getattr(client, "reconnects", 0) > reconnects
+        resent = getattr(client, "resent_writes", 0) > resent_before  # an earlier attempt reached the node
         if exc.code in (POOL_ALREADY_IMPORTED, POOL_TEMPORARILY_BANNED) or (
                 resent and exc.code in (POOL_INVALID, POOL_ANCIENT_BIRTH)):
             return expected  # same bytes, same hash; whether it landed is decided by the block scan
@@ -443,6 +443,7 @@ def submit(client: RpcClient, rt: Runtime, xt: bytes, *, timeout: float = 90.0, 
     xt_hex = "0x" + xt.hex()
     expected = "0x" + blake2_256(xt).hex()
     scanned = _header_number(client)
+    tip = client.call("chain_getBlockHash", [scanned])
     t0 = clock()
     tx_hash = _send(client, xt_hex, expected)
     while True:
@@ -451,11 +452,12 @@ def submit(client: RpcClient, rt: Runtime, xt: bytes, *, timeout: float = 90.0, 
             if clock() - t0 > timeout:
                 raise TxError(f"{tx_hash} not included within {timeout:.0f} s (scanned to #{scanned})")
             best = _header_number(client)
-            if best < scanned:  # the best chain got shorter (re-org): look at its blocks again
-                scanned = max(0, best - 1)
+            if best < scanned or client.call("chain_getBlockHash", [scanned]) != tip:
+                scanned = max(0, min(best, scanned) - 1)  # re-org: the blocks we scanned changed, look again
             while scanned < best and found is None:
                 scanned += 1
                 bh = client.call("chain_getBlockHash", [scanned])
+                tip = bh
                 idx = find_in_block(client, bh, xt_hex)
                 if idx is not None:
                     found = (scanned, bh, idx)
@@ -479,6 +481,7 @@ def submit(client: RpcClient, rt: Runtime, xt: bytes, *, timeout: float = 90.0, 
             block_hash, index = canonical, idx
             break
         scanned = number  # re-org below finality: the extrinsic may be in a later block
+        tip = canonical
     seconds = round(clock() - t0, 1)
     mine = [e for e in events_at(client, rt, block_hash)
             if e.phase == "ApplyExtrinsic" and e.extrinsic_index == index]

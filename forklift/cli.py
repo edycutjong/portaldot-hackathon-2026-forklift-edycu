@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -393,7 +394,9 @@ def verify_cmd(sample: int, seed: int | None, name: str, manifest_path: Path | N
     endpoint = endpoint or (m.get("node") or {}).get("endpoint")
     if not endpoint:
         raise click.UsageError("the manifest has no fork endpoint; pass --endpoint")
-    source = source or m["source"]["endpoint"]
+    source = source or (m.get("source") or {}).get("endpoint")
+    if not source:
+        raise click.UsageError("the manifest has no source endpoint; pass --from")
     node = m.get("node") or {}
     spec_path = (m.get("fork") or {}).get("chain_spec")
     dev_path = node.get("dev_spec")
@@ -414,7 +417,11 @@ def verify_cmd(sample: int, seed: int | None, name: str, manifest_path: Path | N
                    else f"verify could not run: {exc}", err=not as_json)
         sys.exit(1)
     if evidence_dir is not None:
-        record_verify(report, m, evidence_dir, endpoint)
+        try:
+            record_verify(report, m, evidence_dir, endpoint)
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            click.echo(f"warning: verify finished (exit {report.exit_code}) but was NOT recorded in "
+                       f"{evidence_dir}: {exc}", err=True)
     if as_json:
         out = {"ok": report.ok, "exit_code": report.exit_code, "label": m["fork"]["label"],
                "pin": {"block_number": m["source"]["block_number"], "block_hash": m["source"]["block_hash"]},
@@ -696,6 +703,8 @@ def tx_cmd(extrinsic_id: str, name: str, endpoint: str | None, as_json: bool) ->
     """Re-read an extrinsic on the fork by its id BLOCK-INDEX: hash, call, events, outcome (read-only)."""
     from forklift import tx
 
+    if not re.fullmatch(r"\d+-\d+", extrinsic_id):
+        raise click.UsageError(f"extrinsic id must look like 123-1 (block-index), got {extrinsic_id!r}")
     endpoint, _ = _fork_endpoint(name, endpoint)
     try:
         with RpcClient(endpoint) as client:  # read-only client: this command never writes
