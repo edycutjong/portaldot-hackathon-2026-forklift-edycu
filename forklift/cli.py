@@ -1,14 +1,99 @@
 """Command-line entry point."""
 
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
 import click
 
 from forklift import __version__
+from forklift.rpc import DEFAULT_MAINNET, RpcClient
+
+
+def _parse_at(value: str | None) -> str | int | None:
+    if value is None or value == "head" or value.startswith("0x"):
+        return value
+    try:
+        return int(value.replace(",", "").replace("_", ""))
+    except ValueError:
+        raise click.BadParameter("expected a block number, a 0x block hash, or 'head'") from None
+
+
+def run_lift(endpoint: str, at: str | int | None, out_root: Path, *, resume: bool = True) -> dict:
+    """Lift, write ``state.json`` + ``manifest.json`` under ``out_root/<block>/``, return the manifest."""
+    from forklift.lift import lift, mmr_summary
+    from forklift.manifest import build_manifest
+    from forklift.metadata import StorageIndex, decode_hex
+
+    with RpcClient(endpoint) as client:
+        result = lift(client, at, out_root=out_root, resume=resume)
+        index = StorageIndex(decode_hex(client.call("state_getMetadata", [result.pin.hash])))
+        mmr = mmr_summary(client, result.pin.hash)
+    manifest = build_manifest(result, index, endpoint=endpoint, mmr=mmr)
+    manifest["load"]["resumed_from_cursor"] = result.resumed_from
+    path = result.out_dir / "manifest.json"
+    path.write_text(json.dumps(manifest, indent=2) + "\n")
+    manifest["_paths"] = {"dir": str(result.out_dir), "manifest": str(path)}
+    return manifest
+
+
+def data_plate(m: dict) -> str:
+    src, load = m["source"], m["load"]
+    sk = load["skipped"] or {}
+    secs = load["seconds"]
+    return "\n".join([
+        f"lift    {m['profile']} · {src['endpoint']}",
+        f"pin     #{src['block_number']:,}  {src['block_hash']}",
+        f"keys    {load['keys_lifted']:,} keys · {load['value_bytes']:,} B values · {load['key_pages']} pages"
+        f"  (MerkleMountainRange skipped: ~{sk.get('keys_in_range_derived', 0):,} keys, derived)",
+        f"time    keys {secs['keys_s']} s · values {secs['values_s']} s · total {secs['total_s']} s",
+        f"code    {src['code_hash']}  ({src['code_bytes']:,} B)",
+        f"root    {m['manifest_root']}",
+        f"wrote   {m['_paths']['manifest']}",
+    ])
 
 
 @click.group()
 @click.version_option(__version__, prog_name="forklift")
 def main() -> None:
     """Lift Portaldot mainnet state onto a local fork of the official node."""
+
+
+@main.command("lift")
+@click.option("--at", "at", default="head", show_default=True,
+              help="Block to pin: a number, a 0x block hash, or 'head' (latest finalized).")
+@click.option("--from", "endpoint", default=DEFAULT_MAINNET, show_default=True,
+              help="Archive node to read from (read-only).")
+@click.option("--out", "out_root", type=click.Path(path_type=Path), default=None,
+              help="Lift directory root [default: ~/.cache/forklift/lifts].")
+@click.option("--no-resume", is_flag=True, help="Ignore a checkpoint left by an interrupted lift.")
+@click.option("--json", "as_json", is_flag=True, help="Print the manifest as JSON.")
+def lift_cmd(at: str, endpoint: str, out_root: Path | None, no_resume: bool, as_json: bool) -> None:
+    """Read every storage key of a pinned block (MMR range skipped) and write a manifest.
+
+    Exit code 4 if the lift cannot finish; the last key cursor is printed and kept
+    as a checkpoint, and nothing is written as a complete lift.
+    """
+    from forklift.lift import EXIT_LIFT_FAILED, LiftError, default_cache
+
+    out_root = out_root or default_cache() / "lifts"
+    try:
+        manifest = run_lift(endpoint, _parse_at(at), out_root, resume=not no_resume)
+    except LiftError as exc:
+        err = {"error": "lift_failed", "phase": exc.phase, "message": str(exc),
+               "block_hash": exc.block_hash, "last_cursor": exc.cursor}
+        if as_json:
+            click.echo(json.dumps(err))
+        else:
+            click.echo(f"lift failed during {exc.phase}: {exc}", err=True)
+            click.echo(f"last cursor: {exc.cursor}  (re-run the same --at to resume)", err=True)
+        sys.exit(EXIT_LIFT_FAILED)
+    if as_json:
+        click.echo(json.dumps(manifest, indent=2))
+    else:
+        click.echo(data_plate(manifest))
 
 
 if __name__ == "__main__":
