@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "portaldot-forklift"
+version = "0.1.0"
+description = "Lift Portaldot mainnet state at a pinned block onto a local fork of the official node"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [{ name = "Edy Cu" }]
+dependencies = [
+  "click>=8.1",
+  "websockets>=12",
+  "xxhash>=3.4",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+forklift = "forklift.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["forklift"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["live: needs network access to the public Portaldot mainnet node"]
+addopts = "-m 'not live'"
