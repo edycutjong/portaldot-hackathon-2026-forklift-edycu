@@ -140,5 +140,23 @@ def lift_cmd(at: str, endpoint: str, out_root: Path | None, no_resume: bool, evi
         click.echo(data_plate(manifest))
 
 
+EXIT_USAGE = 64  # click's default (2) is reserved for "verify found a mismatch"
+
+
+def run() -> None:
+    """Console entry point: like ``main()`` but with usage errors on exit code 64."""
+    try:
+        main(standalone_mode=False)
+    except click.UsageError as exc:
+        exc.show()
+        sys.exit(EXIT_USAGE)
+    except click.ClickException as exc:
+        exc.show()
+        sys.exit(exc.exit_code)
+    except click.Abort:
+        click.echo("Aborted!", err=True)
+        sys.exit(1)
+
+
 if __name__ == "__main__":
-    main()
+    run()

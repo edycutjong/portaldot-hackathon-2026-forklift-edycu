@@ -20,7 +20,7 @@ dependencies = [
 dev = ["pytest>=8"]
 
 [project.scripts]
-forklift = "forklift.cli:main"
+forklift = "forklift.cli:run"
 
 [tool.hatch.build.targets.wheel]
 packages = ["forklift"]

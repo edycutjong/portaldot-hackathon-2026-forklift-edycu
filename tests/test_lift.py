@@ -138,3 +138,12 @@ def test_page_keys_stops_on_short_page():
     chain = FakeChain({"0x01": "0x", "0x02": "0x"})
     res = page_keys(client_for(chain), chain.block_hash, page_size=10)
     assert res.keys == ["0x01", "0x02"] and res.pages == 1
+
+
+def test_usage_errors_exit_64_not_2(monkeypatch):
+    import sys
+
+    monkeypatch.setattr(sys, "argv", ["forklift", "lift", "--at", "not-a-block"])
+    with pytest.raises(SystemExit) as exc:
+        cli.run()
+    assert exc.value.code == cli.EXIT_USAGE == 64
