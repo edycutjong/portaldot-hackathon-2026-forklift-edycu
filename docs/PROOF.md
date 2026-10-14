@@ -31,7 +31,7 @@ seconds from node launch, read over RPC.
 
 | Pin block | Label | Fork genesis hash | Lifted = identical + dev-kept + overridden | Genesis keys | RPC up / block #1 / finalized #1 (s) | Peers | Boots, same genesis | Evidence |
 |---|---|---|---|---|---|---|---|---|
-| #2,725,639 | `fork-1002-fast` | `0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b` | 16,332 = 9,529 + 6,799 + 4 | 9,568 | 12.2 / 17.3 / 30.9 | 0 | 2, yes | `evidence/fork-2725639.json` |
+| #2,725,639 | `fork-1002-fast` | `0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b` | 16,332 = 9,529 + 6,799 + 4 | 9,568 | 12.6 / 17.3 / 31.0 | 0 | 3, yes | `evidence/fork-2725639.json` |
 
 ## Verify (I1, I2, I4)
 
@@ -43,6 +43,8 @@ the five overrides and both runtime code hashes match the manifest. Re-run a row
 |---|---|---|---|---|---|---|---|---|
 | #2,725,639 | `0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b` | not recorded | 200 → 194 | dev-kept 80, identical 114 | ok / ok / ok / ok | 0 | 18192902814187631806 | `evidence/verify-2725639.json` |
 | #2,725,639 | `0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b` | #7 | 200 → 196 | dev-kept 88, identical 108 | ok / ok / ok / ok | 0 | 1197921109834038660 | `evidence/verify-2725639.json` |
+| #2,725,639 | `0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b` | #7 | 200 → 198 | dev-kept 84, identical 113, override 1 | ok / ok / ok / ok | 0 | 17654518152265610976 | `evidence/verify-2725639.json` |
+| #2,725,639 | `0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b` | #130 | 200 → 197 | dev-kept 89, identical 108 | ok / ok / ok / ok | 0 | 9005202512978171212 | `evidence/verify-2725639.json` |
 
 ## Bench (stub: one run per file)
 
