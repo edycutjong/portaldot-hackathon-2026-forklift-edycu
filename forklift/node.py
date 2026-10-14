@@ -1,7 +1,7 @@
 """Run the ``portaldot_dev`` 2.0.0 node (tarballs in portaldotVolunteer/Portaldot-node) on a spliced chain spec.
 
 Forklift never ships a node of its own. It finds the ``portaldot_dev`` binary (or
-downloads the release tarball and checks its sha256), records the binary's
+downloads the tarball and checks its sha256), records the binary's
 sha256 in the manifest, and spawns it on loopback-only ports with no boot
 nodes, no mDNS and ``--reserved-only``: a fork never peers with anything.
 
@@ -34,8 +34,8 @@ from forklift.rpc import RpcClient, RpcError, RpcUnavailable
 EXIT_NODE_FAILED = 3
 
 BINARY_NAME = "portaldot_dev"
-RELEASE = "https://github.com/portaldotVolunteer/Portaldot-node/raw/main/portaldot-testnet-{os}.tar.gz"
-# sha256 of the release tarballs, measured 2026-10-11 (macos) and 2026-10-13 (ubuntu).
+TARBALL_URL = "https://github.com/portaldotVolunteer/Portaldot-node/raw/main/portaldot-testnet-{os}.tar.gz"
+# sha256 of the tarballs, measured 2026-10-11 (macos) and 2026-10-13 (ubuntu).
 TARBALL_SHA256 = {
     "macos": "0826f3da6473a0610c1764c0f94be16f8e03a37eb4ba4cc8cc8ac3e8bca78f72",
     "ubuntu": "9df4d6332e84ab81707b5d2e3376c572f058eac4212bd99ba6f1908b75a6327c",
@@ -44,7 +44,7 @@ TARBALL_SHA256 = {
 KNOWN_BINARIES = {
     "301a311779e5658aa880953b052c0de3fff9d9d0f3c039030872510a6eedd6e2": "portaldot_dev 2.0.0 (macos x86_64)",
 }
-# Where an earlier install may have unpacked the same macOS release tarball. Used read-only.
+# Where an earlier install may have unpacked the same macOS tarball. Used read-only.
 SHARED_INSTALL = Path.home() / ".cache" / "portaldot-dev-node" / "portaldot-testnet-macos" / BINARY_NAME
 
 DEFAULT_PORTS = {"ws": 9944, "rpc": 9933, "p2p": 30333}
@@ -137,9 +137,9 @@ def release_os() -> str:
 
 
 def download_binary(dest_dir: Path, *, fetch: Callable[[str], bytes] | None = None, os_name: str | None = None) -> Path:
-    """Download the release tarball, check its sha256, unpack only ``portaldot_dev``."""
+    """Download the tarball, check its sha256, unpack only ``portaldot_dev``."""
     os_name = os_name or release_os()
-    url = RELEASE.format(os=os_name)
+    url = TARBALL_URL.format(os=os_name)
     try:
         data = (fetch or _fetch)(url)
     except OSError as exc:  # URLError, timeouts, resets

@@ -1,4 +1,4 @@
-"""Live fork tests: boot the official portaldot_dev on a lift of public mainnet. Run with: pytest -m live
+"""Live fork tests: boot portaldot_dev 2.0.0 (community tarball) on a lift of public mainnet. Run with: pytest -m live
 
 Ports come from FORKLIFT_WS_PORT / FORKLIFT_RPC_PORT / FORKLIFT_P2P_PORT (else 9944 / 9933 / 30333).
 Each test stops its own fork.

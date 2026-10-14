@@ -59,7 +59,7 @@ flowchart TB
     META --> VER
     UP -- "writes fork blocks" --> MAN
     VER --> SPL
-    NODE --> LIFT
+    NODE -- "cache path only" --> LIFT
     REC --> ACT
     RPC -- "reads at a pinned hash" --> MN
     NODE -- "spawns" --> BIN --> FORK
@@ -89,7 +89,7 @@ transaction by extrinsic id from a separate process).
 | `up.py` | `forklift up`: lift (or reuse a cached complete lift of the same block hash) → splice → boot → write the manifest and print the data plate. |
 | `verify.py` | Draws keys **from mainnet** at the pin inside storage maps (weighted by per-item counts), reads each on mainnet at the pin and on the fork at genesis, classifies it (identical, dev-kept, override, reset, mismatch), and runs whole-fork checks: genesis key-set hash, issuance, the five overrides on both sides, both runtime code hashes. Exit 0 only when nothing is unexplained. |
 | `tx.py`, `act.py` | Build the version-4 extrinsic envelope explicitly (the seven signed extensions of spec 1002; any other list is refused), sign with the fork's dev key, submit through the fork client, find the extrinsic by block scan, await finalization, decode events and the dispatch result. `fund` = `Sudo.sudo(Balances.set_balance)`; `as` = `Sudo.sudo_as(<call>)` with the call composed from metadata and the account's storage read before and after. |
-| `receipt.py`, `contracts/receipt.wat` | A hand-written WAT contract for the rent-era Contracts pallet (`seal0` imports only). `attest` emits `mainnet_block_hash ‖ manifest_root ‖ keys_lifted` (72 bytes) as `Contracts.ContractEmitted`; `forklift receipt` instantiates it on a fork's first run, tops its balance up so it pays no rent, attests, decodes the event and compares it with the manifest. |
+| `receipt.py`, `contracts/receipt.wat` | A hand-written WAT contract for the rent-era Contracts pallet (`seal0` host functions only, plus the `env` memory import). `attest` emits `mainnet_block_hash ‖ manifest_root ‖ keys_lifted` (72 bytes) as `Contracts.ContractEmitted`; `forklift receipt` instantiates it on a fork's first run, tops its balance up so it pays no rent, attests, decodes the event and compares it with the manifest. |
 
 ## Invariants the code enforces
 

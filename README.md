@@ -119,7 +119,7 @@ The full module-level diagram, the splice rules and the invariants the code enfo
 | Layer | Choice |
 |---|---|
 | Blockchain platform | **Portaldot V3** is the hackathon's target platform. Forklift's chain today is a local fork of **Portaldot mainnet state (spec 1002)** on the `portaldot_dev` 2.0.0 node with its dev runtime, labelled `fork-1002-fast`. It is not V3. |
-| Contract language | WAT (WebAssembly text), hand-written for the rent-era Contracts pallet of the dev runtime the fork runs (`seal0` imports only), compiled with `wat2wasm` |
+| Contract language | WAT (WebAssembly text), hand-written for the rent-era Contracts pallet of the dev runtime the fork runs (`seal0` host functions only, plus the `env` memory import), compiled with `wat2wasm` |
 | Frontend | None. Forklift is a command-line tool. |
 | Other components | Python 3.11+, `click` (CLI), `websockets` (raw JSON-RPC), `xxhash` (storage key hashing), `substrate-interface` (sr25519 keys and the SCALE type registry), `hashlib` blake2b. Tests use `pytest`. |
 
@@ -188,9 +188,9 @@ forklift down                               # stop the fork (only the PID it rec
 Pinning block 2,725,953 reproduces `manifest_root`
 `0xa430d6a9f16d631da45fd0d0cb5ae600db1854612218e21aabeb7f26d7ba002b` while the public node keeps serving that block.
 `--at head` pins the latest finalized block instead. Every command except `down` takes `--json`; `lift`, `up`, `verify`, `fund`, `as` and `receipt` take `--evidence DIR`,
-which records a run for [`docs/PROOF.md`](docs/PROOF.md) (`python scripts/proof.py`). Default ports are 9944 (WebSocket), 9933 (HTTP) and
-30333 (p2p, loopback only); override with `--ws-port`, `--rpc-port`, `--p2p-port` or `FORKLIFT_WS_PORT` /
-`FORKLIFT_RPC_PORT` / `FORKLIFT_P2P_PORT`. `forklift as` also takes any other `Pallet.call` with a JSON argument list.
+which records a run for [`docs/PROOF.md`](docs/PROOF.md) (`python scripts/proof.py`). `forklift up` listens on 9944 (WebSocket), 9933 (HTTP) and
+30333 (p2p, loopback only) by default; override with `--ws-port`, `--rpc-port`, `--p2p-port` or `FORKLIFT_WS_PORT` /
+`FORKLIFT_RPC_PORT` / `FORKLIFT_P2P_PORT`. Other commands find the fork with `--name` (default `fork`) or `--endpoint`. `forklift as` also takes any other `Pallet.call` with a JSON argument list.
 
 **Exit codes:** `0` success · `1` could not run · `2` mismatch (`verify`, `receipt`) · `3` node failed · `4` lift failed
 (last cursor printed, checkpoint kept) · `5` the carried call failed · `6` Receipt not rent-safe · `64` usage error.
