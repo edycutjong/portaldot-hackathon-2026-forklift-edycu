@@ -1,7 +1,7 @@
 {
-  "refetched_utc": "2026-10-14T14:57:04+00:00",
+  "refetched_utc": "2026-10-14T15:25:13+00:00",
   "process": {
-    "pid": 1817,
+    "pid": 25214,
     "note": "a separate process from the one that submitted"
   },
   "source": "evidence/txs-2725953.json",
