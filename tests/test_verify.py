@@ -6,7 +6,7 @@ from forklift.hashing import blake2_256, twox128
 from forklift.metadata import StorageIndex, StorageItem
 from forklift.rpc import RpcClient
 from forklift.splice import genesis_key_set_hash, splice_state
-from forklift.verify import EXIT_MISMATCH, VerifyError, classify, draw_key, item_prefixes, verify
+from forklift.verify import EXIT_MISMATCH, WINDOW, VerifyError, classify, draw_key, item_prefixes, verify
 from tests.fakes import FakeChain, fake_connect
 from tests.test_splice import dev_genesis, item, mainnet_lift
 
@@ -65,20 +65,21 @@ def head_aware(chain):
     return handler
 
 
-def run(m, mainnet, fork, sample=60, seed=1):
+def run(m, mainnet, fork, sample=60, seed=1, spliced=None):
     main_c = RpcClient("wss://mainnet.portaldot.io", connect=fake_connect(mainnet))
     fork_c = RpcClient("ws://127.0.0.1:59944", connect=fake_connect(head_aware(fork)))
-    return verify(m, main_c, fork_c, sample=sample, seed=seed, index=INDEX)
+    return verify(m, main_c, fork_c, sample=sample, seed=seed, index=INDEX, spliced=spliced)
 
 
 def test_clean_fork_verifies_with_every_class_explained():
-    m, mainnet, fork, _ = manifest_and_chains()
-    r = run(m, mainnet, fork)
+    m, mainnet, fork, sp = manifest_and_chains()
+    r = run(m, mainnet, fork, spliced=dict(sp.top))
     assert r.ok and r.exit_code == 0
     assert set(r.classes) <= {"identical", "dev-kept", "override"}
     assert r.classes["identical"] and r.classes["dev-kept"]
     assert all(c["ok"] for c in r.checks.values())
     assert r.checks["overrides"]["count"] == 5
+    assert r.checks["compared_with_mainnet"]["dev_kept_checked_against_splice"]
     assert r.fork_head == {"best": 7, "finalized": 0}
 
 
@@ -87,9 +88,22 @@ def test_samples_are_drawn_from_mainnet_at_the_pin_inside_item_prefixes():
     run(m, mainnet, fork, sample=30)
     paged = [p for meth, p in mainnet.calls if meth == "state_getKeysPaged"]
     assert paged and all(p[3] == PIN for p in paged)  # pinned reads
-    for prefix, count, start, _ in paged:
-        assert count == 1
-        assert start is None or (start.startswith(prefix) and len(start) == len(prefix) + 32)  # prefix ‖ random16
+    starts = [p for p in paged if p[2] is not None]
+    assert len(starts) == 30  # one random start per draw; a None start is only the wrap to the item's head
+    for prefix, count, start, _ in starts:
+        assert count == WINDOW and start.startswith(prefix) and len(start) == len(prefix) + 32  # prefix ‖ random16
+
+
+def test_every_key_of_a_nested_map_group_is_reachable():
+    """Double-map keys share a group prefix (era); the window pick must reach past each group's first key."""
+    stakers = {item("Staking", "ErasStakers", bytes([era]) * 12 + bytes([v]) * 40): "0x00"
+               for era in (1, 2) for v in range(5)}
+    chain = FakeChain(stakers, block_hash=PIN)
+    c = RpcClient("wss://mainnet.portaldot.io", connect=fake_connect(chain))
+    prefix = twox128("Staking") + twox128("ErasStakers")
+    rng = random.Random(7)
+    seen = {draw_key(c, PIN, prefix, rng)[0] for _ in range(300)}
+    assert seen == set(stakers)
 
 
 def test_a_changed_value_is_a_named_mismatch_and_exit_2():
@@ -109,7 +123,7 @@ def test_a_missing_key_fails_the_key_set_check_and_names_it():
     m, mainnet, fork, sp = manifest_and_chains(lambda top: top.pop(gone))
     main_c, fork_c = (RpcClient("wss://mainnet.portaldot.io", connect=fake_connect(mainnet)),
                       RpcClient("ws://127.0.0.1:59944", connect=fake_connect(head_aware(fork))))
-    r = verify(m, main_c, fork_c, sample=5, seed=3, index=INDEX, spliced_keys=list(sp.top))
+    r = verify(m, main_c, fork_c, sample=5, seed=3, index=INDEX, spliced=dict(sp.top))
     assert not r.ok
     ks = r.checks["genesis_key_set"]
     assert ks["fork_keys"] == ks["expected_keys"] - 1
@@ -130,6 +144,33 @@ def test_a_fork_with_another_genesis_is_refused_not_compared():
         run(m, mainnet, fork)
 
 
+def test_a_dev_kept_key_must_hold_the_spliced_dev_value():
+    babe = item("Babe", "Authorities")
+    m, mainnet, fork, sp = manifest_and_chains(lambda top: top.__setitem__(babe, "0xcafe"))  # mainnet's value leaked
+    m["load"]["per_item"] = {"Babe.Authorities": 1, "System.Account": 1}
+    r = run(m, mainnet, fork, sample=40, spliced=dict(sp.top))
+    assert [mm["item"] for mm in r.mismatches] == ["Babe.Authorities"] and r.exit_code == 2
+    assert classify(babe, "0xcafe", "0xcafe", {}, {babe: "0xdeadbeef"}) == "mismatch"
+    assert classify(babe, "0xcafe", "0xdeadbeef", {}, {babe: "0xdeadbeef"}) == "dev-kept"
+    epoch = item("Babe", "EpochIndex")  # mainnet-only key under a dev prefix: must be absent on the fork
+    assert classify(epoch, "0x01", None, {}, {}) == "dev-kept"
+    assert classify(epoch, "0x01", "0x01", {}, {}) == "mismatch"
+
+
+def test_a_sample_that_compares_nothing_with_mainnet_fails():
+    m, mainnet, fork, sp = manifest_and_chains()
+    m["load"]["per_item"] = {"Babe.Authorities": 1, "Grandpa.SetIdSession": 1}  # dev-kept items only
+    r = run(m, mainnet, fork, sample=10, spliced=dict(sp.top))
+    assert not r.mismatches and not r.checks["compared_with_mainnet"]["ok"] and r.exit_code == 2
+
+
+def test_missing_issuance_is_reported_as_none_not_a_crash():
+    ti = item("Balances", "TotalIssuance")
+    m, mainnet, fork, _ = manifest_and_chains(lambda top: top.pop(ti))
+    r = run(m, mainnet, fork, sample=5)
+    assert r.checks["issuance"]["fork"] is None and not r.checks["issuance"]["ok"]
+
+
 def test_classify_rules():
     over = {"0x01": {"value": "0xaa"}, "0x3a636f6465": {"value": "blake2_256 0x" + blake2_256(b"\x00a").hex() + " (2 B)"}}
     assert classify("0x01", "0xbb", "0xaa", over) == "override"
@@ -147,13 +188,14 @@ def test_classify_rules():
 
 def test_draw_key_wraps_and_reads_a_plain_item_the_pager_cannot_return():
     plain = item("Staking", "ValidatorCount")
-    chain = FakeChain({plain: "0x0a000000", item("Staking", "Ledger", b"\x01" * 40): "0x00"}, block_hash=PIN)
+    ledgers = {item("Staking", "Ledger", bytes([i]) * 40): "0x00" for i in range(3)}
+    chain = FakeChain({plain: "0x0a000000", **ledgers}, block_hash=PIN)
     c = RpcClient("wss://mainnet.portaldot.io", connect=fake_connect(chain))
     key, wrapped = draw_key(c, PIN, bytes.fromhex(plain[2:]), random.Random(0))
     assert key == plain and wrapped
     ledger_prefix = twox128("Staking") + twox128("Ledger")
-    hit = draw_key(c, PIN, ledger_prefix, random.Random(5))[0]
-    assert hit == item("Staking", "Ledger", b"\x01" * 40)
+    seen = {draw_key(c, PIN, ledger_prefix, random.Random(i))[0] for i in range(40)}
+    assert seen == set(ledgers)  # a short item wraps, and every key is reachable
 
 
 def test_item_prefixes_cover_well_known_keys_and_reject_unknown():

@@ -62,23 +62,34 @@ def item_prefixes(index: StorageIndex, per_item: dict[str, int]) -> dict[str, by
     return out
 
 
-def draw_key(client: RpcClient, block_hash: str, prefix: bytes, rng: random.Random) -> tuple[str, bool]:
-    """The first key after ``prefix ‖ random16`` at ``block_hash`` (wrapping to the first). (key, wrapped)."""
+WINDOW = 64
+
+
+def draw_key(client: RpcClient, block_hash: str, prefix: bytes, rng: random.Random,
+             window: int = WINDOW) -> tuple[str, bool]:
+    """One key of the item under ``prefix`` at ``block_hash``. Returns (key, wrapped).
+
+    A random start ``prefix ‖ random16`` lands somewhere in the item; the key is
+    picked at random from the next ``window`` keys, wrapping to the item's first
+    keys at the end. Taking just the first key after the start would never reach
+    past the first key of a group in a nested map (``Staking.ErasStakers`` keys
+    share an era group prefix), so the pick is from a window instead.
+    """
     start = prefix + rng.randbytes(16)
-    page = client.call("state_getKeysPaged", [_h(prefix), 1, _h(start), block_hash])
-    wrapped = not page
+    page = list(client.call("state_getKeysPaged", [_h(prefix), window, _h(start), block_hash]) or [])
+    wrapped = len(page) < window
     if wrapped:
-        # The first key of the item. Paging starts strictly after its start key, so a key equal to the
-        # prefix itself (a plain item, a well-known key) is never paged: read it directly first.
-        if client.call("state_getStorage", [_h(prefix), block_hash]) is not None:
-            return _h(prefix), True
-        page = client.call("state_getKeysPaged", [_h(prefix), 1, None, block_hash])
+        # Paging starts strictly after its start key, so a key equal to the prefix itself
+        # (a plain item, a well-known key) is never paged: read it directly.
+        head = [_h(prefix)] if client.call("state_getStorage", [_h(prefix), block_hash]) is not None else []
+        head += client.call("state_getKeysPaged", [_h(prefix), window, None, block_hash]) or []
+        page += [k for k in head if k not in page][:window - len(page)]
     if not page:
         raise VerifyError(f"no key under {_h(prefix)} on mainnet at {block_hash}")
-    key = page[0]
-    if not key.startswith(_h(prefix)):
-        raise VerifyError(f"the node returned {key} outside the prefix {_h(prefix)}")
-    return key, wrapped
+    bad = [k for k in page if not k.startswith(_h(prefix))]
+    if bad:
+        raise VerifyError(f"the node returned {bad[0]} outside the prefix {_h(prefix)}")
+    return rng.choice(page), wrapped
 
 
 def draw_sample(client: RpcClient, block_hash: str, prefixes: dict[str, bytes], weights: dict[str, int],
@@ -113,11 +124,16 @@ def _override_matches(expected: str, fork_value: str | None) -> bool:
     return expected == fork_value
 
 
-def classify(key: str, mainnet_value: str | None, fork_value: str | None, overrides: dict[str, dict]) -> str:
+def classify(key: str, mainnet_value: str | None, fork_value: str | None, overrides: dict[str, dict],
+             spliced: dict[str, str] | None = None) -> str:
+    """With ``spliced`` (the fork's genesis as written to its chain spec), a dev-kept key must also hold
+    exactly the spliced dev value (or be absent, like the mainnet-only keys under a dev prefix)."""
     if key in overrides:
         return "override" if _override_matches(overrides[key]["value"], fork_value) else "mismatch"
     rule = rule_of(_b(key))
     if rule.startswith("dev:"):
+        if spliced is not None and fork_value != spliced.get(key):
+            return "mismatch"
         return "dev-kept"
     if rule.startswith("reset:"):
         return "reset" if fork_value is None else "mismatch"
@@ -155,7 +171,9 @@ class Report:
 
 
 def verify(manifest: dict, mainnet: RpcClient, fork: RpcClient, *, sample: int = 200, seed: int | None = None,
-           index: StorageIndex | None = None, spliced_keys: list[str] | None = None) -> Report:
+           index: StorageIndex | None = None, spliced: dict[str, str] | None = None) -> Report:
+    """``spliced``: the fork's genesis ``{key: value}`` from its chain spec, if at hand. It lets dev-kept
+    keys be checked against their dev value and names the keys behind a key-set difference."""
     src, fk = manifest["source"], manifest["fork"]
     if not fk or not fk.get("genesis_hash"):
         raise VerifyError("the manifest describes no booted fork (fork.genesis_hash is empty)")
@@ -179,7 +197,7 @@ def verify(manifest: dict, mainnet: RpcClient, fork: RpcClient, *, sample: int =
     mismatches = []
     rows = []
     for k in keys:
-        c = classify(k, on_main[k], on_fork[k], overrides)
+        c = classify(k, on_main[k], on_fork[k], overrides, spliced)
         classes[c] += 1
         name = index.item_of(_b(k))
         rows.append({"key": k, "item": name, "class": c})
@@ -203,8 +221,8 @@ def verify(manifest: dict, mainnet: RpcClient, fork: RpcClient, *, sample: int =
     key_set = {"ok": got_hash == fk["genesis_key_set_hash"] and len(got_keys) == fk["genesis_keys"],
                "expected_keys": fk["genesis_keys"], "fork_keys": len(got_keys),
                "expected_set_hash": fk["genesis_key_set_hash"], "fork_set_hash": got_hash}
-    if not key_set["ok"] and spliced_keys is not None:
-        want, have = set(spliced_keys), set(got_keys)
+    if not key_set["ok"] and spliced is not None:
+        want, have = set(spliced), set(got_keys)
         key_set["missing_on_fork"] = [index.item_of(_b(k)) for k in sorted(want - have)][:20]
         key_set["extra_on_fork"] = [index.item_of(_b(k)) for k in sorted(have - want)][:20]
     checks["genesis_key_set"] = key_set
@@ -214,7 +232,8 @@ def verify(manifest: dict, mainnet: RpcClient, fork: RpcClient, *, sample: int =
     ti_fork = _u128(fork.call("state_getStorage", [ti_key, genesis]))
     added = int(fk["issuance"]["added"])
     checks["issuance"] = {"ok": ti_main is not None and ti_fork == ti_main + added,
-                          "mainnet": str(ti_main), "added": str(added), "fork": str(ti_fork)}
+                          "mainnet": None if ti_main is None else str(ti_main), "added": str(added),
+                          "fork": None if ti_fork is None else str(ti_fork)}
     # I4: both runtimes are the ones the manifest names.
     code_main = mainnet.call("state_getStorage", [_h(CODE), pin])
     code_fork = fork.call("state_getStorage", [_h(CODE), genesis])
@@ -223,6 +242,10 @@ def verify(manifest: dict, mainnet: RpcClient, fork: RpcClient, *, sample: int =
     checks["runtime"] = {"ok": h_main == src["code_hash"] and h_fork == fk["code_hash"],
                          "mainnet_code_hash": h_main, "fork_code_hash": h_fork,
                          "fork_runtime": manifest.get("node", {}).get("runtime_mode")}
+    # Dev-kept and override draws do not compare with mainnet: at least one draw must.
+    checks["compared_with_mainnet"] = {"ok": classes["identical"] + classes["mismatch"] >= 1,
+                                       "keys": classes["identical"] + classes["mismatch"],
+                                       "dev_kept_checked_against_splice": spliced is not None}
     ok = not mismatches and all(c["ok"] for c in checks.values())
     head = {"best": int(fork.call("chain_getHeader")["number"], 16),
             "finalized": int(fork.call("chain_getHeader", [fork.call("chain_getFinalizedHead")])["number"], 16)}

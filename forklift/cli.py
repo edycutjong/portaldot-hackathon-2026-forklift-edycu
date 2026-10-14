@@ -370,10 +370,10 @@ def verify_cmd(sample: int, seed: int | None, name: str, manifest_path: Path | N
     spliced = None
     spec_path = (m.get("fork") or {}).get("chain_spec")
     try:
+        if spec_path and Path(spec_path).is_file():
+            spliced = json.loads(Path(spec_path).read_text())["genesis"]["raw"]["top"]
         with RpcClient(source) as main_c, RpcClient(endpoint) as fork_c:
-            if spec_path and Path(spec_path).is_file():
-                spliced = list(json.loads(Path(spec_path).read_text())["genesis"]["raw"]["top"])
-            report = verify(m, main_c, fork_c, sample=sample, seed=seed, spliced_keys=spliced)
+            report = verify(m, main_c, fork_c, sample=sample, seed=seed, spliced=spliced)
     except (VerifyError, RpcError, RpcUnavailable, OSError, ValueError, KeyError) as exc:
         click.echo(json.dumps({"error": "verify_failed", "message": str(exc)}) if as_json
                    else f"verify could not run: {exc}", err=not as_json)
@@ -392,6 +392,10 @@ def verify_cmd(sample: int, seed: int | None, name: str, manifest_path: Path | N
     sys.exit(report.exit_code)
 
 
+def _n(value: str | None) -> str:
+    return "n/a" if value is None else f"{int(value):,}"
+
+
 def verify_plate(report, m: dict) -> str:
     src, fork, chk = m["source"], m["fork"], report.checks
     lines = [
@@ -399,11 +403,13 @@ def verify_plate(report, m: dict) -> str:
         f"        vs {src['endpoint']} #{src['block_number']:,} {src['block_hash']}",
         f"fork    best #{report.fork_head['best']:,} · finalized #{report.fork_head['finalized']:,}",
         f"sample  {report.draws} draws from mainnet (seed {report.seed}) → {report.unique_keys} keys: "
-        + ", ".join(f"{k} {v}" for k, v in report.classes.items()),
+        + ", ".join(f"{k} {v}" for k, v in report.classes.items())
+        + ("" if chk["compared_with_mainnet"]["dev_kept_checked_against_splice"]
+           else " (dev-kept not checked: chain spec not found)"),
         f"keys    fork genesis {chk['genesis_key_set']['fork_keys']:,} keys, set hash "
         f"{'matches' if chk['genesis_key_set']['ok'] else 'DIFFERS from'} the splice",
-        f"issue   fork {int(chk['issuance']['fork'] or 0):,} = mainnet {int(chk['issuance']['mainnet'] or 0):,}"
-        f" + {int(chk['issuance']['added']):,}: {'ok' if chk['issuance']['ok'] else 'MISMATCH'}",
+        f"issue   fork {_n(chk['issuance']['fork'])} = mainnet {_n(chk['issuance']['mainnet'])}"
+        f" + {_n(chk['issuance']['added'])}: {'ok' if chk['issuance']['ok'] else 'MISMATCH'}",
         f"over    {chk['overrides']['count']} named overrides read on both sides: "
         f"{'ok' if chk['overrides']['ok'] else 'MISMATCH'}",
         f"code    mainnet {chk['runtime']['mainnet_code_hash']} · fork {chk['runtime']['fork_code_hash']}"
