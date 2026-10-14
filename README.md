@@ -65,7 +65,7 @@ flowchart LR
       RPC["rpc.py\nJSON-RPC client\n+ write guard"]
       LIFT["lift.py\npinned key paging\nMMR cursor jump"]
       META["metadata.py\nstorage names"]
-      MAN["manifest.py\nfork.manifest.json\nmanifest_root"]
+      MAN["manifest.py\nmanifest.json\nmanifest_root"]
       CLI["cli.py\nforklift lift"]
     end
     subgraph planned["Planned"]
@@ -106,8 +106,9 @@ Forklift has **no deployed contract yet**, so there is no contract address or tr
   mainnet block hash, the manifest root and the number of lifted keys as an event, so a fork's origin is on-chain.
 - Directory: none yet. Deployment instructions will be added with the contract.
 
-The lift itself is pallet-free: it only calls the node's read RPC methods (`chain_getBlockHash`, `state_getKeysPaged`,
-`state_queryStorageAt`, `state_getMetadata`).
+The lift itself is pallet-free: it only calls read RPC methods: `chain_getFinalizedHead`,
+`chain_getBlockHash`, `chain_getHeader`, `state_getRuntimeVersion`, `state_getKeysPaged`, `state_queryStorageAt`,
+`state_getStorage`, `state_getMetadata`.
 
 ## Installation & Setup
 
@@ -126,8 +127,8 @@ forklift lift --at 2725639 --json   # print the manifest
 ```
 
 Pinning block 2,725,639 reproduces `manifest_root`
-`0x29f18c9250683ce3da0b6ee821674de99036bbc67afc32f42647d687b4c584e7` while the archive node keeps serving that block.
-`--at head` pins the latest finalized block instead. Options: `--from` (archive node), `--out`, `--no-resume`,
+`0x29f18c9250683ce3da0b6ee821674de99036bbc67afc32f42647d687b4c584e7` while the node keeps serving that block.
+`--at head` pins the latest finalized block instead. Options: `--from` (node), `--out`, `--no-resume`,
 `--evidence DIR`, `--json`.
 
 **Exit codes:** `0` lift complete · `4` lift could not finish (last cursor printed, checkpoint kept) · `64` usage
