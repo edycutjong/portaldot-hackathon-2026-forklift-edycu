@@ -16,9 +16,10 @@ from forklift.rpc import RpcClient
 
 EXIT_DISPATCH_FAILED = 5  # the extrinsic landed, but the call it carried returned an error
 
-SUDO_AS_NOTE = ("sudo_as dispatches the call with the account's own origin, but skips what a signed "
-                "extrinsic would run: no fee is withdrawn, the nonce is not checked or bumped, and no "
-                "signed extension runs.")
+SUDO_AS_NOTE = ("sudo_as dispatches the call with the account's own origin, but none of what that account's "
+                "own signed extrinsic would run applies to it: it pays no fee, its nonce is not checked or "
+                "bumped, and its signed extensions do not run (the sudo key's outer extrinsic pays and is "
+                "checked as usual).")
 
 # Calls whose behaviour depends on the block number, which restarts at 1 on a fork (spec §Boundaries).
 _HEIGHT_WARNINGS = {

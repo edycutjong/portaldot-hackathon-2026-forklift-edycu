@@ -660,8 +660,8 @@ def as_cmd(who: str, call: str, args: str | None, name: str, endpoint: str | Non
 
     ARGS is a JSON object of named arguments or a JSON array in metadata order;
     balances are in planck, accounts in SS58. Prints Sudo.SudoAsDone decoded, the
-    call's own events, and what changed for WHO. sudo_as skips the fee, the nonce
-    and signed extensions; calls into Vesting, Proxy announcements and Scheduler
+    call's own events, and what changed for WHO. WHO pays no fee, its nonce is not
+    touched and its signed extensions do not run (the sudo key signs); calls into Vesting, Proxy announcements and Scheduler
     print a warning (block numbers restart at 1 on a fork).
     Exit 0 on success, 5 if the call returned an error, 1 if it could not run.
     """
@@ -817,8 +817,8 @@ def receipt_cmd(address: str | None, no_top_up: bool, name: str, endpoint: str |
     except (receipt.ReceiptError, *_act_errors()) as exc:
         _could_not_run(exc, as_json, "receipt")
     out = r.as_json()
-    if recorded:
-        out["evidence"] = recorded[-1]
+    if evidence_dir is not None:
+        out["evidence"] = recorded[-1] if recorded else None
     click.echo(json.dumps(out, indent=2, default=str) if as_json else receipt_plate(r, manifest))
     sys.exit(r.exit_code)
 
