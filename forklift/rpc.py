@@ -4,9 +4,15 @@ Bulk storage paging goes through this client rather than a full SDK: a lift
 is a few thousand sequential reads, and the SDK adds nothing to them.
 
 Invariant I3 (no mainnet writes) lives here. A client is created either as a
-read-only client (the default, used for mainnet) or as a fork client. Only a
-fork client may call ``author_*`` methods, and a fork client can only be
-created for a loopback endpoint that is not a known mainnet host.
+read-only client (the default, used for mainnet) or as a fork client.
+
+- A read-only client sends only methods on an explicit read allowlist; every
+  other method (``author_*``, ``system_addReservedPeer``,
+  ``offchain_localStorageSet``, ...) is refused before it reaches the socket.
+- A fork client can only be created for a loopback endpoint that is not a
+  known mainnet host, and before its first non-read call it checks that the
+  node's genesis hash is not Portaldot mainnet's (a loopback port can still be
+  a tunnel to mainnet).
 """
 
 from __future__ import annotations
@@ -25,8 +31,14 @@ MAINNET_HOSTS = frozenset({"mainnet.portaldot.io"})
 
 LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
 
-# RPC methods that change chain state or node keys. Refused on non-fork clients.
-WRITE_PREFIXES = ("author_",)
+MAINNET_GENESIS = "0x83b5212c69f85f3996f8696bb35bf913af51b176a5f53d0a74fd3a83dc0b8a54"
+
+# The only methods a read-only (mainnet) client may send.
+READ_PREFIXES = ("chain_get", "state_get", "state_query", "childstate_get")
+READ_METHODS = frozenset({
+    "system_chain", "system_name", "system_version", "system_properties", "system_health",
+    "system_chainType", "rpc_methods", "payment_queryInfo",
+})
 
 
 class RpcError(Exception):
@@ -66,17 +78,25 @@ def is_loopback(endpoint: str) -> bool:
     return (urlparse(endpoint).hostname or "") in LOOPBACK_HOSTS
 
 
+def is_read_method(method: str) -> bool:
+    return method in READ_METHODS or method.startswith(READ_PREFIXES)
+
+
 def is_write_method(method: str) -> bool:
-    return method.startswith(WRITE_PREFIXES)
+    return not is_read_method(method)
+
+
+class BadReply(Exception):
+    """The node sent something that is not a JSON-RPC object (e.g. a gateway error page)."""
 
 
 # Errors that mean "the connection is gone or slow", worth a reconnect and retry.
 def _retryable() -> tuple[type[BaseException], ...]:
-    errors: list[type[BaseException]] = [OSError, TimeoutError, EOFError]
+    errors: list[type[BaseException]] = [OSError, TimeoutError, EOFError, BadReply]
     with contextlib.suppress(ImportError):
-        from websockets.exceptions import ConnectionClosed, InvalidHandshake
+        from websockets.exceptions import WebSocketException
 
-        errors += [ConnectionClosed, InvalidHandshake]
+        errors.append(WebSocketException)
     return tuple(errors)
 
 
@@ -116,6 +136,7 @@ class RpcClient:
         self._close: Callable[[], None] | None = None
         self.requests = 0
         self.reconnects = 0
+        self._fork_checked = False
 
     def __enter__(self) -> "RpcClient":
         return self
@@ -144,7 +165,15 @@ class RpcClient:
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 raise TimeoutError(f"{method}: no answer in {self.timeout}s")
-            msg = json.loads(conn.recv(timeout=remaining))
+            raw = conn.recv(timeout=remaining)
+            try:
+                msg = json.loads(raw)
+            except ValueError as exc:
+                raise BadReply(f"{method}: non-JSON reply {str(raw)[:80]!r}") from exc
+            if not isinstance(msg, dict):
+                raise BadReply(f"{method}: reply is not a JSON-RPC object: {str(raw)[:80]!r}")
+            if "error" in msg and msg.get("id") is None:
+                raise RpcError(method, msg["error"])  # the node could not even parse our request
             if msg.get("id") != req_id:
                 continue  # a subscription notification or a stale answer
             if "error" in msg:
@@ -152,8 +181,21 @@ class RpcClient:
             return msg.get("result")
 
     def call(self, method: str, params: list[Any] | None = None) -> Any:
-        if is_write_method(method) and not self.fork:
-            raise WriteGuardError(f"{method} refused: {self.endpoint} is not a local fork (I3)")
+        if is_write_method(method):
+            if not self.fork:
+                raise WriteGuardError(f"{method} refused: {self.endpoint} is not a local fork (I3)")
+            self._check_fork_genesis()
+        return self._call(method, params)
+
+    def _check_fork_genesis(self) -> None:
+        if self._fork_checked:
+            return
+        genesis = self._call("chain_getBlockHash", [0])
+        if genesis == MAINNET_GENESIS:
+            raise WriteGuardError(f"{self.endpoint} serves Portaldot mainnet's genesis: refusing writes (I3)")
+        self._fork_checked = True
+
+    def _call(self, method: str, params: list[Any] | None) -> Any:
         params = list(params or [])
         retryable = _retryable()
         last: BaseException | None = None

@@ -86,3 +86,69 @@ def test_rpc_error_is_not_retried():
         c.call("state_getKeysPaged", [])
     assert err.value.code == -32602
     assert calls == ["state_getKeysPaged"]
+
+
+@pytest.mark.parametrize("method", ["system_addReservedPeer", "offchain_localStorageSet", "system_addLogFilter",
+                                    "engine_createBlock", "dev_newBlock", "Author_submitExtrinsic"])
+def test_read_only_client_refuses_everything_off_the_read_allowlist(method):
+    seen = []
+    with pytest.raises(WriteGuardError):
+        client(lambda m, p: seen.append(m)).call(method, [])
+    assert seen == []
+
+
+@pytest.mark.parametrize("endpoint", [
+    "ws://127.0.0.1@mainnet.portaldot.io",
+    "wss://localhost.mainnet.portaldot.io",
+    "ws://[2001:db8::1]:9944",
+])
+def test_fork_flag_refused_for_disguised_hosts(endpoint):
+    with pytest.raises(WriteGuardError):
+        RpcClient(endpoint, fork=True)
+
+
+def test_fork_flag_allowed_for_ipv6_loopback():
+    assert RpcClient("ws://[::1]:59944", fork=True).fork
+
+
+def test_loopback_fork_serving_mainnet_genesis_is_refused():
+    from forklift.rpc import MAINNET_GENESIS
+
+    sent = []
+
+    def tunnel(method, params):
+        sent.append(method)
+        return MAINNET_GENESIS if method == "chain_getBlockHash" else "0x00"
+
+    c = client(tunnel, endpoint="ws://127.0.0.1:59944", fork=True)
+    with pytest.raises(WriteGuardError):
+        c.call("author_submitExtrinsic", ["0x00"])
+    assert "author_submitExtrinsic" not in sent
+
+
+def test_non_json_reply_is_retried():
+    calls = {"n": 0}
+
+    class Gateway:
+        def __init__(self):
+            self.q = []
+
+        def send(self, message):
+            import json
+            calls["n"] += 1
+            req = json.loads(message)
+            self.q.append("<html>502 Bad Gateway</html>" if calls["n"] == 1
+                          else json.dumps({"jsonrpc": "2.0", "id": req["id"], "result": "ok"}))
+
+        def recv(self, timeout=None):
+            return self.q.pop(0)
+
+        def close(self):
+            pass
+
+    def connect(endpoint, timeout):
+        g = Gateway()
+        return g, g.close
+
+    c = RpcClient("wss://mainnet.portaldot.io", connect=connect, sleep=lambda s: None)
+    assert c.call("chain_getFinalizedHead") == "ok" and c.reconnects == 1
