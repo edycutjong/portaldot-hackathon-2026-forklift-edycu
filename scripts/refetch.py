@@ -28,6 +28,7 @@ sys.path.insert(0, str(ROOT))
 
 from forklift import receipt, tx  # noqa: E402
 from forklift.rpc import RpcClient, RpcError, RpcUnavailable  # noqa: E402
+from forklift.tx import TxError  # noqa: E402
 
 
 def refetch_row(client: RpcClient, rt: tx.Runtime, row: dict, manifest_like: dict) -> dict:
@@ -43,7 +44,7 @@ def refetch_row(client: RpcClient, rt: tx.Runtime, row: dict, manifest_like: dic
     out = {"extrinsic_id": row["extrinsic_id"], "kind": row["kind"], "call": f"{got['call']['pallet']}.{got['call']['function']}",
            "signer": got["signer"], "block_hash": got["block_hash"], "tx_hash": got["tx_hash"],
            "success": got["success"], "error": got["error"], "events": [e["event"] for e in got["events"]]}
-    if row["kind"] in ("instantiate", "attest"):
+    if row["kind"] in ("instantiate", "attest") and row["success"]:  # a recorded failure emits nothing
         emitted = [e for e in got["events"] if e["event"] == "Contracts.ContractEmitted"]
         payloads = []
         for e in emitted:
@@ -86,17 +87,25 @@ def main() -> int:
         results, clients = [], {}
         try:
             for row in rows:
-                ep = row["fork_endpoint"]
+                ep = row.get("fork_endpoint")
+                if not ep:
+                    results.append({"extrinsic_id": row.get("extrinsic_id"), "kind": row.get("kind"), "ok": False,
+                                    "checks": {"readable": False}, "error": "row has no fork_endpoint"})
+                    continue
                 if ep not in clients:
                     c = RpcClient(ep)  # read-only: this script never writes
                     genesis = c.call("chain_getBlockHash", [0])
                     clients[ep] = (c, tx.Runtime.load(c), genesis)
                 c, rt, genesis = clients[ep]
-                if genesis != row["fork_genesis_hash"]:
+                if genesis != row.get("fork_genesis_hash"):
                     results.append({"extrinsic_id": row["extrinsic_id"], "kind": row["kind"], "ok": False,
                                     "checks": {"same_fork": False}, "genesis": genesis})
                     continue
-                results.append(refetch_row(c, rt, row, manifest_like))
+                try:
+                    results.append(refetch_row(c, rt, row, manifest_like))
+                except (TxError, KeyError, ValueError, TypeError) as exc:
+                    results.append({"extrinsic_id": row.get("extrinsic_id"), "kind": row.get("kind"), "ok": False,
+                                    "checks": {"readable": False}, "error": str(exc)})
         except (RpcError, RpcUnavailable, OSError) as exc:
             print(f"{path.name}: fork unreachable: {exc}", file=sys.stderr)
             return 1

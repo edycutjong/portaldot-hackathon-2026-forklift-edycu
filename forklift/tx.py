@@ -409,16 +409,23 @@ def find_in_block(client: RpcClient, block_hash: str, xt_hex: str) -> int | None
 # author_submitExtrinsic was accepted but its answer was lost and the client re-sent it.
 POOL_ALREADY_IMPORTED = 1013
 POOL_TEMPORARILY_BANNED = 1012  # recently included or dropped; inclusion is then checked, not assumed
+# After a re-send these also mean "it may already be in a block" (stale nonce / ancient birth);
+# on a first send they are real rejections.
+POOL_INVALID = 1010
+POOL_ANCIENT_BIRTH = 1016
 
 
 def _send(client: RpcClient, xt_hex: str, expected: str) -> str:
     from forklift.rpc import RpcError
 
+    reconnects = getattr(client, "reconnects", 0)
     try:
         tx_hash = client.call("author_submitExtrinsic", [xt_hex])
     except RpcError as exc:
-        if exc.code in (POOL_ALREADY_IMPORTED, POOL_TEMPORARILY_BANNED):
-            return expected  # same bytes, same hash; whether it lands is decided by the block scan below
+        resent = getattr(client, "reconnects", 0) > reconnects
+        if exc.code in (POOL_ALREADY_IMPORTED, POOL_TEMPORARILY_BANNED) or (
+                resent and exc.code in (POOL_INVALID, POOL_ANCIENT_BIRTH)):
+            return expected  # same bytes, same hash; whether it landed is decided by the block scan
         raise
     if tx_hash != expected:
         raise TxError(f"node returned tx hash {tx_hash}, expected {expected}")
@@ -444,6 +451,8 @@ def submit(client: RpcClient, rt: Runtime, xt: bytes, *, timeout: float = 90.0, 
             if clock() - t0 > timeout:
                 raise TxError(f"{tx_hash} not included within {timeout:.0f} s (scanned to #{scanned})")
             best = _header_number(client)
+            if best < scanned:  # the best chain got shorter (re-org): look at its blocks again
+                scanned = max(0, best - 1)
             while scanned < best and found is None:
                 scanned += 1
                 bh = client.call("chain_getBlockHash", [scanned])

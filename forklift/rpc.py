@@ -208,6 +208,8 @@ class RpcClient:
             if attempt:
                 self._sleep(self.backoff * 2 ** (attempt - 1))
                 self.reconnects += 1
+            if attempt and self.fork and is_write_method(method):
+                self._check_fork_genesis()  # a write re-sent on a new connection is guarded again (I3)
             try:
                 self.requests += 1
                 return self._once(method, params)

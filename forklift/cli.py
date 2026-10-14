@@ -497,6 +497,16 @@ def _act_errors() -> tuple[type[BaseException], ...]:
     return (RpcError, RpcUnavailable, WriteGuardError, TxError, OSError, KeyError, ValueError)
 
 
+def _record_landed(row: dict, manifest: dict, endpoint: str, name: str, evidence_dir: Path, genesis: str) -> str | None:
+    """record_tx for a transaction that already landed: a write failure warns, it never hides the result."""
+    try:
+        return str(record_tx(row, manifest, endpoint, name, evidence_dir, genesis))
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        click.echo(f"warning: {row.get('kind')} landed as extrinsic {row.get('extrinsic_id')} "
+                   f"(tx {row.get('tx_hash')}) but was NOT recorded in {evidence_dir}: {exc}", err=True)
+        return None
+
+
 def _need_manifest_for_evidence(evidence_dir: Path | None, manifest: dict | None) -> None:
     """Checked before anything is sent: a transaction must never land and then fail to be recorded."""
     if evidence_dir is not None and manifest is None:
@@ -510,6 +520,8 @@ def _bind_fork(client: RpcClient, manifest: dict | None) -> str:
 
     genesis = client.call("chain_getBlockHash", [0])
     want = ((manifest or {}).get("fork") or {}).get("genesis_hash")
+    if manifest is not None and not want:
+        raise WriteGuardError("the fork manifest has no genesis hash: cannot tell which chain this is")
     if want and str(genesis).lower() != want.lower():
         raise WriteGuardError(f"{client.endpoint} serves genesis {genesis}, not the fork in its manifest ({want}): "
                               "refusing to act on another chain")
@@ -593,7 +605,7 @@ def _finish_act(r, manifest: dict | None, endpoint: str, name: str, evidence_dir
             "extrinsic_id", "block_number", "block_hash", "tx_hash", "success", "finalized", "seconds")},
             "dispatch": out["dispatch"], "changed": out["changed"], "inner_events": out["inner_events"],
             "warnings": out["warnings"]}
-        out["evidence"] = str(record_tx(row, manifest, endpoint, name, evidence_dir, genesis))
+        out["evidence"] = _record_landed(row, manifest, endpoint, name, evidence_dir, genesis)
     click.echo(json.dumps(out, indent=2, default=str) if as_json else act_plate(r))
     sys.exit(r.exit_code)
 
@@ -748,6 +760,11 @@ def receipt_cmd(address: str | None, no_top_up: bool, name: str, endpoint: str |
     from forklift import receipt, tx
     from forklift.act import EXIT_DISPATCH_FAILED
 
+    if address is not None:
+        try:
+            address = tx.public_to_ss58(tx.ss58_to_public(address))  # normalised to SS58 format 42
+        except ValueError as exc:
+            raise click.UsageError(f"--address: {exc}") from None
     endpoint, manifest = _fork_endpoint(name, endpoint)
     if manifest is None:
         raise click.UsageError("the Receipt needs the fork's manifest: act on a fork started by `forklift up` "
@@ -766,7 +783,10 @@ def receipt_cmd(address: str | None, no_top_up: bool, name: str, endpoint: str |
                **{k: v for k, v in inc.as_json().items() if k in (
                    "extrinsic_id", "block_number", "block_hash", "tx_hash", "success", "finalized", "seconds")},
                **{k: v for k, v in step.items() if k not in ("kind", "inclusion")}}
-        recorded.append(str(record_tx(row, manifest, endpoint, name, evidence_dir, ctx["genesis"])))
+        path = _record_landed(row, manifest, endpoint, name, evidence_dir, ctx["genesis"])
+        if path:
+            recorded.append(path)
+        ctx.setdefault("recorded_tx", set()).add(inc.tx_hash)
 
     try:
         with RpcClient(endpoint, fork=True) as client:
@@ -777,7 +797,7 @@ def receipt_cmd(address: str | None, no_top_up: bool, name: str, endpoint: str |
                                     top_up=not no_top_up, signer=signer, on_step=on_step)
     except receipt.ReceiptDispatchError as exc:
         inc = exc.inclusion
-        if evidence_dir is not None and not any(inc.tx_hash in Path(p).read_text() for p in recorded):
+        if evidence_dir is not None and inc.tx_hash not in ctx.get("recorded_tx", set()):
             on_step({"kind": exc.kind, "inclusion": inc, "error": str(exc)})
         if as_json:
             click.echo(json.dumps({"error": "dispatch_failed", "message": str(exc), "extrinsic": inc.as_json()},
