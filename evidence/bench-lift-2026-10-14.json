@@ -1,0 +1,22 @@
+{
+  "bench": "lift (stub: 1 run)",
+  "profile": "mainnet-read (spec 1002)",
+  "endpoint": "wss://mainnet.portaldot.io",
+  "pin": {
+    "block_number": 2725639,
+    "block_hash": "0xc6fb8d8a10ae3045b7cb6b0f24ddacc538006a1fae975ec343c8654fb55a8212"
+  },
+  "keys_lifted": 16332,
+  "key_pages": 18,
+  "keys_s": 8.1,
+  "values_s": 12.79,
+  "total_s": 20.89,
+  "wall_s_incl_metadata_and_mmr_reads": 21.4,
+  "manifest_root": "0x29f18c9250683ce3da0b6ee821674de99036bbc67afc32f42647d687b4c584e7",
+  "host": {
+    "machine": "arm64",
+    "system": "Darwin",
+    "python": "3.11.1"
+  },
+  "recorded_utc": "2026-10-14T09:32:36+00:00"
+}

@@ -1,0 +1,24 @@
+{
+  "check": "I1b lifted key set == full key listing at the same block hash minus the MMR range",
+  "profile": "mainnet-read (spec 1002)",
+  "endpoint": "wss://mainnet.portaldot.io",
+  "pin": {
+    "block_number": 2725639,
+    "block_hash": "0xc6fb8d8a10ae3045b7cb6b0f24ddacc538006a1fae975ec343c8654fb55a8212"
+  },
+  "lifted_keys": 16332,
+  "listing_keys_total": 5467601,
+  "listing_keys_outside_mmr": 16332,
+  "mmr_range_keys": 5451269,
+  "mmr_range_keys_derived_by_lift": 5451269,
+  "mmr_derivation_matches": true,
+  "missing_from_lift": 0,
+  "extra_in_lift": 0,
+  "missing_sample": [],
+  "extra_sample": [],
+  "listing_pages": 5468,
+  "listing_seconds": 621.1,
+  "manifest_root": "0x29f18c9250683ce3da0b6ee821674de99036bbc67afc32f42647d687b4c584e7",
+  "started_utc": "2026-10-14T09:20:42+00:00",
+  "pass": true
+}
