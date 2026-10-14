@@ -240,3 +240,121 @@ def test_fetch_extrinsic_by_id_reads_call_signer_and_outcome(rt):
         tx.fetch_extrinsic(_fork_client(CapturedFork(62)), rt, "62")
     with pytest.raises(tx.TxError, match="no index 9"):
         tx.fetch_extrinsic(_fork_client(CapturedFork(62)), rt, "62-9")
+
+
+# --- a2a round 03 fixes -------------------------------------------------------------------------
+
+def test_receipt_compare_fails_closed():
+    good = {"contract": "x", "decoded": receipt.decode_payload(receipt.manifest_payload(MANIFEST))}
+    assert receipt.mismatched_fields([good], MANIFEST) == []
+    assert receipt.mismatched_fields([], MANIFEST) == ["event_count=0"]
+    assert receipt.mismatched_fields([good, good], MANIFEST) == ["event_count=2"]
+    assert receipt.mismatched_fields([{"contract": "x", "decoded": None}], MANIFEST) == ["payload_length"]
+
+
+def _run(**kw):
+    inc = tx.Inclusion("0x", 1, "0x", 1, [], True, None, 0.0)
+    base = dict(address="a", code_hash=receipt.code_hash(), signer="s", deployed_now=False,
+                steps=[{"kind": "attest", "inclusion": inc}], rent_before=None,
+                rent_after=receipt.rent_status(10**18, {}, 502, CONSTS),
+                rent_proof={"no_rent_charged": True}, attest_emitted=[{"decoded": {}}], mismatch=[],
+                manifest_payload="0x")
+    base.update(kw)
+    return receipt.ReceiptRun(**base)
+
+
+def test_receipt_exit_codes():
+    assert _run().exit_code == 0
+    assert _run(mismatch=["payload_length"]).exit_code == 2
+    assert _run(attest_emitted=[]).exit_code == 2
+    assert _run(rent_proof={"no_rent_charged": False}).exit_code == receipt.EXIT_RENT_UNSAFE == 6
+    poor = receipt.rent_status(10**15, {}, 502, CONSTS)
+    assert poor.fee_per_block > 0 and _run(rent_after=poor).exit_code == 6
+    assert _run(rent_after=poor, enforce_rent=False).exit_code == 0  # --no-top-up reports, does not enforce
+    failed = tx.Inclusion("0x", 1, "0x", 1, [], False, "Contracts.ContractTrapped", 0.0)
+    assert _run(steps=[{"kind": "attest", "inclusion": failed}]).exit_code == 5
+
+
+def test_receipt_state_must_match_the_shipped_code(tmp_path, monkeypatch):
+    monkeypatch.setenv("FORKLIFT_CACHE", str(tmp_path))
+    g = "0x" + "aa" * 32
+    receipt.save_state("t", {"genesis_hash": g, "address": "5x", "code_hash": receipt.code_hash()})
+    assert receipt.load_state("t", g)["address"] == "5x"
+    assert receipt.load_state("t", "0x" + "bb" * 32) is None
+    receipt.save_state("t", {"genesis_hash": g, "address": "5x", "code_hash": "0x" + "00" * 32})
+    assert receipt.load_state("t", g) is None
+
+
+def test_submit_treats_an_already_imported_resend_as_submitted(rt):
+    chain = CapturedFork(126)
+    real = chain.__call__
+
+    def handler(method, params):
+        if method == "author_submitExtrinsic":
+            real(method, params)  # the pool took it ...
+            return {"__error__": {"code": 1013, "message": "Transaction Already Imported"}}  # ... answer lost, re-sent
+        return real(method, params)
+
+    xt = bytes.fromhex(CAP["blocks"]["126"]["extrinsics"][1][2:])
+    inc = tx.submit(_fork_client(handler), rt, xt, sleep=lambda s: None)
+    assert inc.extrinsic_id == "126-1" and inc.success and inc.tx_hash == "0x" + blake2_256(xt).hex()
+
+
+def test_submit_other_pool_errors_still_raise(rt):
+    from forklift.rpc import RpcError
+
+    chain = CapturedFork(126)
+
+    def handler(method, params):
+        if method == "author_submitExtrinsic":
+            return {"__error__": {"code": 1010, "message": "Invalid Transaction"}}
+        return chain(method, params)
+
+    with pytest.raises(RpcError):
+        tx.submit(_fork_client(handler), rt, bytes.fromhex(CAP["blocks"]["126"]["extrinsics"][1][2:]),
+                  sleep=lambda s: None)
+
+
+def test_submit_follows_a_reorg_to_a_later_block(rt):
+    """Seen in #126 on a branch that lost; the canonical #126 lacks it; it lands in #127."""
+    b = CAP["blocks"]["126"]
+    xt_hex = b["extrinsics"][1]
+    stale, canon126, canon127 = "0x" + "c1" * 32, "0x" + "c2" * 32, b["hash"]
+    state = {"best": 125, "phase": 0}
+
+    def handler(method, params):
+        if method == "chain_getBlockHash":
+            if params == [0]:
+                return CAP["genesis_hash"]
+            n = params[0]
+            if n == 126:
+                return stale if state["phase"] == 0 else canon126
+            return canon127 if n == 127 else "0x" + f"{n:064x}"
+        if method == "author_submitExtrinsic":
+            state["best"] = 126
+            return "0x" + blake2_256(bytes.fromhex(params[0][2:])).hex()
+        if method == "chain_getHeader":
+            if params and params[0] == "fin":
+                state["phase"] = 1
+                state["best"] = 127
+                return {"number": hex(127)}
+            if params and params[0] == canon127:
+                return {"number": hex(127)}
+            return {"number": hex(state["best"])}
+        if method == "chain_getFinalizedHead":
+            return "fin"
+        if method == "chain_getBlock":
+            return {"block": {"extrinsics": ["0x00", xt_hex] if params[0] in (stale, canon127) else ["0x00"]}}
+        if method == "state_getStorage":
+            return b["events"] if params[1] == canon127 else None
+        raise AssertionError(method)
+
+    inc = tx.submit(_fork_client(handler), rt, bytes.fromhex(xt_hex[2:]), sleep=lambda s: None)
+    assert (inc.block_number, inc.block_hash, inc.index) == (127, canon127, 1) and inc.success
+
+
+def test_fetch_extrinsic_reports_the_carried_dispatch_result(rt):
+    got = tx.fetch_extrinsic(_fork_client(CapturedFork(62)), rt, "62-1")
+    assert got["dispatch"] == {"event": "Sudo.SudoAsDone", "ok": True, "error": None}
+    got = tx.fetch_extrinsic(_fork_client(CapturedFork(126)), rt, "126-1")
+    assert got["dispatch"] is None  # not a sudo call

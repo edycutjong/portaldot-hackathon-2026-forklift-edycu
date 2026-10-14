@@ -6,13 +6,14 @@ With `--json`, an error is printed as one JSON object with an `error` field inst
 
 | Code | Meaning | Commands | `--json` error |
 |---|---|---|---|
-| `0` | Success: the lift is complete, the fork is up, nothing is unexplained, the call succeeded, the Receipt matches | all | — |
+| `0` | Success: the lift is complete, the fork is up, nothing is unexplained, the call succeeded, the Receipt matches and pays no rent | all | — |
 | `1` | Could not run: endpoint unreachable, transaction rejected by the pool or never included, unreadable chain spec, or the **I3 write-guard** refused a non-fork endpoint | `verify`, `fund`, `as`, `receipt`, `tx` | `verify_failed`, `fund_failed`, `as_failed`, `receipt_failed`, `tx_failed`, `write_refused` |
-| `2` | Mismatch: `verify` found a sampled key or a whole-fork check (key set, issuance, overrides, code hash) that nothing explains; `receipt` saw an emitted payload that is not the fork manifest's (or no Receipt event) | `verify`, `receipt` | — (the report has `ok: false`) |
+| `2` | Mismatch: `verify` found a sampled key or a whole-fork check (key set, issuance, overrides, code hash) that nothing explains; `receipt` did not see exactly one Receipt event whose 72-byte payload equals the fork manifest (missing, malformed, duplicated or different) | `verify`, `receipt` | — (`verify`: `ok: false`; `receipt`: `attest.matches_manifest: false` + `mismatched_fields`) |
 | `3` | Node failed: the binary did not start, did not author a block within 2 slots (I5), did not finalize, had peers, or exited; the log tail and a known-cause hint are printed | `up`, `down` | `node_failed` |
 | `4` | Lift failed: pinning, key paging, value reads, the manifest or the write step failed; the last key cursor is printed and kept as a checkpoint, and nothing is written as a complete lift | `lift`, `up` | `lift_failed` |
-| `5` | Dispatch failed: the extrinsic landed on the fork, but the call it carried returned an error (`Sudo.Sudid` / `Sudo.SudoAsDone` = `Err`, or `ExtrinsicFailed`); the decoded error name is printed | `fund`, `as`, `receipt` | — (the result has `dispatch.ok: false`) |
-| `64` | Usage error: bad arguments, an unknown `Pallet.call`, a bad SS58 address or amount, no running fork of that name | all | — |
+| `5` | Dispatch failed: the extrinsic landed on the fork, but the call it carried returned an error (`Sudo.Sudid` / `Sudo.SudoAsDone` = `Err`, or `ExtrinsicFailed`, including a failed Receipt instantiate or rent top-up); the decoded error name is printed | `fund`, `as`, `receipt` | `fund` / `as`: `dispatch.ok: false`; `receipt`: `dispatch_failed`, or `steps[].extrinsic.success: false` |
+| `6` | Receipt not rent-safe: the payload matched, but after the top-up the contract still pays rent, or rent was charged across the attest (`rent.proof.no_rent_charged: false`); not enforced with `--no-top-up` | `receipt` | — (`rent.rent_safe: false`) |
+| `64` | Usage error: bad arguments, an unknown `Pallet.call`, call arguments that do not encode, a bad SS58 address or amount, no running fork of that name, `--evidence` without the fork's manifest (checked before anything is sent) | all | — |
 
 Click's own usage code (`2`) is remapped to `64` so that `2` always means a mismatch.
 
@@ -21,6 +22,9 @@ Click's own usage code (`2`) is remapped to `64` so that `2` always means a mism
 `fund`, `as` and `receipt` sign with the fork's dev sudo key and submit, so they only ever
 open a *fork client*: its endpoint must be loopback (`127.0.0.1`, `localhost`, `::1`) and never
 a known mainnet host, and before the first write the client reads the chain's genesis hash and
-refuses if it is Portaldot mainnet's (`0x83b5…8a54`). A refusal exits `1` with
-`"error": "write_refused"` before anything is sent. `lift`, `verify` (mainnet side) and `tx` use a
+refuses if it is Portaldot mainnet's (`0x83b5…8a54`); the check runs again on every new
+connection. When the command acts on a fork started by `forklift up`, the chain's genesis must
+also equal the genesis in that fork's manifest, so a different chain on the same port is never
+written to or recorded as this fork. A refusal exits `1` with `"error": "write_refused"` before
+anything is sent. `lift`, `verify` (mainnet side) and `tx` use a
 read-only client that can only send an allowlist of read methods.

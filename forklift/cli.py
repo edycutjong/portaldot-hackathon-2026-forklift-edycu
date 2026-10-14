@@ -51,6 +51,14 @@ def run_lift(endpoint: str, at: str | int | None, out_root: Path, *, resume: boo
     return manifest
 
 
+def _write_evidence(path: Path, ev: dict) -> None:
+    """Evidence files are cumulative: write atomically so a crash never leaves half a file."""
+    from forklift.lift import _atomic_write
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    _atomic_write(path, json.dumps(ev, indent=2) + "\n")
+
+
 def record_evidence(m: dict, evidence_dir: Path) -> Path:
     """Write or extend ``evidence/lift-<block>.json``. Every run at a pin is kept, with its root."""
     import datetime as dt
@@ -89,8 +97,7 @@ def record_evidence(m: dict, evidence_dir: Path) -> Path:
         "roots_identical_across_runs": len({r["manifest_root"] for r in runs}) == 1,
         "runs": runs,
     }
-    evidence_dir.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(ev, indent=2) + "\n")
+    _write_evidence(path, ev)
     return path
 
 
@@ -269,8 +276,7 @@ def record_fork(m: dict, evidence_dir: Path) -> Path:
         "genesis_hash_stable_across_runs": len({r["genesis_hash"] for r in runs} | {fork["genesis_hash"]}) == 1,
         "runs": runs,
     }
-    evidence_dir.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(ev, indent=2) + "\n")
+    _write_evidence(path, ev)
     return path
 
 
@@ -326,8 +332,7 @@ def record_verify(report, m: dict, evidence_dir: Path, endpoint: str) -> Path:
         "reproduce": "forklift verify --sample <draws> --seed <seed> against a fork of this pin",
         "runs": runs,
     }
-    evidence_dir.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(ev, indent=2) + "\n")
+    _write_evidence(path, ev)
     return path
 
 
@@ -492,19 +497,40 @@ def _act_errors() -> tuple[type[BaseException], ...]:
     return (RpcError, RpcUnavailable, WriteGuardError, TxError, OSError, KeyError, ValueError)
 
 
-def record_tx(row: dict, manifest: dict | None, endpoint: str, name: str, evidence_dir: Path) -> Path:
-    """Append one transaction to ``evidence/txs-<block>.json`` (one file per mainnet pin)."""
+def _need_manifest_for_evidence(evidence_dir: Path | None, manifest: dict | None) -> None:
+    """Checked before anything is sent: a transaction must never land and then fail to be recorded."""
+    if evidence_dir is not None and manifest is None:
+        raise click.UsageError("--evidence needs the fork's manifest: act on a fork started by `forklift up` "
+                               "(--name), not a bare --endpoint")
+
+
+def _bind_fork(client: RpcClient, manifest: dict | None) -> str:
+    """Read the chain's genesis; with a manifest, refuse a chain that is not that fork. Returns the genesis."""
+    from forklift.rpc import WriteGuardError
+
+    genesis = client.call("chain_getBlockHash", [0])
+    want = ((manifest or {}).get("fork") or {}).get("genesis_hash")
+    if want and str(genesis).lower() != want.lower():
+        raise WriteGuardError(f"{client.endpoint} serves genesis {genesis}, not the fork in its manifest ({want}): "
+                              "refusing to act on another chain")
+    return genesis
+
+
+def record_tx(row: dict, manifest: dict, endpoint: str, name: str, evidence_dir: Path, genesis: str) -> Path:
+    """Append one transaction to ``evidence/txs-<block>.json`` (one file per mainnet pin).
+
+    ``genesis`` is the genesis hash read from the chain the transaction was sent to (it was
+    checked against the manifest's before the first write, see ``_bind_fork``).
+    """
     import datetime as dt
 
-    if manifest is None:
-        raise click.UsageError("--evidence needs the fork's manifest (start it with `forklift up`, act with --name)")
     src, fork, node = manifest["source"], manifest["fork"], manifest.get("node") or {}
     path = evidence_dir / f"txs-{src['block_number']}.json"
     prior = json.loads(path.read_text()) if path.exists() else {}
     rows = prior.get("rows", [])
     rows.append({"recorded_utc": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
                  "label": fork["label"], "fork_name": name, "fork_endpoint": endpoint,
-                 "fork_genesis_hash": fork["genesis_hash"],
+                 "fork_genesis_hash": genesis,
                  "persistent_base_path": node.get("base_path") is not None, **row})
     ev = {"pin": {"block_number": src["block_number"], "block_hash": src["block_hash"]},
           "source_endpoint": src["endpoint"], "manifest_root": manifest["manifest_root"],
@@ -512,8 +538,7 @@ def record_tx(row: dict, manifest: dict | None, endpoint: str, name: str, eviden
           "note": "block numbers and hashes are on the fork named in each row, not on mainnet",
           "reproduce": "forklift tx <extrinsic_id> --endpoint <fork_endpoint> re-reads a row from the fork",
           "rows": rows}
-    evidence_dir.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(ev, indent=2) + "\n")
+    _write_evidence(path, ev)
     return path
 
 
@@ -561,14 +586,14 @@ def _act_options(f):
 
 
 def _finish_act(r, manifest: dict | None, endpoint: str, name: str, evidence_dir: Path | None,
-                as_json: bool) -> None:
+                as_json: bool, genesis: str) -> None:
     out = r.as_json()
     if evidence_dir is not None:
         row = {"kind": r.kind, "call": r.call, "who": r.who, **{k: out["extrinsic"][k] for k in (
             "extrinsic_id", "block_number", "block_hash", "tx_hash", "success", "finalized", "seconds")},
             "dispatch": out["dispatch"], "changed": out["changed"], "inner_events": out["inner_events"],
             "warnings": out["warnings"]}
-        out["evidence"] = str(record_tx(row, manifest, endpoint, name, evidence_dir))
+        out["evidence"] = str(record_tx(row, manifest, endpoint, name, evidence_dir, genesis))
     click.echo(json.dumps(out, indent=2, default=str) if as_json else act_plate(r))
     sys.exit(r.exit_code)
 
@@ -595,12 +620,14 @@ def fund_cmd(who: str, amount: str | None, planck: int | None, name: str, endpoi
     except ValueError as exc:
         raise click.UsageError(str(exc)) from None
     endpoint, manifest = _fork_endpoint(name, endpoint)
+    _need_manifest_for_evidence(evidence_dir, manifest)
     try:
         with RpcClient(endpoint, fork=True) as client:
+            genesis = _bind_fork(client, manifest)
             r = act.fund(client, tx.Runtime.load(client), who, value)
     except _act_errors() as exc:
         _could_not_run(exc, as_json, "fund")
-    _finish_act(r, manifest, endpoint, name, evidence_dir, as_json)
+    _finish_act(r, manifest, endpoint, name, evidence_dir, as_json, genesis)
 
 
 @main.command("as")
@@ -627,19 +654,25 @@ def as_cmd(who: str, call: str, args: str | None, name: str, endpoint: str | Non
     except ValueError as exc:
         raise click.UsageError(str(exc)) from None
     endpoint, manifest = _fork_endpoint(name, endpoint)
+    _need_manifest_for_evidence(evidence_dir, manifest)
     try:
         with RpcClient(endpoint, fork=True) as client:
+            genesis = _bind_fork(client, manifest)
             rt = tx.Runtime.load(client)
             try:
                 call_args = act.parse_args(rt, pallet, function, args)
-            except (KeyError, ValueError) as exc:
-                raise click.UsageError(str(exc).strip("'\"")) from None
+                rt.compose(pallet, function, call_args)  # encode locally first: bad values are usage errors
+            except click.UsageError:
+                raise
+            except Exception as exc:  # the SDK's encoders raise assorted types for bad values
+                raise click.UsageError(f"cannot encode {pallet}.{function}{' ' + args if args else ''}: "
+                                       f"{str(exc).strip(chr(39) + chr(34))}") from None
             r = act.act_as(client, rt, who, pallet, function, call_args)
     except click.UsageError:
         raise
     except _act_errors() as exc:
         _could_not_run(exc, as_json, "as")
-    _finish_act(r, manifest, endpoint, name, evidence_dir, as_json)
+    _finish_act(r, manifest, endpoint, name, evidence_dir, as_json, genesis)
 
 
 @main.command("tx")
@@ -687,11 +720,13 @@ def receipt_plate(r, manifest: dict) -> str:
         lines.append(f"emitted     mainnet #{manifest['source']['block_number']:,} {d.get('mainnet_block_hash')}\n"
                      f"            root {d.get('manifest_root')} · {d.get('keys_lifted', 0):,} keys")
     if not r.attest_emitted:
-        lines.append("MISMATCH    attest emitted no Receipt event")
+        lines.append("MISMATCH    attest emitted no Receipt event (exit 2)")
     elif r.mismatch:
-        lines.append(f"MISMATCH    emitted payload differs from the manifest in: {', '.join(r.mismatch)} (exit 2)")
+        lines.append(f"MISMATCH    emitted payload differs from the manifest: {', '.join(r.mismatch)} (exit 2)")
     else:
         lines.append("OK          emitted payload = the fork manifest (block hash, manifest root, keys lifted)")
+    if r.enforce_rent and not r.rent_safe:
+        lines.append("RENT        the Receipt still pays rent after the top-up (exit 6)")
     return "\n".join(lines)
 
 
@@ -705,36 +740,56 @@ def receipt_cmd(address: str | None, no_top_up: bool, name: str, endpoint: str |
 
     attest emits mainnet_block_hash ‖ manifest_root ‖ keys_lifted from the fork's
     manifest as Contracts.ContractEmitted; the event is decoded and compared with
-    the manifest. Exit 0 when it matches, 2 when it differs, 5 when a transaction
-    failed, 1 when it could not run.
+    the manifest. Exit 0 when it matches and the Receipt pays no rent, 2 when the
+    payload differs (or is missing, malformed, or emitted twice), 5 when a
+    transaction failed, 6 when rent is still charged after the top-up, 1 when it
+    could not run.
     """
     from forklift import receipt, tx
+    from forklift.act import EXIT_DISPATCH_FAILED
 
     endpoint, manifest = _fork_endpoint(name, endpoint)
     if manifest is None:
-        raise click.UsageError(f"the Receipt needs the fork's manifest: act on a fork started by `forklift up` "
-                               f"(--name), not a bare --endpoint")
+        raise click.UsageError("the Receipt needs the fork's manifest: act on a fork started by `forklift up` "
+                               "(--name), not a bare --endpoint")
+    calls = {"instantiate": "Contracts.instantiate_with_code", "rent_top_up": "Balances.transfer",
+             "attest": "Contracts.call(attest)"}
+    recorded: list[str] = []
+    ctx: dict = {}
+
+    def on_step(step: dict) -> None:
+        """Record each landed transaction at once, so a later failure cannot lose it."""
+        if evidence_dir is None:
+            return
+        inc = step["inclusion"]
+        row = {"kind": step["kind"], "call": calls[step["kind"]], "who": ctx["signer"],
+               **{k: v for k, v in inc.as_json().items() if k in (
+                   "extrinsic_id", "block_number", "block_hash", "tx_hash", "success", "finalized", "seconds")},
+               **{k: v for k, v in step.items() if k not in ("kind", "inclusion")}}
+        recorded.append(str(record_tx(row, manifest, endpoint, name, evidence_dir, ctx["genesis"])))
+
     try:
         with RpcClient(endpoint, fork=True) as client:
+            ctx["genesis"] = _bind_fork(client, manifest)
+            signer = tx.dev_keypair()
+            ctx["signer"] = signer.ss58_address
             r = receipt.run_receipt(client, tx.Runtime.load(client), manifest, name=name, address=address,
-                                    top_up=not no_top_up)
+                                    top_up=not no_top_up, signer=signer, on_step=on_step)
+    except receipt.ReceiptDispatchError as exc:
+        inc = exc.inclusion
+        if evidence_dir is not None and not any(inc.tx_hash in Path(p).read_text() for p in recorded):
+            on_step({"kind": exc.kind, "inclusion": inc, "error": str(exc)})
+        if as_json:
+            click.echo(json.dumps({"error": "dispatch_failed", "message": str(exc), "extrinsic": inc.as_json()},
+                                  default=str))
+        else:
+            click.echo(f"receipt: {exc}", err=True)
+        sys.exit(EXIT_DISPATCH_FAILED)
     except (receipt.ReceiptError, *_act_errors()) as exc:
         _could_not_run(exc, as_json, "receipt")
     out = r.as_json()
-    if evidence_dir is not None:
-        for s, js in zip(r.steps, out["steps"]):
-            row = {"kind": s["kind"], "call": {"instantiate": "Contracts.instantiate_with_code",
-                                               "rent_top_up": "Balances.transfer",
-                                               "attest": "Contracts.call(attest)"}[s["kind"]],
-                   "who": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-                   "contract": r.address, "code_hash": r.code_hash,
-                   **{k: js["extrinsic"][k] for k in ("extrinsic_id", "block_number", "block_hash", "tx_hash",
-                                                      "success", "finalized", "seconds")},
-                   **{k: v for k, v in js.items() if k not in ("kind", "extrinsic")}}
-            if s["kind"] == "attest":
-                row["matches_manifest"] = out["attest"]["matches_manifest"]
-                row["rent_proof"] = out["rent"]["proof"]
-            out.setdefault("evidence", str(record_tx(row, manifest, endpoint, name, evidence_dir)))
+    if recorded:
+        out["evidence"] = recorded[-1]
     click.echo(json.dumps(out, indent=2, default=str) if as_json else receipt_plate(r, manifest))
     sys.exit(r.exit_code)
 

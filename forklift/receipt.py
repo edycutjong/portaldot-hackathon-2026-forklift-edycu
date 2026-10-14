@@ -112,7 +112,9 @@ def load_state(name: str, genesis_hash: str) -> dict | None:
         st = json.loads(state_path(name).read_text())
     except (OSError, ValueError):
         return None
-    return st if isinstance(st, dict) and st.get("genesis_hash") == genesis_hash and st.get("address") else None
+    ok = (isinstance(st, dict) and st.get("genesis_hash") == genesis_hash and st.get("address")
+          and st.get("code_hash") == code_hash())  # a Receipt built from other code is not this one
+    return st if ok else None
 
 
 def save_state(name: str, st: dict) -> None:
@@ -242,16 +244,29 @@ def free_of(client: RpcClient, rt: tx.Runtime, address: str, at: str | None = No
     return int(account_info(client, rt, tx.ss58_to_public(address), at)["data"]["free"])
 
 
+class ReceiptDispatchError(ReceiptError):
+    """A Receipt transaction landed on the fork but failed (exit 5, like a failed fund/as)."""
+
+    def __init__(self, message: str, inclusion: tx.Inclusion, kind: str):
+        super().__init__(message)
+        self.inclusion = inclusion
+        self.kind = kind
+
+
 def instantiate(client: RpcClient, rt: tx.Runtime, data: bytes, endowment: int, signer) -> tuple[tx.Inclusion, str]:
     call = rt.compose("Contracts", "instantiate_with_code", {
         "endowment": endowment, "gas_limit": GAS_LIMIT, "code": "0x" + wasm().hex(),
         "data": "0x" + data.hex(), "salt": "0x" + SALT.hex()})
     inc = tx.sign_and_submit(client, rt, call, signer)
     if not inc.success:
-        raise ReceiptError(f"instantiate_with_code failed: {inc.error} (extrinsic {inc.extrinsic_id})")
+        hint = (" (this fork already has a Receipt from this deployer, code and salt: pass its address with "
+                "--address; `forklift tx <id>` of its instantiate shows it)" if inc.error == "Contracts.DuplicateContract"
+                else "")
+        raise ReceiptDispatchError(f"instantiate_with_code failed: {inc.error} (extrinsic {inc.extrinsic_id}){hint}",
+                                   inc, "instantiate")
     inst = inc.events_named("Contracts.Instantiated")
     if not inst:
-        raise ReceiptError(f"no Contracts.Instantiated event in {inc.extrinsic_id}")
+        raise ReceiptDispatchError(f"no Contracts.Instantiated event in {inc.extrinsic_id}", inc, "instantiate")
     return inc, tx.as_ss58(inst[0].attributes[1]["value"])
 
 
@@ -265,10 +280,23 @@ def transfer(client: RpcClient, rt: tx.Runtime, dest: str, planck: int, signer) 
     return tx.sign_and_submit(client, rt, rt.compose("Balances", "transfer", {"dest": dest, "value": planck}), signer)
 
 
+EXIT_RENT_UNSAFE = 6  # the attest matched, but the Receipt still pays rent (or was charged rent on the attest)
+
+
+def mismatched_fields(mine: list[dict], manifest: dict) -> list[str]:
+    """Fail closed: exactly one Receipt event, decodable, equal to the manifest; else the reasons."""
+    if len(mine) != 1:
+        return [f"event_count={len(mine)}"]
+    if mine[0]["decoded"] is None:
+        return ["payload_length"]
+    return compare_to_manifest(mine[0]["decoded"], manifest)
+
+
 @dataclass
 class ReceiptRun:
     address: str
-    code_hash: str
+    code_hash: str  # read from the chain (ContractInfoOf), equal to the shipped Receipt's
+    signer: str
     deployed_now: bool
     steps: list[dict]  # {kind, inclusion, ...} in order
     rent_before: Rent | None
@@ -277,6 +305,11 @@ class ReceiptRun:
     attest_emitted: list[dict]
     mismatch: list[str]
     manifest_payload: str
+    enforce_rent: bool = True
+
+    @property
+    def rent_safe(self) -> bool:
+        return bool(self.rent_proof.get("no_rent_charged")) and self.rent_after.fee_per_block == 0
 
     @property
     def exit_code(self) -> int:
@@ -284,14 +317,18 @@ class ReceiptRun:
             from forklift.act import EXIT_DISPATCH_FAILED
 
             return EXIT_DISPATCH_FAILED
-        return EXIT_PAYLOAD_MISMATCH if self.mismatch or not self.attest_emitted else 0
+        if self.mismatch or not self.attest_emitted:
+            return EXIT_PAYLOAD_MISMATCH
+        return EXIT_RENT_UNSAFE if self.enforce_rent and not self.rent_safe else 0
 
     def as_json(self) -> dict:
-        return {"address": self.address, "code_hash": self.code_hash, "deployed_now": self.deployed_now,
+        return {"address": self.address, "code_hash": self.code_hash, "signer": self.signer,
+                "deployed_now": self.deployed_now,
                 "steps": [{**{k: v for k, v in s.items() if k != "inclusion"}, "extrinsic": s["inclusion"].as_json()}
                           for s in self.steps],
                 "rent": {"before_top_up": self.rent_before.as_json() if self.rent_before else None,
-                         "after": self.rent_after.as_json(), "proof": self.rent_proof},
+                         "after": self.rent_after.as_json(), "proof": self.rent_proof, "rent_safe": self.rent_safe,
+                         "enforced": self.enforce_rent},
                 "attest": {"emitted": self.attest_emitted, "manifest_payload": self.manifest_payload,
                            "matches_manifest": not self.mismatch and bool(self.attest_emitted),
                            "mismatched_fields": self.mismatch},
@@ -299,13 +336,23 @@ class ReceiptRun:
 
 
 def run_receipt(client: RpcClient, rt: tx.Runtime, manifest: dict, *, name: str, address: str | None = None,
-                top_up: bool = True, signer=None) -> ReceiptRun:
-    """Deploy (first run on this fork) → rent check + top-up → attest → compare the event with the manifest."""
+                top_up: bool = True, signer=None, on_step=None) -> ReceiptRun:
+    """Deploy (first run on this fork) → rent check + top-up → attest → compare the event with the manifest.
+
+    ``on_step(step)`` is called after each transaction lands, before the next one is sent, so a
+    caller can record what already happened even if a later step fails.
+    """
     signer = signer or tx.dev_keypair()
     data = manifest_payload(manifest)
     genesis = client.call("chain_getBlockHash", [0])
     consts = rent_constants(rt)
     steps: list[dict] = []
+
+    def done(step: dict) -> None:
+        steps.append(step)
+        if on_step is not None:
+            on_step(step)
+
     st = load_state(name, genesis)
     address = address or (st or {}).get("address")
     deployed_now = False
@@ -319,27 +366,31 @@ def run_receipt(client: RpcClient, rt: tx.Runtime, manifest: dict, *, name: str,
         endowment = 2 * (consts["ExistentialDeposit"] + consts["TombstoneDeposit"])
         inc, address = instantiate(client, rt, data, endowment, signer)
         deployed_now = True
-        steps.append({"kind": "instantiate", "inclusion": inc, "endowment": endowment,
-                      "emitted": emitted(inc)})
         save_state(name, {"genesis_hash": genesis, "address": address, "code_hash": code_hash(),
                           "instantiate": inc.as_json(), "salt": "0x" + SALT.hex()})
+        done({"kind": "instantiate", "inclusion": inc, "contract": address, "code_hash": code_hash(),
+              "endowment": endowment, "emitted": emitted(inc)})
     info = contract_info(client, rt, address)
+    if info["code_hash"].lower() != code_hash().lower():
+        raise ReceiptError(f"{address} runs code {info['code_hash']}, not the Fork Receipt {code_hash()}")
     code_bytes = stored_code_bytes(client, rt, info["code_hash"])
     rent_before = rent_status(free_of(client, rt, address), info, code_bytes, consts)
     amount = top_up_amount(rent_before) if top_up else 0
     if amount:
         inc = transfer(client, rt, address, amount, signer)
-        steps.append({"kind": "rent_top_up", "inclusion": inc, "amount": amount,
-                      "why": (f"rent was up to {rent_before.fee_per_block:,} planck/block: eviction in about "
-                              f"{rent_before.blocks_until_eviction:,} blocks (~"
-                              f"{rent_before.blocks_until_eviction * BLOCK_SECONDS / 86400:.1f} days of 6 s blocks) "
-                              f"at that rate; topped up to the deposit bound + {TOP_UP_MARGIN_PERMILLE / 10:g} % "
-                              f"so the rent is 0 and the Receipt is never evicted")})
+        done({"kind": "rent_top_up", "inclusion": inc, "contract": address, "amount": amount, "rent_before": rent_before.as_json(),
+              "why": (f"rent was up to {rent_before.fee_per_block:,} planck/block: eviction in about "
+                      f"{rent_before.blocks_until_eviction:,} blocks (~"
+                      f"{rent_before.blocks_until_eviction * BLOCK_SECONDS / 86400:.1f} days of 6 s blocks) "
+                      f"at that rate; topped up to the deposit bound + {TOP_UP_MARGIN_PERMILLE / 10:g} % so the "
+                      f"rent is 0 at the balance held")})
+        if not inc.success:
+            raise ReceiptDispatchError(f"rent top-up failed: {inc.error} (extrinsic {inc.extrinsic_id})", inc,
+                                       "rent_top_up")
     info_before = contract_info(client, rt, address)
     free_before = free_of(client, rt, address)
     inc = attest(client, rt, address, data, signer)
     out = emitted(inc)
-    steps.append({"kind": "attest", "inclusion": inc, "emitted": out})
     info_after = contract_info(client, rt, address, at=inc.block_hash)
     free_after = free_of(client, rt, address, at=inc.block_hash)
     rent_after = rent_status(free_after, info_after, code_bytes, consts)
@@ -348,11 +399,16 @@ def run_receipt(client: RpcClient, rt: tx.Runtime, manifest: dict, *, name: str,
              "rent_paid_before": paid(info_before), "rent_paid_after": paid(info_after),
              "deduct_block_before": int((info_before or {}).get("deduct_block", 0)),
              "deduct_block_after": int((info_after or {}).get("deduct_block", 0))}
-    proof["no_rent_charged"] = (proof["rent_paid_after"] == proof["rent_paid_before"]
+    proof["no_rent_charged"] = (info_after is not None and proof["rent_paid_after"] == proof["rent_paid_before"]
                                 and free_after >= free_before)
     mine = [e for e in out if e["contract"] == address]
-    mismatch = compare_to_manifest(mine[0]["decoded"], manifest) if mine and mine[0]["decoded"] else []
-    return ReceiptRun(address=address, code_hash=code_hash(), deployed_now=deployed_now, steps=steps,
-                      rent_before=rent_before if amount or deployed_now else None, rent_after=rent_after,
-                      rent_proof=proof, attest_emitted=mine, mismatch=mismatch,
-                      manifest_payload="0x" + data.hex())
+    mismatch = mismatched_fields(mine, manifest)
+    run = ReceiptRun(address=address, code_hash=info["code_hash"], signer=signer.ss58_address,
+                     deployed_now=deployed_now, steps=steps,
+                     rent_before=rent_before if amount or deployed_now else None, rent_after=rent_after,
+                     rent_proof=proof, attest_emitted=mine, mismatch=mismatch,
+                     manifest_payload="0x" + data.hex(), enforce_rent=top_up)
+    done({"kind": "attest", "inclusion": inc, "contract": address, "code_hash": info["code_hash"],
+          "emitted": out, "matches_manifest": not mismatch, "mismatched_fields": mismatch,
+          "rent_proof": proof, "rent_safe": run.rent_safe})
+    return run

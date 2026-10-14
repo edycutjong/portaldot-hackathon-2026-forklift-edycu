@@ -124,3 +124,49 @@ def test_act_commands_refuse_mainnet_before_any_connection(argv):
 def test_act_commands_need_a_running_fork_or_an_endpoint():
     res = CliRunner().invoke(main, ["as", WHALE, "Staking.chill", "--name", "absent"])
     assert res.exit_code != 0 and "no running fork named 'absent'" in res.output
+
+
+def test_own_events_drop_only_the_fee_deposit():
+    def ev(name):
+        p, n = name.split(".")
+        return tx.Event(0, "ApplyExtrinsic", 1, p, n, [])
+
+    inc = _inclusion([ev("Treasury.Deposit"), ev("Balances.Transfer"), ev("Sudo.SudoAsDone"),
+                      ev("Treasury.Deposit"), ev("System.ExtrinsicSuccess")])
+    assert [e["event"] for e in act.own_events(inc)] == ["Treasury.Deposit", "Balances.Transfer"]
+
+
+def test_evidence_without_a_manifest_is_refused_before_anything_is_sent():
+    """--endpoint without a fork manifest + --evidence: usage error (64) before connecting (port 1 is closed)."""
+    for argv in (["fund", WHALE, "1"], ["as", WHALE, "Staking.chill"]):
+        res = CliRunner().invoke(main, argv + ["--endpoint", "ws://127.0.0.1:1", "--evidence", "ev"])
+        assert res.exit_code != 0 and "--evidence needs the fork's manifest" in res.output
+
+
+def test_act_refuses_a_chain_that_is_not_the_manifest_fork():
+    from forklift.cli import _bind_fork
+    from forklift.rpc import RpcClient, WriteGuardError
+    from tests.fakes import fake_connect
+
+    client = RpcClient("ws://127.0.0.1:59944", fork=True,
+                       connect=fake_connect(lambda m, p: "0x" + "99" * 32 if m == "chain_getBlockHash" else None))
+    assert _bind_fork(client, None) == "0x" + "99" * 32
+    with pytest.raises(WriteGuardError, match="not the fork in its manifest"):
+        _bind_fork(client, {"fork": {"genesis_hash": "0x" + "75" * 32}})
+
+
+def test_a_new_connection_is_checked_again_before_its_first_write():
+    from forklift.rpc import RpcClient
+    from tests.fakes import fake_connect
+
+    calls = []
+
+    def handler(method, params):
+        calls.append(method)
+        return "0x" + "12" * 32 if method == "chain_getBlockHash" else "0x" + "34" * 32
+
+    client = RpcClient("ws://127.0.0.1:59944", fork=True, connect=fake_connect(handler))
+    client.call("author_submitExtrinsic", ["0x00"])
+    client.close()
+    client.call("author_submitExtrinsic", ["0x00"])
+    assert calls == ["chain_getBlockHash", "author_submitExtrinsic"] * 2
