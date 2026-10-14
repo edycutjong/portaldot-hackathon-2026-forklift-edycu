@@ -16,6 +16,9 @@ from forklift.lift import CODE_KEY, LiftResult
 from forklift.metadata import StorageIndex
 
 
+CHILD_PREFIX = b":child_storage:"
+
+
 def _b(hex_str: str) -> bytes:
     return bytes.fromhex(hex_str.removeprefix("0x"))
 
@@ -61,6 +64,9 @@ def build_manifest(result: LiftResult, index: StorageIndex, *, endpoint: str, mm
             "key_pages": result.pages,
             "seconds": result.timings,
             "skipped": mmr,
+            # Lifted from the top trie only. A child trie shows up as a top-trie key under
+            # ":child_storage:"; a non-zero count here means child storage was NOT lifted.
+            "child_trie_roots_not_lifted": sum(1 for k in result.keys if _b(k).startswith(CHILD_PREFIX)),
             "per_pallet": per_pallet,
             "per_item": per_item,
         },

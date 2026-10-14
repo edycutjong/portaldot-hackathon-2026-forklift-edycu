@@ -39,3 +39,14 @@ def test_manifest_root_framing_separates_key_and_value():
 def test_manifest_root_rejects_duplicate_keys():
     with pytest.raises(ValueError):
         manifest_root([(b"\x01", b"a"), (b"\x01", b"b")])
+
+
+def test_manifest_root_golden_vector():
+    # Pins the framing: changing it changes every recorded manifest_root.
+    import hashlib
+
+    framed = (b"\x02\x00\x00\x00" + b"\x00\xff" + b"\x00\x00\x00\x00"          # (0x00ff, "")
+              + b"\x01\x00\x00\x00" + b"\x01" + b"\x01\x00\x00\x00" + b"a"      # (0x01, "a")
+              + b"\x02\x00\x00\x00" + b"\x02\x00" + b"\x02\x00\x00\x00" + b"bb")  # (0x0200, "bb")
+    assert manifest_root(PAIRS) == hashlib.blake2b(framed, digest_size=32).digest()
+    assert manifest_root(PAIRS).hex() == "183da1116e811a91c8ae18b24b807c16d29ef486cf9b3e2a52bb02a9456d418a"

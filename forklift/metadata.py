@@ -176,21 +176,24 @@ class StorageIndex:
             for it in p.items:
                 self.items[pp + twox128(it.name)] = it
 
+    # Pallet lookups come first: a pallet prefix may itself start with 0x3a (":").
     def pallet_of(self, key: bytes) -> str:
-        if key.startswith(b":"):
-            return ":well-known"
         item = self.items.get(key[:32])
         if item is not None:
             return item.pallet
-        return self.pallets.get(key[:16], f"unknown:0x{key[:16].hex()}")
+        if key[:16] in self.pallets:
+            return self.pallets[key[:16]]
+        if key.startswith(b":"):
+            return ":well-known"
+        return f"unknown:0x{key[:16].hex()}"
 
     def item_of(self, key: bytes) -> str:
-        if key.startswith(b":"):
-            return key.decode(errors="replace")
         item = self.items.get(key[:32])
         if item is not None:
             return item.full_name
         pallet = self.pallets.get(key[:16])
         if pallet is not None:
             return f"{pallet}.unknown:0x{key[16:32].hex()}"
+        if key.startswith(b":"):
+            return key.decode(errors="replace")
         return f"unknown:0x{key[:16].hex()}"

@@ -52,3 +52,58 @@ def test_rejects_other_metadata_versions():
 def test_rejects_truncated_metadata():
     with pytest.raises(MetadataError):
         decode_v13(META[:5000])
+
+
+def _compact(n):
+    assert n < 1 << 30
+    if n < 1 << 6:
+        return bytes([n << 2])
+    if n < 1 << 14:
+        return ((n << 2) | 1).to_bytes(2, "little")
+    return ((n << 2) | 2).to_bytes(4, "little")
+
+
+def _s(text):
+    b = text.encode()
+    return _compact(len(b)) + b
+
+
+def _vec(items):
+    return _compact(len(items)) + b"".join(items)
+
+
+def test_hand_built_v13_covers_every_storage_entry_kind_and_compact_mode():
+    from forklift.metadata import _Reader
+
+    long_doc = _s("d" * 70)  # 70 > 63: two-byte compact length
+    entries = [
+        _s("Plain") + b"\x00" + b"\x00" + _s("u32") + _s("0x00") + _vec([long_doc]),
+        _s("Map") + b"\x01" + b"\x01" + b"\x02" + _s("K") + _s("V") + b"\x00" + _s("") + _vec([]),
+        _s("Double") + b"\x00" + b"\x02" + b"\x05" + _s("K1") + _s("K2") + _s("V") + b"\x06" + _s("") + _vec([]),
+        _s("N") + b"\x00" + b"\x03" + _vec([_s("A"), _s("B"), _s("C")]) + _vec([b"\x02", b"\x05", b"\x06"])
+        + _s("V") + _s("") + _vec([]),
+    ]
+    module = (_s("Demo") + b"\x01" + _s("DemoPrefix") + _vec(entries)
+              + b"\x01" + _vec([_s("call") + _vec([_s("a") + _s("u8")]) + _vec([])])  # calls
+              + b"\x00"  # no events
+              + _vec([_s("C") + _s("u8") + _s("\x07") + _vec([])])  # constants
+              + _vec([_s("E") + _vec([])])  # errors
+              + b"\x07")  # index
+    pallets = decode_v13(b"meta\x0d" + _vec([module]))
+    (p,) = pallets
+    assert (p.name, p.index, p.storage_prefix) == ("Demo", 7, "DemoPrefix")
+    assert [(i.name, i.kind, i.hashers) for i in p.items] == [
+        ("Plain", "Plain", []),
+        ("Map", "Map", ["Blake2_128Concat"]),
+        ("Double", "DoubleMap", ["Twox64Concat", "Identity"]),
+        ("N", "NMap", ["Blake2_128Concat", "Twox64Concat", "Identity"]),
+    ]
+    assert _Reader(_compact(1_000_000)).compact() == 1_000_000  # four-byte mode
+    assert _Reader(b"\x13" + (2**40).to_bytes(8, "little")).compact() == 2**40  # big-integer mode
+
+
+def test_pallet_prefix_starting_with_colon_is_not_taken_for_a_well_known_key(pallets):
+    idx = StorageIndex(pallets)
+    idx.pallets[b":" + b"\x00" * 15] = "Colon"
+    assert idx.pallet_of(b":" + b"\x00" * 15 + b"\x01" * 16) == "Colon"
+    assert idx.pallet_of(b":code") == ":well-known"

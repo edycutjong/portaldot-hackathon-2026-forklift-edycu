@@ -19,6 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from forklift.hashing import manifest_root  # noqa: E402
 from forklift.rpc import DEFAULT_MAINNET, RpcClient  # noqa: E402
 
 MMR = "0x434e2055f3154c54233a8dabeeb2839e"
@@ -41,7 +42,7 @@ def full_listing(client: RpcClient, block_hash: str, progress_every: int = 500):
                 keys.add(k)
         if pages % progress_every == 0:
             print(f"  {pages} pages · {len(keys) + mmr:,} keys · {time.monotonic() - t0:.0f} s", flush=True)
-        if len(page) < PAGE:
+        if not page:  # only an empty page ends the listing: a node may return short pages early
             return keys, mmr, pages
         cursor = page[-1]
 
@@ -56,6 +57,8 @@ def main() -> int:
     manifest = json.loads((args.lift_dir / "manifest.json").read_text())
     state = json.loads((args.lift_dir / "state.json").read_text())
     lifted = set(state["storage"])
+    root = "0x" + manifest_root((bytes.fromhex(k[2:]), bytes.fromhex(v[2:]))
+                                for k, v in state["storage"].items()).hex()
     pin_hash = manifest["source"]["block_hash"]
     assert state["block_hash"] == pin_hash
 
@@ -86,8 +89,10 @@ def main() -> int:
         "listing_pages": pages,
         "listing_seconds": seconds,
         "manifest_root": manifest["manifest_root"],
+        "state_root_matches_manifest": root == manifest["manifest_root"],
         "started_utc": started.isoformat(timespec="seconds"),
-        "pass": not missing and not extra,
+        "pass": bool(listing) and not missing and not extra and derived == mmr_count
+        and root == manifest["manifest_root"],
     }
     args.evidence.mkdir(parents=True, exist_ok=True)
     path = args.evidence / f"lift-completeness-{manifest['source']['block_number']}.json"

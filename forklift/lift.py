@@ -37,6 +37,10 @@ def default_cache() -> Path:
     return Path(os.environ.get("FORKLIFT_CACHE", Path.home() / ".cache" / "forklift"))
 
 
+class PagingError(ValueError):
+    """A key page broke the strictly-increasing order the node must return."""
+
+
 class LiftError(Exception):
     """The lift could not finish. ``cursor`` is the last key paged successfully."""
 
@@ -101,15 +105,17 @@ def page_keys(
     client: RpcClient,
     block_hash: str,
     *,
-    page_size: int = PAGE_SIZE,
+    page_size: int | None = None,
     start: str | None = None,
     on_page: Callable[[list[str], str], None] | None = None,
 ) -> KeyPages:
     """Page all keys at ``block_hash`` from ``start`` (exclusive), skipping the MMR range.
 
     ``on_page(new_keys, cursor)`` runs after every page with the keys kept from
-    that page and the cursor the next page starts from.
+    that page and the cursor the next page starts from. Paging ends only on an
+    empty page: a node or gateway may return short pages before the end.
     """
+    page_size = page_size or PAGE_SIZE
     keys: list[str] = []
     cursor = start
     pages = mmr_seen = jumps = 0
@@ -118,6 +124,8 @@ def page_keys(
         pages += 1
         if not page:
             break
+        if any(b <= a for a, b in zip(page, page[1:])) or (cursor is not None and page[0] <= cursor):
+            raise PagingError(f"page after cursor {cursor} is not strictly increasing")
         kept = [k for k in page if not in_mmr(k)]
         mmr_seen += len(page) - len(kept)
         keys.extend(kept)
@@ -128,17 +136,27 @@ def page_keys(
             jumps += 1
         if on_page is not None:
             on_page(kept, cursor)
-        if len(page) < page_size and not in_mmr(page[-1]):
-            break
     return KeyPages(keys, pages, mmr_seen, jumps)
 
 
 def fetch_values(client: RpcClient, keys: list[str], block_hash: str, *, batch: int = VALUE_BATCH) -> dict[str, str]:
-    """Read every key's value at ``block_hash``. A key with no value at the pin is an error."""
+    """Read every key's value at ``block_hash``. A key with no value at the pin is an error.
+
+    If the node rejects a batch (e.g. a response-size limit), the batch is
+    halved and retried, down to one key.
+    """
     values: dict[str, str] = {}
-    for i in range(0, len(keys), batch):
+    i = 0
+    while i < len(keys):
         chunk = keys[i:i + batch]
-        sets = client.call("state_queryStorageAt", [chunk, block_hash])
+        try:
+            sets = client.call("state_queryStorageAt", [chunk, block_hash])
+        except RpcError:
+            if batch == 1:
+                raise
+            batch = max(1, batch // 2)
+            continue
+        i += len(chunk)
         got = {k: v for s in sets for k, v in s["changes"]}
         missing = [k for k in chunk if got.get(k) is None]
         if missing:
@@ -157,25 +175,30 @@ class Checkpoint:
         self.block_hash = block_hash
 
     def load(self) -> tuple[str | None, list[str]]:
-        if not self.path.exists():
+        """The saved cursor and keys, or ``(None, [])`` if absent, for another block, or damaged."""
+        try:
+            data = json.loads(self.path.read_text())
+            if data.get("block_hash") != self.block_hash:
+                return None, []
+            keys = self.keys_path.read_text().split()
+            if len(keys) != data["keys"] or (keys[-1] if keys else None) != data["last_key"]:
+                return None, []
+            return data["cursor"], keys
+        except (OSError, ValueError, KeyError, TypeError):
             return None, []
-        data = json.loads(self.path.read_text())
-        if data.get("block_hash") != self.block_hash or not self.keys_path.exists():
-            return None, []
-        keys = self.keys_path.read_text().split()
-        if len(keys) != data["keys"]:
-            return None, []
-        return data["cursor"], keys
 
     def reset(self) -> None:
         self.keys_path.write_text("")
         self.path.unlink(missing_ok=True)
 
-    def save(self, new_keys: list[str], cursor: str, total: int) -> None:
+    def save(self, new_keys: list[str], cursor: str, total: int, last_key: str | None) -> None:
         with self.keys_path.open("a") as f:
             for k in new_keys:
                 f.write(k + "\n")
-        _atomic_write(self.path, json.dumps({"block_hash": self.block_hash, "cursor": cursor, "keys": total}))
+            f.flush()
+            os.fsync(f.fileno())
+        _atomic_write(self.path, json.dumps({"block_hash": self.block_hash, "cursor": cursor, "keys": total,
+                                             "last_key": last_key}))
 
     def clear(self) -> None:
         self.path.unlink(missing_ok=True)
@@ -193,16 +216,23 @@ def lift(
     at: str | int | None = None,
     *,
     out_root: Path | None = None,
-    page_size: int = PAGE_SIZE,
+    page_size: int | None = None,
     value_batch: int = VALUE_BATCH,
     resume: bool = True,
+    keep_checkpoint: bool = False,
 ) -> LiftResult:
-    """Lift the state of one pinned block. With ``out_root``, checkpoint and write the lift there."""
+    """Lift the state of one pinned block. With ``out_root``, checkpoint and write the lift there.
+
+    ``keep_checkpoint=True`` leaves the checkpoint for the caller to clear once
+    it has written the manifest (the lift is complete only with a manifest).
+    """
     t0 = time.monotonic()
     cursor: str | None = None
     try:
         pin = resolve_pin(client, at)
         version = client.call("state_getRuntimeVersion", [pin.hash])
+        if not isinstance(version, dict) or "specVersion" not in version:
+            raise ValueError(f"no runtime version at {pin.hash}")
     except (RpcError, RpcUnavailable, ValueError) as exc:
         raise LiftError(f"could not pin a block: {exc}", cursor=None, phase="pin", block_hash=None) from exc
 
@@ -220,17 +250,19 @@ def lift(
             ckpt.reset()
     resumed_from = cursor
     total = len(prior)
+    last_key = prior[-1] if prior else None
 
     def on_page(new_keys: list[str], next_cursor: str) -> None:
-        nonlocal cursor, total
+        nonlocal cursor, total, last_key
         total += len(new_keys)
         cursor = next_cursor
+        last_key = new_keys[-1] if new_keys else last_key
         if ckpt is not None:
-            ckpt.save(new_keys, next_cursor, total)
+            ckpt.save(new_keys, next_cursor, total, last_key)
 
     try:
         paged = page_keys(client, pin.hash, page_size=page_size, start=cursor, on_page=on_page)
-    except (RpcError, RpcUnavailable) as exc:
+    except (RpcError, RpcUnavailable, PagingError) as exc:
         raise LiftError(f"key paging failed: {exc}", cursor=cursor, phase="keys", block_hash=pin.hash) from exc
     keys = prior + paged.keys
     t_keys = time.monotonic()
@@ -263,7 +295,8 @@ def lift(
     if out_dir is not None:
         _atomic_write(out_dir / "state.json", json.dumps({"block_hash": pin.hash, "block_number": pin.number,
                                                           "storage": values}))
-        ckpt.clear()
+        if not keep_checkpoint:
+            ckpt.clear()
     return result
 
 

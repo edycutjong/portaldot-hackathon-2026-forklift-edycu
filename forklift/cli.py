@@ -23,18 +23,26 @@ def _parse_at(value: str | None) -> str | int | None:
 
 def run_lift(endpoint: str, at: str | int | None, out_root: Path, *, resume: bool = True) -> dict:
     """Lift, write ``state.json`` + ``manifest.json`` under ``out_root/<block>/``, return the manifest."""
-    from forklift.lift import lift, mmr_summary
+    from forklift.lift import Checkpoint, LiftError, _atomic_write, lift, mmr_summary
     from forklift.manifest import build_manifest
-    from forklift.metadata import StorageIndex, decode_hex
+    from forklift.metadata import MetadataError, StorageIndex, decode_hex
+    from forklift.rpc import RpcError, RpcUnavailable
 
     with RpcClient(endpoint) as client:
-        result = lift(client, at, out_root=out_root, resume=resume)
-        index = StorageIndex(decode_hex(client.call("state_getMetadata", [result.pin.hash])))
-        mmr = mmr_summary(client, result.pin.hash)
-    manifest = build_manifest(result, index, endpoint=endpoint, mmr=mmr)
+        result = lift(client, at, out_root=out_root, resume=resume, keep_checkpoint=True)
+        try:
+            index = StorageIndex(decode_hex(client.call("state_getMetadata", [result.pin.hash])))
+            mmr = mmr_summary(client, result.pin.hash)
+            manifest = build_manifest(result, index, endpoint=endpoint, mmr=mmr)
+        except (RpcError, RpcUnavailable, MetadataError, ValueError, AttributeError) as exc:
+            # state.json is on disk but without a manifest it is not a complete lift;
+            # the checkpoint stays, so a re-run resumes instead of paging again.
+            raise LiftError(f"manifest step failed: {exc}", cursor=None, phase="manifest",
+                            block_hash=result.pin.hash) from exc
     manifest["load"]["resumed_from_cursor"] = result.resumed_from
     path = result.out_dir / "manifest.json"
-    path.write_text(json.dumps(manifest, indent=2) + "\n")
+    _atomic_write(path, json.dumps(manifest, indent=2) + "\n")
+    Checkpoint(result.out_dir / "checkpoint.json", result.pin.hash).clear()
     manifest["_paths"] = {"dir": str(result.out_dir), "manifest": str(path)}
     return manifest
 
@@ -46,6 +54,10 @@ def record_evidence(m: dict, evidence_dir: Path) -> Path:
     src, load = m["source"], m["load"]
     path = evidence_dir / f"lift-{src['block_number']}.json"
     prior = json.loads(path.read_text()) if path.exists() else {}
+    if prior and prior["pin"]["block_hash"] != src["block_hash"]:
+        # Same number, different block (a reorg below finality should not happen, but never merge them).
+        path = evidence_dir / f"lift-{src['block_number']}-{src['block_hash'][2:10]}.json"
+        prior = json.loads(path.read_text()) if path.exists() else {}
     runs = prior.get("runs", [])
     runs.append({
         "recorded_utc": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),

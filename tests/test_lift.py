@@ -117,7 +117,7 @@ def test_key_without_value_fails_the_lift():
     assert err.value.phase == "values"
 
 
-def test_cli_exits_4_with_last_cursor(monkeypatch, tmp_path):
+def test_cli_exits_4_when_the_node_is_down(monkeypatch, tmp_path):
     flaky = Flaky(FakeChain(store(), number=42), fail_on_page=1)
     monkeypatch.setattr(cli, "RpcClient",
                         lambda endpoint: RpcClient(endpoint, connect=fake_connect(flaky), retries=1,
@@ -134,16 +134,112 @@ def test_mmr_node_count(leaves, nodes):
     assert mmr_nodes_for_leaves(leaves) == nodes
 
 
-def test_page_keys_stops_on_short_page():
+def test_short_pages_from_a_clamping_node_do_not_truncate_the_lift():
+    chain = FakeChain(store(), clamp=2)
+    res = lift(client_for(chain), "head", page_size=1000)
+    assert res.keys == sorted(k for k in store() if not k.startswith(MMR))
+
+
+def test_paging_ends_only_on_an_empty_page():
     chain = FakeChain({"0x01": "0x", "0x02": "0x"})
     res = page_keys(client_for(chain), chain.block_hash, page_size=10)
-    assert res.keys == ["0x01", "0x02"] and res.pages == 1
+    assert res.keys == ["0x01", "0x02"] and res.pages == 2
 
 
-def test_usage_errors_exit_64_not_2(monkeypatch):
-    import sys
+@pytest.mark.parametrize("page_size", [1, 2, 3, 4, 5, 7, 11, 16, 1000])
+def test_mmr_range_at_any_page_alignment(page_size):
+    """MMR starting/ending mid-page, on a page boundary, or filling whole pages."""
+    chain = FakeChain(store())
+    res = page_keys(client_for(chain), chain.block_hash, page_size=page_size)
+    assert res.keys == sorted(k for k in store() if not k.startswith(MMR))
+    # A range longer than the page is jumped once; a page that swallows the whole range needs no jump.
+    assert res.jumps <= 1 and (res.jumps == 1 or page_size >= 10)
+    assert 1 <= res.mmr_seen <= page_size  # at most the one page that reached the range
 
-    monkeypatch.setattr(sys, "argv", ["forklift", "lift", "--at", "not-a-block"])
-    with pytest.raises(SystemExit) as exc:
-        cli.run()
-    assert exc.value.code == cli.EXIT_USAGE == 64
+
+def test_mmr_range_at_the_end_of_the_keyspace():
+    s = {k: v for k, v in store().items() if k < MMR or k.startswith(MMR)}
+    chain = FakeChain(s)
+    res = page_keys(client_for(chain), chain.block_hash, page_size=3)
+    assert res.keys == sorted(k for k in s if not k.startswith(MMR))
+
+
+def test_resume_starting_at_the_mmr_jump():
+    chain = FakeChain(store())
+    res = page_keys(client_for(chain), chain.block_hash, page_size=3, start=MMR_JUMP)
+    assert res.keys == ["0x9900", "0xff00"]
+
+
+def test_out_of_order_page_fails_before_it_is_checkpointed(tmp_path):
+    class Shuffled(FakeChain):
+        def __call__(self, method, params):
+            out = super().__call__(method, params)
+            return list(reversed(out)) if method == "state_getKeysPaged" and len(out) > 1 else out
+
+    with pytest.raises(LiftError) as err:
+        lift(client_for(Shuffled(store(), number=42)), "head", out_root=tmp_path, page_size=3)
+    assert err.value.phase == "keys"
+    assert (tmp_path / "42" / "keys.partial").read_text() == ""
+
+
+def test_stale_or_corrupt_checkpoint_is_ignored(tmp_path):
+    chain = FakeChain(store(), number=42)
+    d = tmp_path / "42"
+    d.mkdir()
+    clean = lift(client_for(FakeChain(store(), number=42)), "head", page_size=3)
+    for ckpt, keys in [
+        ('{"block_hash": "0x' + "99" * 32 + '", "cursor": "0xff00", "keys": 1, "last_key": "0x0101"}', "0x0101\n"),
+        ("{not json", "0x0101\n"),
+        ('{"block_hash": "' + chain.block_hash + '", "cursor": "0x26aa02", "keys": 4, "last_key": "0x26aa02"}',
+         "0x0101\n0x0102\n0x26aa01\n0x26a"),  # torn last line
+    ]:
+        (d / "checkpoint.json").write_text(ckpt)
+        (d / "keys.partial").write_text(keys)
+        res = lift(client_for(chain), "head", out_root=tmp_path, page_size=3)
+        assert res.resumed_from is None and res.keys == clean.keys
+
+
+def test_cli_exits_4_with_a_non_null_cursor_mid_paging(monkeypatch, tmp_path):
+    flaky = Flaky(FakeChain(store(), number=42), fail_on_page=3)
+    monkeypatch.setattr(cli, "RpcClient", lambda endpoint: RpcClient(endpoint, connect=fake_connect(flaky),
+                                                                    retries=1, sleep=lambda s: None))
+    monkeypatch.setattr("forklift.lift.PAGE_SIZE", 2)
+    result = CliRunner().invoke(cli.main, ["lift", "--out", str(tmp_path), "--json"])
+    assert result.exit_code == EXIT_LIFT_FAILED
+    assert json.loads(result.output)["last_cursor"] == "0x26aa02"
+
+
+def test_cli_exits_4_when_the_manifest_step_fails_and_keeps_the_checkpoint(monkeypatch, tmp_path):
+    chain = FakeChain(store(), number=42, metadata="0x6d657461ff")  # metadata V255: undecodable
+    monkeypatch.setattr(cli, "RpcClient", lambda endpoint: RpcClient(endpoint, connect=fake_connect(chain),
+                                                                    sleep=lambda s: None))
+    result = CliRunner().invoke(cli.main, ["lift", "--out", str(tmp_path), "--json"])
+    assert result.exit_code == EXIT_LIFT_FAILED
+    assert json.loads(result.output)["phase"] == "manifest"
+    assert not (tmp_path / "42" / "manifest.json").exists()
+    assert (tmp_path / "42" / "checkpoint.json").exists()
+
+
+def test_cli_full_lift_on_fake_chain_reads_only_at_the_pin(monkeypatch, tmp_path):
+    from pathlib import Path as P
+
+    meta = "0x" + (P(__file__).parent / "fixtures" / "metadata-1002.scale").read_bytes().hex()
+    chain = FakeChain(store(), number=42, metadata=meta)  # FakeChain asserts the pin on every state read
+    monkeypatch.setattr(cli, "RpcClient", lambda endpoint: RpcClient(endpoint, connect=fake_connect(chain),
+                                                                    sleep=lambda s: None))
+    result = CliRunner().invoke(cli.main, ["lift", "--out", str(tmp_path), "--json"])
+    assert result.exit_code == 0, result.output
+    m = json.loads(result.output)
+    assert m["load"]["keys_lifted"] == 7 and m["load"]["child_trie_roots_not_lifted"] == 0
+    assert (tmp_path / "42" / "manifest.json").exists() and not (tmp_path / "42" / "checkpoint.json").exists()
+
+
+def test_value_batch_is_halved_when_the_node_rejects_it():
+    class SizeCapped(FakeChain):
+        def __call__(self, method, params):
+            if method == "state_queryStorageAt" and len(params[0]) > 2:
+                return {"__error__": {"code": -32000, "message": "response too large"}}
+            return super().__call__(method, params)
+
+    res = lift(client_for(SizeCapped(store())), "head", page_size=4, value_batch=8)
+    assert res.values == {k: v for k, v in store().items() if not k.startswith(MMR)}
