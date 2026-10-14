@@ -39,6 +39,45 @@ def run_lift(endpoint: str, at: str | int | None, out_root: Path, *, resume: boo
     return manifest
 
 
+def record_evidence(m: dict, evidence_dir: Path) -> Path:
+    """Write or extend ``evidence/lift-<block>.json``. Every run at a pin is kept, with its root."""
+    import datetime as dt
+
+    src, load = m["source"], m["load"]
+    path = evidence_dir / f"lift-{src['block_number']}.json"
+    prior = json.loads(path.read_text()) if path.exists() else {}
+    runs = prior.get("runs", [])
+    runs.append({
+        "recorded_utc": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+        "seconds": load["seconds"],
+        "key_pages": load["key_pages"],
+        "manifest_root": m["manifest_root"],
+        "resumed_from_cursor": load.get("resumed_from_cursor"),
+    })
+    ev = {
+        "profile": m["profile"],
+        "forklift_version": m["forklift_version"],
+        "endpoint": src["endpoint"],
+        "pin": {"block_number": src["block_number"], "block_hash": src["block_hash"]},
+        "spec_name": src["spec_name"],
+        "spec_version": src["spec_version"],
+        "code_hash": src["code_hash"],
+        "code_bytes": src["code_bytes"],
+        "keys_lifted": load["keys_lifted"],
+        "key_bytes": load["key_bytes"],
+        "value_bytes": load["value_bytes"],
+        "skipped": load["skipped"],
+        "per_pallet": load["per_pallet"],
+        "per_item": load["per_item"],
+        "manifest_root": m["manifest_root"],
+        "roots_identical_across_runs": len({r["manifest_root"] for r in runs}) == 1,
+        "runs": runs,
+    }
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(ev, indent=2) + "\n")
+    return path
+
+
 def data_plate(m: dict) -> str:
     src, load = m["source"], m["load"]
     sk = load["skipped"] or {}
@@ -69,8 +108,11 @@ def main() -> None:
 @click.option("--out", "out_root", type=click.Path(path_type=Path), default=None,
               help="Lift directory root [default: ~/.cache/forklift/lifts].")
 @click.option("--no-resume", is_flag=True, help="Ignore a checkpoint left by an interrupted lift.")
+@click.option("--evidence", "evidence_dir", type=click.Path(path_type=Path), default=None,
+              help="Also record this run in <DIR>/lift-<block>.json.")
 @click.option("--json", "as_json", is_flag=True, help="Print the manifest as JSON.")
-def lift_cmd(at: str, endpoint: str, out_root: Path | None, no_resume: bool, as_json: bool) -> None:
+def lift_cmd(at: str, endpoint: str, out_root: Path | None, no_resume: bool, evidence_dir: Path | None,
+             as_json: bool) -> None:
     """Read every storage key of a pinned block (MMR range skipped) and write a manifest.
 
     Exit code 4 if the lift cannot finish; the last key cursor is printed and kept
@@ -90,6 +132,8 @@ def lift_cmd(at: str, endpoint: str, out_root: Path | None, no_resume: bool, as_
             click.echo(f"lift failed during {exc.phase}: {exc}", err=True)
             click.echo(f"last cursor: {exc.cursor}  (re-run the same --at to resume)", err=True)
         sys.exit(EXIT_LIFT_FAILED)
+    if evidence_dir is not None:
+        manifest["_paths"]["evidence"] = str(record_evidence(manifest, evidence_dir))
     if as_json:
         click.echo(json.dumps(manifest, indent=2))
     else:

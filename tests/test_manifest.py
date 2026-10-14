@@ -45,3 +45,17 @@ def test_build_manifest_fills_source_and_load_only():
     # Filled only once a fork is spliced from the lift.
     assert m["node"] is None and m["fork"] is None and m["overrides"] == []
     assert m["manifest_root"] == root_of(values)
+
+
+def test_record_evidence_keeps_every_run_and_flags_root_changes(tmp_path):
+    from forklift.cli import record_evidence
+
+    values = dict(SLICE["storage"])
+    m = build_manifest(result(values), INDEX, endpoint="wss://mainnet.portaldot.io", mmr=None)
+    record_evidence(m, tmp_path)
+    path = record_evidence(m, tmp_path)
+    ev = json.loads(path.read_text())
+    assert len(ev["runs"]) == 2 and ev["roots_identical_across_runs"]
+    m2 = dict(m, manifest_root="0x" + "00" * 32)
+    ev = json.loads(record_evidence(m2, tmp_path).read_text())
+    assert len(ev["runs"]) == 3 and not ev["roots_identical_across_runs"]
