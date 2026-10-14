@@ -147,6 +147,7 @@ class Report:
     mismatches: list[dict]
     checks: dict
     sample: list[dict] = field(default_factory=list)
+    fork_head: dict = field(default_factory=dict)
 
     @property
     def exit_code(self) -> int:
@@ -223,8 +224,10 @@ def verify(manifest: dict, mainnet: RpcClient, fork: RpcClient, *, sample: int =
                          "mainnet_code_hash": h_main, "fork_code_hash": h_fork,
                          "fork_runtime": manifest.get("node", {}).get("runtime_mode")}
     ok = not mismatches and all(c["ok"] for c in checks.values())
+    head = {"best": int(fork.call("chain_getHeader")["number"], 16),
+            "finalized": int(fork.call("chain_getHeader", [fork.call("chain_getFinalizedHead")])["number"], 16)}
     return Report(ok=ok, seed=seed, draws=len(draws), unique_keys=len(keys), classes=dict(sorted(classes.items())),
-                  mismatches=mismatches, checks=checks, sample=rows)
+                  mismatches=mismatches, checks=checks, sample=rows, fork_head=head)
 
 
 def _u128(value: str | None) -> int | None:

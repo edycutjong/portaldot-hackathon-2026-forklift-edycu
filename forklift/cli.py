@@ -192,9 +192,12 @@ def _port_options(f):
 @click.option("--node-bin", default=None, help="portaldot_dev binary [env FORKLIFT_NODE_BIN; else found or downloaded].")
 @click.option("--relift", is_flag=True, help="Lift again even if a complete lift of this block is cached.")
 @_port_options
+@click.option("--evidence", "evidence_dir", type=click.Path(path_type=Path), default=None,
+              help="Also record this boot in <DIR>/fork-<block>.json.")
 @click.option("--json", "as_json", is_flag=True, help="Print the fork manifest as JSON.")
 def up_cmd(at: str, runtime: str, endpoint: str, name: str, base_path: Path | None, node_bin: str | None,
-           relift: bool, ws_port: int | None, rpc_port: int | None, p2p_port: int | None, as_json: bool) -> None:
+           relift: bool, ws_port: int | None, rpc_port: int | None, p2p_port: int | None,
+           evidence_dir: Path | None, as_json: bool) -> None:
     """Lift mainnet at a pinned block, splice it into the dev chain spec, and boot the official node on it.
 
     The node keeps running after this command returns. Exit 3 if the node does
@@ -218,7 +221,52 @@ def up_cmd(at: str, runtime: str, endpoint: str, name: str, base_path: Path | No
         if isinstance(exc, SpliceError):
             exc = NodeError(f"splice failed: {exc}")
         _node_failed(exc, as_json)
+    if evidence_dir is not None:
+        m["_paths"]["evidence"] = str(record_fork(m, evidence_dir))
     click.echo(json.dumps(m, indent=2) if as_json else up_plate(m))
+
+
+def record_fork(m: dict, evidence_dir: Path) -> Path:
+    """Write or extend ``evidence/fork-<block>.json``: one run per boot (genesis, timings, accounting)."""
+    import datetime as dt
+
+    src, fork, node = m["source"], m["fork"], m["node"]
+    path = evidence_dir / f"fork-{src['block_number']}.json"
+    prior = json.loads(path.read_text()) if path.exists() else {}
+    if prior and prior["pin"]["block_hash"] != src["block_hash"]:
+        path = evidence_dir / f"fork-{src['block_number']}-{src['block_hash'][2:10]}.json"
+        prior = json.loads(path.read_text()) if path.exists() else {}
+    runs = prior.get("runs", [])
+    runs.append({
+        "recorded_utc": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+        "label": fork["label"],
+        "name": node["name"],
+        "persistent_base_path": node["base_path"] is not None,
+        "genesis_hash": fork["genesis_hash"],
+        "genesis_keys": fork["genesis_keys"],
+        "genesis_key_set_hash": fork["genesis_key_set_hash"],
+        "boot": node["boot"],
+        "timings": m["timings"],
+    })
+    ev = {
+        "pin": {"block_number": src["block_number"], "block_hash": src["block_hash"]},
+        "source_endpoint": src["endpoint"],
+        "spec_version": src["spec_version"],
+        "source_code_hash": src["code_hash"],
+        "manifest_root": m["manifest_root"],
+        "binary": {"version": node["binary"], "sha256": node["sha256"], "known_build": node["known_build"]},
+        "runtime_mode": node["runtime_mode"],
+        "fork_code_hash": fork["code_hash"],
+        "chain_id": fork["chain_id"],
+        "accounting": fork["accounting"],
+        "issuance": fork["issuance"],
+        "overrides": m["overrides"],
+        "genesis_hash_stable_across_runs": len({r["genesis_hash"] for r in runs} | {fork["genesis_hash"]}) == 1,
+        "runs": runs,
+    }
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(ev, indent=2) + "\n")
+    return path
 
 
 @main.command("down")
@@ -255,6 +303,7 @@ def record_verify(report, m: dict, evidence_dir: Path, endpoint: str) -> Path:
         "classes": report.classes,
         "mismatches": report.mismatches,
         "checks": report.checks,
+        "fork_head_at_verify": report.fork_head,
         "exit_code": report.exit_code,
     })
     ev = {
@@ -336,7 +385,7 @@ def verify_cmd(sample: int, seed: int | None, name: str, manifest_path: Path | N
                "pin": {"block_number": m["source"]["block_number"], "block_hash": m["source"]["block_hash"]},
                "fork_genesis_hash": m["fork"]["genesis_hash"], "seed": report.seed, "draws": report.draws,
                "unique_keys": report.unique_keys, "classes": report.classes, "mismatches": report.mismatches,
-               "checks": report.checks, "sample": report.sample}
+               "checks": report.checks, "fork_head": report.fork_head, "sample": report.sample}
         click.echo(json.dumps(out, indent=2))
     else:
         click.echo(verify_plate(report, m))
@@ -348,6 +397,7 @@ def verify_plate(report, m: dict) -> str:
     lines = [
         f"verify  {fork['label']} genesis {fork['genesis_hash']}",
         f"        vs {src['endpoint']} #{src['block_number']:,} {src['block_hash']}",
+        f"fork    best #{report.fork_head['best']:,} · finalized #{report.fork_head['finalized']:,}",
         f"sample  {report.draws} draws from mainnet (seed {report.seed}) → {report.unique_keys} keys: "
         + ", ".join(f"{k} {v}" for k, v in report.classes.items()),
         f"keys    fork genesis {chk['genesis_key_set']['fork_keys']:,} keys, set hash "
