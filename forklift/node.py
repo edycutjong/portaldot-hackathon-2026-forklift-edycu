@@ -81,7 +81,10 @@ def resolve_ports(ws: int | None = None, rpc: int | None = None, p2p: int | None
     for name, value in given.items():
         if value is None:
             env = os.environ.get(PORT_ENV[name])
-            value = int(env) if env else DEFAULT_PORTS[name]
+            try:
+                value = int(env) if env else DEFAULT_PORTS[name]
+            except ValueError:
+                raise NodeError(f"{PORT_ENV[name]}={env!r} is not a port number") from None
         if not 1024 <= int(value) <= 65535:
             raise NodeError(f"{name} port {value} is outside 1024-65535")
         ports[name] = int(value)
@@ -137,22 +140,28 @@ def download_binary(dest_dir: Path, *, fetch: Callable[[str], bytes] | None = No
     """Download the official tarball, check its sha256, unpack only ``portaldot_dev``."""
     os_name = os_name or release_os()
     url = RELEASE.format(os=os_name)
-    data = (fetch or _fetch)(url)
+    try:
+        data = (fetch or _fetch)(url)
+    except OSError as exc:  # URLError, timeouts, resets
+        raise NodeError(f"cannot download {url}: {exc}") from exc
     got = hashlib.sha256(data).hexdigest()
     if got != TARBALL_SHA256[os_name]:
         raise NodeError(f"{url}: sha256 {got} does not match the pinned {TARBALL_SHA256[os_name]}")
-    with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as tar:
-        members = [m for m in tar.getmembers() if m.isfile() and Path(m.name).name == BINARY_NAME]
-        if len(members) != 1:
-            raise NodeError(f"{url}: expected one {BINARY_NAME} in the tarball, found {len(members)}")
-        src = tar.extractfile(members[0])
-        dest_dir.mkdir(parents=True, exist_ok=True)
-        dest = dest_dir / BINARY_NAME
-        tmp = dest.with_suffix(".part")
-        with open(tmp, "wb") as out:
-            shutil.copyfileobj(src, out)  # type: ignore[arg-type]
-        tmp.chmod(0o755)
-        tmp.replace(dest)
+    try:
+        with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as tar:
+            members = [m for m in tar.getmembers() if m.isfile() and Path(m.name).name == BINARY_NAME]
+            if len(members) != 1:
+                raise NodeError(f"{url}: expected one {BINARY_NAME} in the tarball, found {len(members)}")
+            src = tar.extractfile(members[0])
+            dest_dir.mkdir(parents=True, exist_ok=True)
+            dest = dest_dir / BINARY_NAME
+            tmp = dest.with_suffix(".part")
+            with open(tmp, "wb") as out:
+                shutil.copyfileobj(src, out)  # type: ignore[arg-type]
+            tmp.chmod(0o755)
+            tmp.replace(dest)
+    except (tarfile.TarError, OSError) as exc:
+        raise NodeError(f"cannot unpack {url}: {exc}") from exc
     return dest
 
 
@@ -185,7 +194,7 @@ def locate_binary(explicit: str | Path | None = None, *, allow_download: bool = 
 def inspect_binary(path: Path) -> Binary:
     try:
         out = subprocess.run([str(path), "--version"], capture_output=True, text=True, timeout=60)
-    except OSError as exc:
+    except (OSError, subprocess.SubprocessError) as exc:
         raise NodeError(f"cannot run {path}: {exc}", hint=_hint(str(exc))) from exc
     version = (out.stdout or out.stderr).strip()
     if out.returncode != 0 or not version:
@@ -201,7 +210,10 @@ def dev_spec(binary: Path, sha256: str, cache: Path | None = None) -> Path:
     path = out_dir / f"dev-raw-{sha256[:16]}.json"
     if path.is_file() and path.stat().st_size > 0:
         return path
-    res = subprocess.run([str(binary), "build-spec", "--dev", "--raw"], capture_output=True, timeout=300)
+    try:
+        res = subprocess.run([str(binary), "build-spec", "--dev", "--raw"], capture_output=True, timeout=300)
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise NodeError(f"build-spec --dev --raw failed: {exc}", hint=_hint(str(exc))) from exc
     if res.returncode != 0 or not res.stdout.strip():
         raise NodeError(f"build-spec --dev --raw failed: {res.stderr.decode(errors='replace')[-400:]}")
     tmp = path.with_suffix(".part")
@@ -217,6 +229,7 @@ class NodeConfig:
     ports: dict[str, int]
     base_path: Path | None = None  # None: --tmp (deleted when the node exits)
     extra: list[str] = field(default_factory=list)
+    chain_name: str | None = None  # expected system_chain: proves the RPC on our port is this fork
 
     @property
     def ws_endpoint(self) -> str:
@@ -263,10 +276,23 @@ def process_command(pid: int) -> str | None:
 
 
 def owns(record: dict, command: str | None) -> bool:
-    """Is ``command`` the node this PID record started? (binary name and our own WS port both present)."""
+    """Is ``command`` the node this PID record started?
+
+    Token-exact: the recorded binary (or one named ``portaldot_dev``) as argv[0] or behind an
+    interpreter, ``--ws-port <our port>`` and, when recorded, ``--chain <our chain spec>``. Another
+    project's node on the same binary differs in its port and chain, so it never matches.
+    """
     if not command:
         return False
-    return BINARY_NAME in command and f"--ws-port {record['ports']['ws']}" in command
+    tokens = command.split()
+    pairs = set(zip(tokens, tokens[1:]))
+    head = tokens[:2]
+    binary = record.get("binary")
+    bin_ok = (binary is not None and binary in head) or any(Path(t).name == BINARY_NAME for t in head)
+    port_ok = ("--ws-port", str(record["ports"]["ws"])) in pairs
+    chain = record.get("chain_spec")
+    chain_ok = chain is None or ("--chain", chain) in pairs
+    return bin_ok and port_ok and chain_ok
 
 
 def running(name: str) -> dict | None:
@@ -288,12 +314,19 @@ def start(binary: Path, cfg: NodeConfig, log_path: Path) -> subprocess.Popen:
     with open(log_path, "ab") as log:
         proc = subprocess.Popen(args, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
                                 start_new_session=True)
-    rec = {"pid": proc.pid, "name": cfg.name, "ports": cfg.ports, "endpoint": cfg.ws_endpoint,
-           "chain_spec": str(cfg.chain_spec), "base_path": str(cfg.base_path) if cfg.base_path else None,
+    rec = {"pid": proc.pid, "name": cfg.name, "binary": str(binary), "ports": cfg.ports,
+           "endpoint": cfg.ws_endpoint, "chain_spec": str(cfg.chain_spec),
+           "base_path": str(cfg.base_path) if cfg.base_path else None,
            "log": str(log_path), "started_unix": round(time.time(), 3), "args": args[1:]}
     path = pid_file(cfg.name)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(rec, indent=2) + "\n")
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(rec, indent=2) + "\n")
+    except OSError as exc:
+        # Without a PID file nothing could stop it later: stop it now.
+        proc.kill()
+        proc.wait(timeout=30)
+        raise NodeError(f"cannot write the PID file {path}: {exc}") from exc
     return proc
 
 
@@ -303,6 +336,19 @@ def update_pid_record(name: str, **fields) -> None:
         return
     rec.update(fields)
     pid_file(name).write_text(json.dumps(rec, indent=2) + "\n")
+
+
+def _reap(pid: int) -> None:
+    """If ``pid`` is our own child (the ``up`` process stopping a node it just spawned), collect it."""
+    try:
+        os.waitpid(pid, os.WNOHANG)
+    except ChildProcessError:
+        pass
+
+
+def _gone(pid: int, rec: dict) -> bool:
+    _reap(pid)
+    return not owns(rec, process_command(pid))
 
 
 def stop(name: str, *, timeout: float = 30.0) -> str:
@@ -319,12 +365,19 @@ def stop(name: str, *, timeout: float = 30.0) -> str:
     if not owns(rec, cmd):
         path.unlink(missing_ok=True)
         return f"PID {pid} is now another process; left it alone and removed the stale PID file"
-    os.kill(pid, signal.SIGTERM)
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline and process_command(pid) is not None:
-        time.sleep(0.25)
-    if process_command(pid) is not None and owns(rec, process_command(pid)):
-        os.kill(pid, signal.SIGKILL)
+    try:
+        os.kill(pid, signal.SIGTERM)
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline and not _gone(pid, rec):
+            time.sleep(0.25)
+        if not _gone(pid, rec):
+            os.kill(pid, signal.SIGKILL)
+            time.sleep(0.5)
+            _reap(pid)
+    except ProcessLookupError:
+        pass  # it exited on its own in between
+    except PermissionError as exc:
+        raise NodeError(f"not allowed to stop PID {pid}: {exc}") from exc
     path.unlink(missing_ok=True)
     return f"stopped PID {pid}"
 
@@ -372,6 +425,7 @@ class Boot:
     epoch_length: int
     genesis_hash: str
     peers: int
+    best_at_rpc_ready: int = 0
 
 
 def babe_config(client: RpcClient) -> tuple[int, int]:
@@ -405,35 +459,48 @@ def wait_boot(proc: subprocess.Popen, cfg: NodeConfig, log_path: Path, *, rpc_ti
                 raise fail(f"no RPC answer on {cfg.ws_endpoint} after {rpc_timeout:.0f} s", log_path) from None
             sleep(0.5)
     rpc_ready = clock()
-    with client:
-        client.timeout = 30.0
-        client.retries = 2
-        slot_ms, epoch_length = babe_config(client)
-        # I5: the first block must land within author_slots slots of the RPC coming up.
-        deadline = rpc_ready + author_slots * slot_ms / 1000.0 + 1.0
-        best = _header_number(client, "best")
-        while best < 1:
-            alive()
-            if clock() > deadline:
-                raise fail(f"no block authored within {author_slots} slots ({author_slots * slot_ms / 1000:.0f} s)"
-                           " of the RPC coming up (I5)", log_path)
-            sleep(0.5)
-            best = _header_number(client, "best")
-        first_block = clock()
-        finalized = _header_number(client, "finalized")
-        while finalized < 1:
-            alive()
-            if clock() - first_block > finalize_timeout:
-                raise fail(f"block 1 not finalized within {finalize_timeout:.0f} s", log_path)
-            sleep(0.5)
+    try:
+        with client:
+            client.timeout = 30.0
+            client.retries = 2
+            if cfg.chain_name is not None:
+                chain = client.call("system_chain")
+                if chain != cfg.chain_name:
+                    raise fail(f"{cfg.ws_endpoint} serves {chain!r}, not this fork ({cfg.chain_name!r})", log_path)
+            slot_ms, epoch_length = babe_config(client)
+            # I5: a NEW block must land within author_slots slots of the RPC coming up (a persistent
+            # base path already has blocks, so "best >= 1" alone would prove nothing on a restart).
+            deadline = rpc_ready + author_slots * slot_ms / 1000.0 + 1.0
+            best_at_ready = _header_number(client, "best")
+            best = best_at_ready
+            while best <= best_at_ready:
+                alive()
+                if clock() > deadline:
+                    raise fail(f"no block authored within {author_slots} slots ({author_slots * slot_ms / 1000:.0f} s)"
+                               " of the RPC coming up (I5)", log_path)
+                sleep(0.5)
+                best = _header_number(client, "best")
+            first_block = clock()
             finalized = _header_number(client, "finalized")
-        finalized_at = clock()
-        health = client.call("system_health")
-        peers = int(health.get("peers", 0))
-        genesis = client.call("chain_getBlockHash", [0])
-        best = _header_number(client, "best")
+            while finalized < 1:
+                alive()
+                if clock() - first_block > finalize_timeout:
+                    raise fail(f"block 1 not finalized within {finalize_timeout:.0f} s", log_path)
+                sleep(0.5)
+                finalized = _header_number(client, "finalized")
+            finalized_at = clock()
+            health = client.call("system_health")
+            peers = int(health.get("peers", 0))
+            genesis = client.call("chain_getBlockHash", [0])
+            best = _header_number(client, "best")
+    except NodeError:
+        raise
+    except (RpcError, RpcUnavailable, OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
+        alive()
+        raise fail(f"the node stopped answering RPC after it came up: {exc}", log_path) from exc
     return Boot(cfg.ws_endpoint, round(rpc_ready - t0, 1), round(first_block - t0, 1),
-                round(finalized_at - t0, 1), best, finalized, slot_ms, epoch_length, genesis, peers)
+                round(finalized_at - t0, 1), best, finalized, slot_ms, epoch_length, genesis, peers,
+                best_at_ready)
 
 
 def ensure_no_peers(boot: Boot, name: str) -> None:

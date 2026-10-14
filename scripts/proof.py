@@ -113,8 +113,8 @@ def render() -> str:
         for d in verifies:
             for r in d["runs"]:
                 chk = r["checks"]
-                flags = " / ".join("ok" if chk[c]["ok"] else "**FAIL**"
-                                   for c in ("genesis_key_set", "issuance", "overrides", "runtime") if c in chk)
+                flags = " / ".join("n/a" if c not in chk else "ok" if chk[c]["ok"] else "**FAIL**"
+                                   for c in ("genesis_key_set", "issuance", "overrides", "runtime"))
                 head = r.get("fork_head_at_verify")
                 fin = f"#{head['finalized']:,}" if head else "not recorded"
                 classes = ", ".join(f"{k} {v}" for k, v in r["classes"].items())

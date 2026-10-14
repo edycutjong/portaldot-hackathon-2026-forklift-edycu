@@ -9,8 +9,8 @@ from dataclasses import asdict
 from pathlib import Path
 
 from forklift import node as nodes
-from forklift.lift import _atomic_write, default_cache
-from forklift.rpc import RpcClient
+from forklift.lift import LiftError, _atomic_write, default_cache
+from forklift.rpc import RpcClient, RpcError, RpcUnavailable
 from forklift.splice import fork_chain_spec, genesis_key_set_hash, load_dev_spec, splice_state
 
 
@@ -29,9 +29,10 @@ def cached_lift(out_root: Path, block_hash: str) -> tuple[dict, dict] | None:
             if m["source"]["block_hash"] != block_hash:
                 continue
             state = json.loads(s_path.read_text())
-        except (OSError, ValueError, KeyError):
+            complete = state["block_hash"] == block_hash and len(state["storage"]) == m["load"]["keys_lifted"]
+        except (OSError, ValueError, KeyError, TypeError):
             continue
-        if state.get("block_hash") == block_hash and len(state["storage"]) == m["load"]["keys_lifted"]:
+        if complete:
             m["_paths"] = {"dir": str(d), "manifest": str(m_path)}
             return m, state["storage"]
     return None
@@ -40,8 +41,7 @@ def cached_lift(out_root: Path, block_hash: str) -> tuple[dict, dict] | None:
 def obtain_lift(endpoint: str, at, out_root: Path, *, relift: bool) -> tuple[dict, dict, bool]:
     """Reuse a complete lift of the same block hash, else lift. Returns (manifest, storage, reused)."""
     from forklift.cli import run_lift
-    from forklift.lift import LiftError, resolve_pin
-    from forklift.rpc import RpcError, RpcUnavailable
+    from forklift.lift import resolve_pin
 
     if not relift:
         try:
@@ -54,7 +54,11 @@ def obtain_lift(endpoint: str, at, out_root: Path, *, relift: bool) -> tuple[dic
             return hit[0], hit[1], True
         at = pin.hash
     manifest = run_lift(endpoint, at, out_root, resume=True)
-    storage = json.loads((Path(manifest["_paths"]["dir"]) / "state.json").read_text())["storage"]
+    try:
+        storage = json.loads((Path(manifest["_paths"]["dir"]) / "state.json").read_text())["storage"]
+    except (OSError, ValueError, KeyError) as exc:
+        raise LiftError(f"cannot read the lift back: {exc}", cursor=None, phase="write",
+                        block_hash=manifest["source"]["block_hash"]) from exc
     return manifest, storage, False
 
 
@@ -72,16 +76,23 @@ def run_up(endpoint: str, at, *, name: str = "fork", runtime: str = "fast", port
     binary_path = nodes.locate_binary(node_bin)
     binary = nodes.inspect_binary(binary_path)
     dev = load_dev_spec(nodes.dev_spec(binary_path, binary.sha256))
-    with RpcClient(endpoint) as main:
-        properties = main.call("system_properties")
     src = lift_m["source"]
+    try:
+        with RpcClient(endpoint) as main:
+            properties = main.call("system_properties")  # token symbol and decimals, for wallets
+    except (RpcError, RpcUnavailable) as exc:
+        raise LiftError(f"cannot read system_properties: {exc}", cursor=None, phase="source",
+                        block_hash=src["block_hash"]) from exc
     sp = splice_state(storage, dev["genesis"]["raw"]["top"], runtime=runtime)
     spec = fork_chain_spec(dev, sp.top, block_number=src["block_number"], runtime=runtime,
-                           properties=properties or None)
+                           properties=properties if isinstance(properties, dict) and properties else None)
     fork_dir = cache / "forks" / name
-    fork_dir.mkdir(parents=True, exist_ok=True)
     spec_path = fork_dir / "fork.json"
-    _atomic_write(spec_path, json.dumps(spec))
+    try:
+        fork_dir.mkdir(parents=True, exist_ok=True)
+        _atomic_write(spec_path, json.dumps(spec))
+    except OSError as exc:
+        raise nodes.NodeError(f"cannot write the fork chain spec {spec_path}: {exc}") from exc
     t_splice = time.monotonic()
 
     m = copy.deepcopy({k: v for k, v in lift_m.items() if k != "_paths"})
@@ -108,9 +119,13 @@ def run_up(endpoint: str, at, *, name: str = "fork", runtime: str = "fast", port
                  "path": binary.path, "runtime_mode": runtime, "name": name, "endpoint": None,
                  "ports": ports, "base_path": str(base_path) if base_path else None, "boot": None}
     manifest_path = fork_dir / "fork.manifest.json"
-    _atomic_write(manifest_path, json.dumps(m, indent=2) + "\n")
+    try:
+        _atomic_write(manifest_path, json.dumps(m, indent=2) + "\n")
+    except OSError as exc:
+        raise nodes.NodeError(f"cannot write {manifest_path}: {exc}") from exc
 
-    cfg = nodes.NodeConfig(name=name, chain_spec=spec_path, ports=ports, base_path=base_path)
+    cfg = nodes.NodeConfig(name=name, chain_spec=spec_path, ports=ports, base_path=base_path,
+                           chain_name=spec["name"])
     log_path = fork_dir / "node.log"
     if base_path is None and log_path.exists():
         log_path.unlink()  # a fresh --tmp fork gets a fresh log
@@ -128,8 +143,12 @@ def run_up(endpoint: str, at, *, name: str = "fork", runtime: str = "fast", port
     m["node"]["boot"] = asdict(boot)
     m["timings"] = {"lift_s": round(t_lift - t0, 2), "lift_reused": reused, "splice_s": round(t_splice - t_lift, 2),
                     "boot_to_finalized_s": boot.finalized_s, "total_s": round(time.monotonic() - t0, 2)}
-    _atomic_write(manifest_path, json.dumps(m, indent=2) + "\n")
-    nodes.update_pid_record(name, manifest=str(manifest_path), genesis_hash=boot.genesis_hash)
+    try:
+        _atomic_write(manifest_path, json.dumps(m, indent=2) + "\n")
+        nodes.update_pid_record(name, manifest=str(manifest_path), genesis_hash=boot.genesis_hash)
+    except OSError as exc:
+        nodes.stop(name)
+        raise nodes.NodeError(f"cannot write {manifest_path}: {exc}") from exc
     m["_paths"] = {"manifest": str(manifest_path), "chain_spec": str(spec_path), "log": str(log_path),
                    "lift": lift_m["_paths"]["dir"]}
     return m

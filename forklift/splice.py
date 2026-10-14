@@ -258,7 +258,10 @@ def fork_chain_spec(dev_spec: dict, top: dict[str, str], *, block_number: int, r
 
 
 def load_dev_spec(path: Path) -> dict:
-    spec = json.loads(Path(path).read_text())
+    try:
+        spec = json.loads(Path(path).read_text())
+    except (OSError, ValueError) as exc:
+        raise SpliceError(f"cannot read the dev chain spec {path}: {exc}") from exc
     try:
         top = spec["genesis"]["raw"]["top"]
     except (KeyError, TypeError):

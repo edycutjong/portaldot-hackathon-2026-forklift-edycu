@@ -64,6 +64,14 @@ def test_owns_requires_our_binary_and_our_ws_port():
     assert not nodes.owns(rec, None)
 
 
+def test_owns_is_token_exact_and_follows_the_recorded_binary_and_chain():
+    rec = {"ports": {"ws": 3000}, "binary": "/opt/pd", "chain_spec": "/c/forks/fork/fork.json"}
+    assert nodes.owns(rec, "/opt/pd --chain /c/forks/fork/fork.json --alice --ws-port 3000")  # renamed binary
+    assert not nodes.owns(rec, "/opt/pd --chain /c/forks/fork/fork.json --ws-port 30000")  # no substring match
+    assert not nodes.owns(rec, "/opt/pd --chain /c/forks/soak/fork.json --ws-port 3000")  # another fork's chain
+    assert not nodes.owns(rec, "/opt/pd --dev --ws-port 3000")
+
+
 def test_stop_never_kills_a_process_that_is_not_our_node(cache):
     # A PID file that points at this very test process (not a portaldot_dev): stop must leave it alone.
     path = nodes.pid_file("fork")
@@ -79,6 +87,39 @@ def test_stop_cleans_a_pid_file_whose_process_is_gone(cache):
     path.parent.mkdir(parents=True)
     path.write_text(json.dumps({"pid": 2**22 + 12345, "ports": {"ws": 59944}}))
     assert "gone" in nodes.stop("fork") and not path.exists()
+
+
+def test_stop_terminates_an_owned_process_and_reaps_it(cache, tmp_path):
+    fake = tmp_path / "portaldot_dev"
+    fake.write_text("#!/bin/sh\nexec sleep 60\n")
+    fake.chmod(0o755)
+    import subprocess
+    proc = subprocess.Popen(["/bin/sh", str(fake), "--chain", "/c/f.json", "--ws-port", "59990"])
+    path = nodes.pid_file("fork")
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps({"pid": proc.pid, "binary": str(fake), "chain_spec": "/c/f.json",
+                                "ports": {"ws": 59990}}))
+    # The shell has exec'd sleep, so its command line no longer names the node: stop must refuse it.
+    import time
+    time.sleep(0.3)
+    assert "left it alone" in nodes.stop("fork")
+    assert proc.poll() is None
+    proc.kill()
+    proc.wait()
+    # A process whose command line does match is terminated, and stop does not wait out its timeout.
+    proc = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)", str(fake), "--chain",
+                             "/c/f.json", "--ws-port", "59990"])
+    path.write_text(json.dumps({"pid": proc.pid, "binary": sys.executable, "chain_spec": "/c/f.json",
+                                "ports": {"ws": 59990}}))
+    t = time.monotonic()
+    assert nodes.stop("fork", timeout=10) == f"stopped PID {proc.pid}"
+    assert time.monotonic() - t < 5 and proc.poll() is not None and not path.exists()
+
+
+def test_bad_port_env_is_a_node_error(monkeypatch):
+    monkeypatch.setenv("FORKLIFT_WS_PORT", "fiftynine")
+    with pytest.raises(NodeError, match="not a port number"):
+        nodes.resolve_ports()
 
 
 def test_start_refuses_a_busy_port(cache):
@@ -153,18 +194,24 @@ class Clock:
         self.t += s
 
 
-def boot_handler(blocks_after: float, clock: Clock, finalize_after: float = 1e9, peers: int = 0):
+def boot_handler(blocks_after: float, clock: Clock, finalize_after: float = 1e9, peers: int = 0,
+                 base: int = 0, chain: str = "Forklift fork", break_after: float | None = None):
     babe = (6000).to_bytes(8, "little") + (1200).to_bytes(8, "little")
 
     def h(method, params):
+        # After break_after, only the bare readiness probe still answers.
+        if break_after is not None and clock.t >= break_after and (method, bool(params)) != ("chain_getHeader", False):
+            raise ConnectionResetError("node went away")
+        if method == "system_chain":
+            return chain
         if method == "chain_getBlockHash":
             return "0x" + "75" * 32
         if method == "state_call":
             return "0x" + babe.hex()
         if method == "chain_getHeader":
             if params:  # the finalized head's header
-                return {"number": hex(1 if clock.t >= finalize_after else 0)}
-            return {"number": hex(1 if clock.t >= blocks_after else 0)}
+                return {"number": hex(base + (1 if clock.t >= finalize_after else 0))}
+            return {"number": hex(base + (1 if clock.t >= blocks_after else 0))}
         if method == "chain_getFinalizedHead":
             return "0x" + "fe" * 32
         if method == "system_health":
@@ -198,6 +245,36 @@ def test_wait_boot_reports_a_node_that_exited(cache):
     with pytest.raises(NodeError, match="exited with code 1"):
         nodes.wait_boot(FakeProc(code=1), cfg, cache / "node.log", t0=0.0, clock=clock, sleep=clock.sleep,
                         connect=fake_connect(boot_handler(0.0, clock)))
+
+
+def test_i5_on_a_restarted_fork_needs_a_new_block_not_an_old_one(cache):
+    clock = Clock()
+    cfg = NodeConfig("soak", cache / "f.json", {"ws": 59945, "rpc": 59946, "p2p": 59947}, base_path=cache / "db")
+    with pytest.raises(NodeError, match="I5"):  # best is already 500 at readiness, and never moves
+        nodes.wait_boot(FakeProc(), cfg, cache / "node.log", t0=0.0, clock=clock, sleep=clock.sleep,
+                        connect=fake_connect(boot_handler(1e9, clock, base=500)))
+    clock = Clock()
+    boot = nodes.wait_boot(FakeProc(), cfg, cache / "node.log", t0=0.0, clock=clock, sleep=clock.sleep,
+                           connect=fake_connect(boot_handler(5.0, clock, base=500, finalize_after=0)))
+    assert boot.best_at_rpc_ready == 500 and boot.best == 501
+
+
+def test_readiness_refuses_another_chain_on_our_port(cache):
+    clock = Clock()
+    cfg = NodeConfig("fork", cache / "f.json", {"ws": 59944, "rpc": 59933, "p2p": 30359}, chain_name="Forklift fork")
+    with pytest.raises(NodeError, match="not this fork"):
+        nodes.wait_boot(FakeProc(), cfg, cache / "node.log", t0=0.0, clock=clock, sleep=clock.sleep,
+                        connect=fake_connect(boot_handler(0.0, clock, chain="Development")))
+
+
+def test_rpc_failure_after_readiness_is_a_node_error_with_the_log(cache):
+    clock = Clock()
+    (cache / "node.log").write_text("Thread 'main' panicked\n")
+    cfg = NodeConfig("fork", cache / "f.json", {"ws": 59944, "rpc": 59933, "p2p": 30359})
+    with pytest.raises(NodeError, match="stopped answering") as e:
+        nodes.wait_boot(FakeProc(), cfg, cache / "node.log", t0=0.0, clock=clock, sleep=clock.sleep,
+                        connect=fake_connect(boot_handler(1e9, clock, break_after=0.0)))
+    assert "panicked" in e.value.log_tail
 
 
 def test_ensure_no_peers_stops_a_peered_fork(cache, monkeypatch):
