@@ -185,6 +185,35 @@
         "boot_to_finalized_s": 31.0,
         "total_s": 31.83
       }
+    },
+    {
+      "recorded_utc": "2026-10-14T11:48:44+00:00",
+      "label": "fork-1002-fast",
+      "name": "fork",
+      "persistent_base_path": false,
+      "genesis_hash": "0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b",
+      "genesis_keys": 9568,
+      "genesis_key_set_hash": "0x34f77c402f9c79ee919ec13ac4e08709ddb27a597774aba7a44909697c6a21d1",
+      "boot": {
+        "endpoint": "ws://127.0.0.1:59944",
+        "rpc_ready_s": 12.1,
+        "first_block_s": 16.7,
+        "finalized_s": 30.8,
+        "best": 3,
+        "finalized": 1,
+        "slot_ms": 6000,
+        "epoch_length": 1200,
+        "genesis_hash": "0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b",
+        "peers": 0,
+        "best_at_rpc_ready": 0
+      },
+      "timings": {
+        "lift_s": 0.39,
+        "lift_reused": true,
+        "splice_s": 0.48,
+        "boot_to_finalized_s": 30.8,
+        "total_s": 31.7
+      }
     }
   ]
 }
