@@ -344,8 +344,12 @@ def result_of(rt: Runtime, value: Any) -> tuple[bool, str | None]:
         if "Ok" in value:
             return True, None
         return False, dispatch_error_name(rt, value["Err"])
-    if value is None or value == "Ok":
+    if value == "Ok":
         return True, None
+    if isinstance(value, bool):  # older pallets report the dispatch outcome as a bool
+        return (True, None) if value else (False, "dispatch returned false")
+    if value is None:
+        return False, "no dispatch result decoded"
     return False, dispatch_error_name(rt, value)
 
 
@@ -401,56 +405,96 @@ def find_in_block(client: RpcClient, block_hash: str, xt_hex: str) -> int | None
     return None
 
 
+# Pool answers that mean "this exact extrinsic already reached the pool": seen when the first
+# author_submitExtrinsic was accepted but its answer was lost and the client re-sent it.
+POOL_ALREADY_IMPORTED = 1013
+POOL_TEMPORARILY_BANNED = 1012  # recently included or dropped; inclusion is then checked, not assumed
+
+
+def _send(client: RpcClient, xt_hex: str, expected: str) -> str:
+    from forklift.rpc import RpcError
+
+    try:
+        tx_hash = client.call("author_submitExtrinsic", [xt_hex])
+    except RpcError as exc:
+        if exc.code in (POOL_ALREADY_IMPORTED, POOL_TEMPORARILY_BANNED):
+            return expected  # same bytes, same hash; whether it lands is decided by the block scan below
+        raise
+    if tx_hash != expected:
+        raise TxError(f"node returned tx hash {tx_hash}, expected {expected}")
+    return tx_hash
+
+
 def submit(client: RpcClient, rt: Runtime, xt: bytes, *, timeout: float = 90.0, finalized: bool = True,
            poll: float = 0.5, sleep=time.sleep, clock=time.monotonic) -> Inclusion:
     """Submit, wait for the block that includes it (and, by default, its finalization), decode the result.
 
-    ``author_submitExtrinsic`` is a write: ``client`` must be a fork client (I3).
+    ``author_submitExtrinsic`` is a write: ``client`` must be a fork client (I3). A re-sent
+    extrinsic that the pool already holds is not an error (see ``_send``). If the block that
+    included it is not the one that finalized at its height, the scan resumes from there.
     """
     xt_hex = "0x" + xt.hex()
-    start_number = _header_number(client)
-    t0 = clock()
-    tx_hash = client.call("author_submitExtrinsic", [xt_hex])
     expected = "0x" + blake2_256(xt).hex()
-    if tx_hash != expected:
-        raise TxError(f"node returned tx hash {tx_hash}, expected {expected}")
-    scanned = start_number
-    found: tuple[int, str, int] | None = None
-    while found is None:
-        if clock() - t0 > timeout:
-            raise TxError(f"{tx_hash} not included within {timeout:.0f} s (scanned to #{scanned})")
-        best = _header_number(client)
-        while scanned < best and found is None:
-            scanned += 1
-            bh = client.call("chain_getBlockHash", [scanned])
-            idx = find_in_block(client, bh, xt_hex)
-            if idx is not None:
-                found = (scanned, bh, idx)
-        if found is None:
-            sleep(poll)
-    number, block_hash, index = found
-    is_final = False
-    if finalized:
+    scanned = _header_number(client)
+    t0 = clock()
+    tx_hash = _send(client, xt_hex, expected)
+    while True:
+        found: tuple[int, str, int] | None = None
+        while found is None:
+            if clock() - t0 > timeout:
+                raise TxError(f"{tx_hash} not included within {timeout:.0f} s (scanned to #{scanned})")
+            best = _header_number(client)
+            while scanned < best and found is None:
+                scanned += 1
+                bh = client.call("chain_getBlockHash", [scanned])
+                idx = find_in_block(client, bh, xt_hex)
+                if idx is not None:
+                    found = (scanned, bh, idx)
+            if found is None:
+                sleep(poll)
+        number, block_hash, index = found
+        if not finalized:
+            break
         while True:
             fin = _header_number(client, client.call("chain_getFinalizedHead", []))
             if fin >= number:
-                canonical = client.call("chain_getBlockHash", [number])
-                if canonical != block_hash:  # re-org below finality: look again from there
-                    idx = find_in_block(client, canonical, xt_hex)
-                    if idx is None:
-                        raise TxError(f"{tx_hash} was in #{number} {block_hash}, which did not finalize")
-                    block_hash, index = canonical, idx
-                is_final = True
                 break
             if clock() - t0 > timeout:
                 raise TxError(f"{tx_hash} included in #{number} but not finalized within {timeout:.0f} s")
             sleep(poll)
+        canonical = client.call("chain_getBlockHash", [number])
+        if canonical == block_hash:
+            break
+        idx = find_in_block(client, canonical, xt_hex)
+        if idx is not None:
+            block_hash, index = canonical, idx
+            break
+        scanned = number  # re-org below finality: the extrinsic may be in a later block
     seconds = round(clock() - t0, 1)
     mine = [e for e in events_at(client, rt, block_hash)
             if e.phase == "ApplyExtrinsic" and e.extrinsic_index == index]
     ok, err = _outcome(rt, mine)
     return Inclusion(tx_hash=tx_hash, block_number=number, block_hash=block_hash, index=index, events=mine,
-                     success=ok, error=err, seconds=seconds, finalized=is_final)
+                     success=ok, error=err, seconds=seconds, finalized=finalized)
+
+
+WRAPPER_RESULT_EVENTS = ("Sudo.Sudid", "Sudo.SudoAsDone")
+
+
+def wrapper_result(rt: Runtime, success: bool, error: str | None, events: list) -> dict | None:
+    """The result of the call a Sudo wrapper carried, from its ``Sudid`` / ``SudoAsDone`` event.
+
+    ``events`` are Event objects or their ``as_json()`` dicts. None if the extrinsic has no wrapper
+    event (not a sudo call); ``ok`` is False if the extrinsic itself failed.
+    """
+    for e in events:
+        name = e.full_name if isinstance(e, Event) else e.get("event")
+        if name in WRAPPER_RESULT_EVENTS:
+            attrs = e.attributes if isinstance(e, Event) else e.get("attributes")
+            value = attrs[0]["value"] if isinstance(attrs, list) and attrs and isinstance(attrs[0], dict) else attrs
+            ok, err = result_of(rt, value) if success else (False, error)
+            return {"event": name, "ok": ok, "error": err}
+    return None
 
 
 def next_nonce(client: RpcClient, address: str) -> int:
@@ -486,4 +530,5 @@ def fetch_extrinsic(client: RpcClient, rt: Runtime, extrinsic_id: str) -> dict:
             "signer": as_ss58(xt.get("address") or xt.get("account_id")),
             "call": {"pallet": xt.get("call", {}).get("call_module"),
                      "function": xt.get("call", {}).get("call_function")},
-            "success": ok, "error": err, "events": [e.as_json() for e in mine]}
+            "success": ok, "error": err, "dispatch": wrapper_result(rt, ok, err, mine),
+            "events": [e.as_json() for e in mine]}

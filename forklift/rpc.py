@@ -152,6 +152,7 @@ class RpcClient:
                 self._close()
         self._conn = None
         self._close = None
+        self._fork_checked = False  # a new connection is checked again before its first write
 
     def _ensure(self) -> Transport:
         if self._conn is None:

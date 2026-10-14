@@ -151,16 +151,31 @@ class ActResult:
 def _wrapper_result(rt: tx.Runtime, inc: tx.Inclusion, event: str) -> tuple[bool, str | None]:
     if not inc.success:
         return False, inc.error
-    found = inc.events_named(event)
-    if not found:
+    res = tx.wrapper_result(rt, inc.success, inc.error, [e for e in inc.events if e.full_name == event])
+    if res is None:
         return False, f"no {event} event"
-    attrs = found[0].attributes
-    value = attrs[0]["value"] if isinstance(attrs, list) and attrs and isinstance(attrs[0], dict) else attrs
-    return tx.result_of(rt, value)
+    return res["ok"], res["error"]
 
 
-_WRAPPER_EVENTS = {"Sudo.Sudid", "Sudo.SudoAsDone", "System.ExtrinsicSuccess", "System.ExtrinsicFailed",
-                   "Treasury.Deposit"}
+def own_events(inc: tx.Inclusion) -> list[dict]:
+    """The carried call's own events: everything but the wrapper, the outcome and the fee deposit.
+
+    The fee goes to the treasury as the ``Treasury.Deposit`` right before ``ExtrinsicSuccess`` /
+    ``ExtrinsicFailed``; a ``Treasury.Deposit`` the call itself emits stays.
+    """
+    events = list(inc.events)
+    out = []
+    for i, e in enumerate(events):
+        if e.full_name in _WRAPPER_EVENTS:
+            continue
+        nxt = events[i + 1].full_name if i + 1 < len(events) else None
+        if e.full_name == "Treasury.Deposit" and nxt in ("System.ExtrinsicSuccess", "System.ExtrinsicFailed"):
+            continue
+        out.append(e.as_json())
+    return out
+
+
+_WRAPPER_EVENTS = {"Sudo.Sudid", "Sudo.SudoAsDone", "System.ExtrinsicSuccess", "System.ExtrinsicFailed"}
 
 
 def fund(client: RpcClient, rt: tx.Runtime, who: str, planck: int, *, signer=None) -> ActResult:
@@ -176,7 +191,7 @@ def fund(client: RpcClient, rt: tx.Runtime, who: str, planck: int, *, signer=Non
     ok, err = _wrapper_result(rt, inc, "Sudo.Sudid")
     return ActResult(kind="fund", who=who, call="Sudo.sudo(Balances.set_balance)", inclusion=inc,
                      dispatch_ok=ok, dispatch_error=err, before=before, after=after,
-                     inner_events=[e.as_json() for e in inc.events if e.full_name not in _WRAPPER_EVENTS])
+                     inner_events=own_events(inc))
 
 
 def act_as(client: RpcClient, rt: tx.Runtime, who: str, pallet: str, function: str, args: dict[str, Any], *,
@@ -194,4 +209,4 @@ def act_as(client: RpcClient, rt: tx.Runtime, who: str, pallet: str, function: s
     ok, err = _wrapper_result(rt, inc, "Sudo.SudoAsDone")
     return ActResult(kind="as", who=who, call=f"Sudo.sudo_as({pallet}.{function})", inclusion=inc,
                      dispatch_ok=ok, dispatch_error=err, before=before, after=after, warnings=warnings,
-                     inner_events=[e.as_json() for e in inc.events if e.full_name not in _WRAPPER_EVENTS])
+                     inner_events=own_events(inc))

@@ -138,3 +138,20 @@ def test_error_names_come_from_metadata(rt):
     assert tx.result_of(rt, {"Ok": ()}) == (True, None)
     assert tx.result_of(rt, "Ok") == (True, None)
     assert tx.result_of(rt, {"Err": {"BadOrigin": None}}) == (False, "BadOrigin")
+
+
+def test_result_of_fails_closed_on_nothing_decoded_and_reads_bools(rt):
+    assert tx.result_of(rt, None) == (False, "no dispatch result decoded")
+    assert tx.result_of(rt, True) == (True, None)
+    assert tx.result_of(rt, False) == (False, "dispatch returned false")
+
+
+def test_wrapper_result_reads_sudid_and_sudo_as_done(rt):
+    ev = tx.Event(0, "ApplyExtrinsic", 1, "Sudo", "Sudid", [{"type": "DispatchResult", "value": "Ok"}])
+    assert tx.wrapper_result(rt, True, None, [ev]) == {"event": "Sudo.Sudid", "ok": True, "error": None}
+    as_json = {"event": "Sudo.SudoAsDone", "attributes": [
+        {"type": "DispatchResult", "value": {"Err": {"Module": {"index": 6, "error": 2}}}}]}
+    assert tx.wrapper_result(rt, True, None, [as_json])["error"] == "Balances.InsufficientBalance"
+    assert tx.wrapper_result(rt, False, "Sudo.RequireSudo", [ev]) == {"event": "Sudo.Sudid", "ok": False,
+                                                                       "error": "Sudo.RequireSudo"}
+    assert tx.wrapper_result(rt, True, None, []) is None
