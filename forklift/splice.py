@@ -1,4 +1,4 @@
-"""Splice: the official dev chain spec with its genesis replaced by a lift.
+"""Splice: the node's own dev chain spec with its genesis replaced by a lift.
 
 The node's own ``build-spec --dev --raw`` output is a flat ``{key: value}``
 map of genesis storage, so a splice is dict work:

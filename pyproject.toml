@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "portaldot-forklift"
 version = "0.1.0"
-description = "Lift Portaldot mainnet state at a pinned block onto a local fork of the official node"
+description = "Lift Portaldot mainnet state at a pinned block onto a local fork on the portaldot_dev node"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"

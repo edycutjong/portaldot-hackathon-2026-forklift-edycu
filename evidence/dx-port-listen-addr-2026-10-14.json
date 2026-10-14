@@ -1,0 +1,8 @@
+{
+  "what": "portaldot_dev 2.0.0 rejects --port together with --listen-addr (exits before binding anything)",
+  "recorded_utc": "2026-10-14T14:50:00+00:00",
+  "command": "portaldot_dev --dev --tmp --port 59949 --listen-addr /ip4/127.0.0.1/tcp/59949 --ws-port 59948 --rpc-port 59943 --no-mdns --no-telemetry --no-prometheus",
+  "binary": "portaldot_dev 2.0.0-unknown-x86_64-macos",
+  "stderr_first_line": "error: The argument '--listen-addr <LISTEN_ADDR>...' cannot be used with '--port <PORT>'",
+  "node_started": false
+}

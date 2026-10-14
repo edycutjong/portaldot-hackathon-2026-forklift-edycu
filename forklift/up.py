@@ -176,7 +176,7 @@ def up_plate(m: dict) -> str:
         f"        issuance {int(fork['issuance']['mainnet']):,} + {int(fork['issuance']['added']):,} planck (dev key)",
         f"boot    {node['binary']} · sha256 {node['sha256'][:16]}… · runtime {node['runtime_mode']}",
         f"        {fork['label']} · genesis {fork['genesis_hash']}",
-        f"        block #1 at {boot['first_block_s']} s · finalized #1 at {boot['finalized_s']} s · peers {boot['peers']}",
+        f"        first new block at {boot['first_block_s']} s · finalized #1 at {boot['finalized_s']} s · peers {boot['peers']}",
         f"rpc     {node['endpoint']}  (PID {node['pid']}; stop with: forklift down --name {node['name']})",
         f"wrote   {m['_paths']['manifest']}",
     ])

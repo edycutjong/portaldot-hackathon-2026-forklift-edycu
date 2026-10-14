@@ -1,6 +1,6 @@
-"""Run the official Portaldot node (``portaldot_dev`` 2.0.0) on a spliced chain spec.
+"""Run the ``portaldot_dev`` 2.0.0 node (release at portaldotVolunteer/Portaldot-node) on a spliced chain spec.
 
-Forklift never ships a node of its own. It finds the Foundation's binary (or
+Forklift never ships a node of its own. It finds the ``portaldot_dev`` binary (or
 downloads the release tarball and checks its sha256), records the binary's
 sha256 in the manifest, and spawns it on loopback-only ports with no boot
 nodes, no mDNS and ``--reserved-only``: a fork never peers with anything.
@@ -44,7 +44,7 @@ TARBALL_SHA256 = {
 KNOWN_BINARIES = {
     "301a311779e5658aa880953b052c0de3fff9d9d0f3c039030872510a6eedd6e2": "portaldot_dev 2.0.0 (macos x86_64)",
 }
-# Where an earlier install may have unpacked the official macOS tarball. Used read-only.
+# Where an earlier install may have unpacked the same macOS release tarball. Used read-only.
 SHARED_INSTALL = Path.home() / ".cache" / "portaldot-dev-node" / "portaldot-testnet-macos" / BINARY_NAME
 
 DEFAULT_PORTS = {"ws": 9944, "rpc": 9933, "p2p": 30333}
@@ -121,7 +121,7 @@ class Binary:
     path: str
     sha256: str
     version: str
-    known: str | None  # label if the sha256 is a recognised official build
+    known: str | None  # label if the sha256 is a recognised portaldot_dev build
 
     def as_json(self) -> dict:
         return asdict(self)
@@ -133,11 +133,11 @@ def release_os() -> str:
         return "macos"
     if system == "Linux":
         return "ubuntu"
-    raise NodeError(f"no official portaldot_dev build for {system}")
+    raise NodeError(f"no portaldot_dev release build for {system}")
 
 
 def download_binary(dest_dir: Path, *, fetch: Callable[[str], bytes] | None = None, os_name: str | None = None) -> Path:
-    """Download the official tarball, check its sha256, unpack only ``portaldot_dev``."""
+    """Download the release tarball, check its sha256, unpack only ``portaldot_dev``."""
     os_name = os_name or release_os()
     url = RELEASE.format(os=os_name)
     try:

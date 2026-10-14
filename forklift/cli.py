@@ -121,7 +121,7 @@ def data_plate(m: dict) -> str:
 @click.group()
 @click.version_option(__version__, prog_name="forklift")
 def main() -> None:
-    """Lift Portaldot mainnet state onto a local fork of the official node."""
+    """Lift Portaldot mainnet state onto a local fork on the portaldot_dev node."""
 
 
 @main.command("lift")
@@ -206,7 +206,7 @@ def _port_options(f):
 def up_cmd(at: str, runtime: str, endpoint: str, name: str, base_path: Path | None, node_bin: str | None,
            relift: bool, ws_port: int | None, rpc_port: int | None, p2p_port: int | None,
            evidence_dir: Path | None, as_json: bool) -> None:
-    """Lift mainnet at a pinned block, splice it into the dev chain spec, and boot the official node on it.
+    """Lift mainnet at a pinned block, splice it into the dev chain spec, and boot portaldot_dev on it.
 
     The node keeps running after this command returns. Exit 3 if the node does
     not start, author a block within 2 slots, or finalize; exit 4 if the lift fails.

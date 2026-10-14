@@ -47,7 +47,7 @@ def render() -> str:
         "Lift rows are measured runs against the public Portaldot mainnet node",
         "(`wss://mainnet.portaldot.io`, runtime spec 1002), read-only, at a fixed block hash:",
         "profile `mainnet-read (spec 1002)`. Fork rows are local forks of that state on the `portaldot_dev`",
-        "2.0.0 testnet client (the `portaldotVolunteer/Portaldot-node` release tarball, sha256 pinned in",
+        "2.0.0 release (the `portaldotVolunteer/Portaldot-node` tarball `portaldot-testnet-*`, sha256 pinned in",
         "`forklift/node.py`), labelled `fork-1002-fast` (dev runtime wasm). A local fork is not the",
         "Portaldot V3 testnet.",
         "",
@@ -95,7 +95,7 @@ def render() -> str:
             "seconds from node launch, read over RPC.",
             "",
             "| Pin block | Label | Fork genesis hash | Lifted = identical + dev-kept + overridden | Genesis keys | "
-            "RPC up / block #1 / finalized #1 (s) | Peers | Boots, same genesis | Evidence |",
+            "RPC up / first new block / finalized #1 (s) | Peers | Boots, same genesis | Evidence |",
             "|---|---|---|---|---|---|---|---|---|",
         ]
         for d in forks:
