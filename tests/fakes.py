@@ -87,7 +87,10 @@ class FakeChain:
         if method == "state_getKeysPaged":
             prefix, count, start = params[0], params[1], params[2]
             assert params[3] == self.block_hash, "read not pinned to the block hash"
-            keys = [k for k in self.storage if k.startswith(prefix) and (start is None or k > start)]
+            # Like the node: paging starts strictly after the start key, which defaults to the prefix,
+            # so a key equal to the prefix itself is never paged.
+            start = start or prefix
+            keys = [k for k in self.storage if k.startswith(prefix) and k > start]
             return keys[:min(count, self.clamp or count)]
         if method == "state_queryStorageAt":
             keys, at = params
