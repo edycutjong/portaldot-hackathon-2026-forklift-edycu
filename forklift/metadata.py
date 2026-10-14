@@ -142,6 +142,18 @@ def decode_hex(metadata_hex: str) -> list[Pallet]:
     return decode_v13(bytes.fromhex(metadata_hex.removeprefix("0x")))
 
 
+# Every FRAME pallet of this era stores its version under twox128(pallet name).
+PALLET_VERSION_KEY = ":__PALLET_VERSION__:"
+
+# Storage that exists on spec 1002 but is not described in its V13 metadata
+# (both pallets have storage=None there; keys found in a 2026-10-14 lift, names
+# matched by twox128). pallet name -> (storage prefix, [(item, kind)]).
+UNLISTED_ITEMS = {
+    "AuthorityDiscovery": ("AuthorityDiscovery", [("Keys", "Plain"), ("NextKeys", "Plain")]),
+    "Historical": ("Session", [("HistoricalSessions", "Map"), ("StoredRange", "Plain")]),
+}
+
+
 class StorageIndex:
     """Name lookup for raw storage keys."""
 
@@ -149,6 +161,14 @@ class StorageIndex:
         self.pallets: dict[bytes, str] = {}
         self.items: dict[bytes, StorageItem] = {}
         for p in pallets:
+            # Pallet-version key: under the pallet *name*, which may differ from its storage prefix.
+            np = twox128(p.name)
+            self.pallets.setdefault(np, p.storage_prefix or p.name)
+            self.items[np + twox128(PALLET_VERSION_KEY)] = StorageItem(p.name, PALLET_VERSION_KEY, "Plain")
+            if p.storage_prefix is None and p.name in UNLISTED_ITEMS:
+                prefix, unlisted = UNLISTED_ITEMS[p.name]
+                for name, kind in unlisted:
+                    self.items[twox128(prefix) + twox128(name)] = StorageItem(prefix, name, kind)
             if p.storage_prefix is None:
                 continue
             pp = twox128(p.storage_prefix)
@@ -159,6 +179,9 @@ class StorageIndex:
     def pallet_of(self, key: bytes) -> str:
         if key.startswith(b":"):
             return ":well-known"
+        item = self.items.get(key[:32])
+        if item is not None:
+            return item.pallet
         return self.pallets.get(key[:16], f"unknown:0x{key[:16].hex()}")
 
     def item_of(self, key: bytes) -> str:
