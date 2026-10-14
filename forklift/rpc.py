@@ -38,7 +38,7 @@ MAINNET_GENESIS = "0x83b5212c69f85f3996f8696bb35bf913af51b176a5f53d0a74fd3a83dc0
 READ_PREFIXES = ("chain_get", "state_get", "state_query", "childstate_get")
 READ_METHODS = frozenset({
     "system_chain", "system_name", "system_version", "system_properties", "system_health",
-    "system_chainType", "rpc_methods", "payment_queryInfo",
+    "system_chainType", "system_accountNextIndex", "rpc_methods", "payment_queryInfo",
 })
 
 
