@@ -1,0 +1,3 @@
+# Public, not secrets: //Alice's SS58 address (Substrate's well-known dev account) and a docstring.
+a1404de9848e22677b0654227f60d50818b3d5a3:forklift/splice.py:generic-api-key:43
+a1404de9848e22677b0654227f60d50818b3d5a3:forklift/splice.py:generic-api-key:64

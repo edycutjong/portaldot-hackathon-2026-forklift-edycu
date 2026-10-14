@@ -40,7 +40,7 @@ FORCE_NONE = b"\x02"  # pallet_staking::Forcing::ForceNone
 
 # //Alice (sr25519). Public: its seed is the best-known key in Substrate.
 DEV_KEY = bytes.fromhex("d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d")
-DEV_KEY_SS58 = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
+DEV_KEY_SS58 = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"  # public address  gitleaks:allow
 
 RUNTIMES = ("fast",)  # "exact" (mainnet :code + --execution Wasm) is a later build step
 
@@ -61,7 +61,7 @@ def _h(raw: bytes) -> str:
 
 
 def account_key(account: bytes) -> bytes:
-    """``System.Account`` key: ``Blake2_128Concat`` of the 32-byte AccountId."""
+    """The ``System.Account`` storage key of an AccountId (Blake2_128Concat hasher)."""
     return SYSTEM_ACCOUNT + blake2_128(account) + account
 
 

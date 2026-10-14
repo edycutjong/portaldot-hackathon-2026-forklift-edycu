@@ -1,0 +1,12 @@
+# gitleaks config: the default rules, plus one narrow allowlist.
+title = "forklift"
+
+[extend]
+useDefault = true
+
+# evidence/*.json is generated from public chain reads (storage keys, block and set hashes): high-entropy hex
+# next to field names like "key" trips generic-api-key. Only that rule is relaxed, only for that folder.
+[[allowlists]]
+description = "Generated evidence: public Portaldot storage keys and hashes"
+targetRules = ["generic-api-key"]
+paths = ['''(^|/)evidence/[^/]+\.json$''']
