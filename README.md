@@ -2,11 +2,11 @@
 
 # Forklift
 
-**Portaldot mainnet state, lifted at a pinned block, with its key set checked against an independent listing.**
+**Portaldot mainnet state on a local fork of the official node: lifted at a pinned block, checked against mainnet key by key, and acted on as real accounts.**
 
-![status](https://img.shields.io/badge/status-work_in_progress-orange)
+![status](https://img.shields.io/badge/status-check--in_slice-orange)
 ![python](https://img.shields.io/badge/python-3.11%2B-blue)
-![tests](https://img.shields.io/badge/tests-85_offline_%2B_1_live-brightgreen)
+![tests](https://img.shields.io/badge/tests-222_offline_%2B_4_live-brightgreen)
 ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
 Portaldot Hacker House 2026 · Track: Node Operations & Tooling
@@ -15,106 +15,153 @@ Portaldot Hacker House 2026 · Track: Node Operations & Tooling
 
 ## Project Name
 
-**Forklift** (`portaldot-forklift`, version 0.1.0).
+**Forklift** (`portaldot-forklift`, version 0.1.0): a command-line tool that gives a Portaldot developer a local chain
+that starts from **mainnet's real state** instead of an empty dev chain.
 
-> **Status: work in progress.** This is README v0. It describes only what the repository does today: a read-only
-> **lift** of Portaldot **mainnet (runtime spec 1002)** state at a pinned block, with a manifest and measured
-> evidence. Everything else is marked **planned**.
+> **Status: check-in slice.** Everything described as shipped below is in this repository and was measured on
+> 2026-10-14 (numbers come from [`docs/PROOF.md`](docs/PROOF.md), generated from [`evidence/`](evidence)). Everything
+> else is marked **planned**. The fork is a **local fork of Portaldot mainnet (runtime spec 1002)**, labelled
+> `fork-1002-fast`. **It is not the Portaldot V3 testnet** (see *V3 status*).
 
 ## Project Overview
 
 ### Problem Statement
 
-A local `portaldot_dev --dev` chain is a development chain; it does not carry mainnet's accounts, stakes or nominators.
-A builder who wants to test one staking call, or one contract, against the state their users are actually on has no
-simple way to get that state locally.
+A local `portaldot_dev --dev` chain is a development chain: one validator named Alice, none of mainnet's accounts,
+stakes or nominators. A builder who wants to test one staking call, or one contract, against the state their users are
+actually on has no simple way to get that state onto a local node, and no way to check that what they got is faithful.
 
 ### Solution
 
-Forklift reads every top-level storage key of a Portaldot chain (except the MMR range) at one pinned block hash and records what it read in a
-`manifest.json` (source block and hash, key counts per pallet and item, a `manifest_root` hash over every
-key/value pair).
+Forklift is four steps behind one command each.
 
-**Shipped (this repo, today):**
+1. **Lift.** `forklift lift` reads every top-level storage key of Portaldot mainnet at one pinned block hash (the
+   Merkle Mountain Range storage is skipped, not paged through) and records what it read in a manifest with a
+   `manifest_root` hash over every key/value pair.
+2. **Splice and boot.** `forklift up` writes the lift into the official `portaldot_dev` 2.0.0 chain spec, keeps the dev
+   consensus keys so the node can author, applies five named overrides, boots the node on loopback-only ports with zero
+   peers, and waits (over RPC) until it authors and finalizes.
+3. **Verify.** `forklift verify` draws keys **from mainnet** (inside storage maps, weighted by how many keys each map
+   holds), reads each on mainnet at the pin and on the fork at genesis, and exits `0` only when every key is identical
+   or explained (dev-kept, override, reset) and the key set, issuance, overrides and runtime code hashes check out.
+4. **Act.** `forklift fund` sets a balance, `forklift as <account> <Pallet.call> <args>` dispatches a call with a real
+   mainnet account's origin (through `Sudo.sudo_as`), and `forklift receipt` deploys a small contract that emits the
+   lift's block hash, `manifest_root` and key count as an on-chain event, so a fork's origin is recorded on the fork.
 
-- `forklift lift --at N|0xhash|head` pages every storage key **at the pinned block hash**, fetches values at the
-  same hash, and writes the lift to `~/.cache/forklift/lifts/<block>/`.
-- The Merkle Mountain Range (MMR) storage is skipped without being paged through or fetched: the lift pages keys until the page that
-  reaches the MMR prefix, then jumps the cursor past it. The MMR holds 5,451,269 keys at the pinned block; none are
-  fetched. (One probe page reaches the range, so that page's MMR keys, at most 1,000, are listed and dropped.)
-- Progress is checkpointed after every page. If the node fails for good, the lift exits with code `4` and prints the
-  last cursor; a partial lift is never written as complete.
-- Top trie only: child tries are not lifted.
-- A write guard refuses to send `author_*` calls to anything that is not a local fork.
-- Every key is named by pallet and item at both pinned blocks (0 unknown), including storage the spec-1002 metadata does not describe.
+**Shipped, in this repository today:**
 
-**Planned (not built yet, not claimed):** splice the lift into the official node's chain spec and boot a local fork
-(`fork-1002-fast`), `verify` the fork against mainnet, `fund` / `as` (act as a real account), a Fork Receipt contract,
-an `exact` runtime profile, and a hosted fork.
+- The lift engine: pinned paging, MMR cursor jump, per-page checkpoints, exit code `4` with the last cursor when the node
+  fails for good (a partial lift is never written as complete), completeness checked against an independent full
+  listing (`scripts/completeness.py`).
+- The splice, node runner (sha256-checked official binary, PID guard, no peers), `up` / `down`.
+- `verify` with exit codes `0` / `2` and a reproducible seed.
+- `fund`, `as`, `tx` (re-read any extrinsic by id), and the **Fork Receipt** contract with a rent check.
+- An endpoint write-guard: nothing is ever signed or submitted to mainnet, and a fork client refuses any non-loopback
+  endpoint or a chain whose genesis is mainnet's.
+- `--json` output and documented exit codes ([`docs/EXIT-CODES.md`](docs/EXIT-CODES.md)); 222 offline tests plus 4 live
+  tests.
+
+**Planned (not built, not claimed):** an `exact` runtime profile (mainnet's wasm on the fork), `replay` of a mainnet
+extrinsic on a fork of its parent block, a hosted fork, a PyPI package and a CI action.
 
 ### Blockchain Relevance
 
-Forklift is node-operations and developer tooling for Portaldot. It reads real chain state through the public node (`wss://mainnet.portaldot.io`) and is designed so tests run against the state of the live chain rather
-than an empty dev chain. It never signs or submits anything to mainnet.
+Forklift is node-operations and developer tooling for Portaldot. It reads real chain state through the public node
+(`wss://mainnet.portaldot.io`), runs it on the Foundation's own `portaldot_dev` binary, uses Portaldot's historical-state
+RPC (`state_getKeysPaged`, `state_queryStorageAt` at a block hash), the Sudo pallet to act as accounts on the fork, and
+the Contracts pallet for the receipt. Every fork is labelled with the runtime it carries, so nobody mistakes it for a
+testnet or for V3.
+
+### Boundaries (read before trusting a fork)
+
+- **Block heights restart.** The fork starts at block 0; mainnet's block numbers (for example 2,725,953) mean nothing on
+  it. Calls whose meaning depends on block numbers (Vesting schedules, Proxy announcements, Scheduler) will not behave as
+  on mainnet; `forklift as` prints a warning for them.
+- **`sudo_as` is not a signed dispatch.** The call runs with the target account's origin, but the target pays no fee,
+  its nonce is not touched and its signed extensions do not run. The fork's dev sudo key signs the outer extrinsic.
+- **A local fork is not V3, and not mainnet's runtime.** `fork-1002-fast` runs the dev runtime wasm (the manifest records
+  both code hashes), with dev consensus keys, 6-second blocks and staking era changes disabled (`Staking.ForceEra`
+  override). It is a dev tool, not an audit tool.
+- **Top trie only.** Child tries are not lifted (the manifest counts their roots: 0 at the pinned blocks).
+- **Evidence is local.** The contract address and transaction hashes below live on a local fork, not on a public
+  explorer; `forklift tx <block-index>` re-reads any of them from the fork.
 
 ## Technical Architecture
 
 ```mermaid
 flowchart LR
-    M[("Portaldot mainnet\nspec 1002\nread-only RPC")]
-    subgraph shipped["Shipped (D1)"]
-      RPC["rpc.py\nJSON-RPC client\n+ write guard"]
-      LIFT["lift.py\npinned key paging\nMMR cursor jump"]
-      META["metadata.py\nstorage names"]
-      MAN["manifest.py\nmanifest.json\nmanifest_root"]
-      CLI["cli.py\nforklift lift"]
+    M[("Portaldot mainnet\nspec 1002, read-only")]
+    subgraph tool["forklift (Python)"]
+      RPC["rpc.py\nJSON-RPC + write-guard"]
+      LIFT["lift.py\npinned paging, MMR jump"]
+      SPL["splice.py\ndev genesis + lift + 5 overrides"]
+      NODE["node.py + up.py\nboot, RPC readiness"]
+      VER["verify.py"]
+      ACT["tx.py + act.py\nfund / as"]
+      REC["receipt.py\nFork Receipt contract"]
     end
-    subgraph planned["Planned"]
-      SPL["splice"]
-      BOOT["boot local fork"]
-      VER["verify"]
-      ACT["fund / as"]
-      REC["Fork Receipt contract"]
-    end
-    M --> RPC --> LIFT --> MAN
-    META --> MAN
-    CLI --> LIFT
-    MAN -.-> SPL -.-> BOOT -.-> VER
-    BOOT -.-> ACT -.-> REC
+    BIN[["portaldot_dev 2.0.0\n(official)"]]
+    F[("local fork\nfork-1002-fast")]
+    EV[("evidence/*.json\n-> docs/PROOF.md")]
+    M --> RPC --> LIFT --> SPL --> NODE --> BIN --> F
+    VER -- "keys drawn from mainnet" --> RPC
+    VER -- "read at genesis" --> F
+    ACT --> F
+    REC --> F
+    tool -.-> EV
 ```
+
+The full module-level diagram, the splice rules and the invariants the code enforces are in
+[`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 **Core tech stack**
 
 | Layer | Choice |
 |---|---|
-| Blockchain platform | **Portaldot V3** is the hackathon's target platform. Current runs are a read-only lift of **Portaldot mainnet (runtime spec 1002)**, not V3. A local mainnet fork profile (`fork-1002-*`) is planned. |
-| Contract language | Planned: a small Fork Receipt contract (see Smart Contracts). None exists yet. |
+| Blockchain platform | **Portaldot V3** is the hackathon's target platform. Forklift's chain today is a local fork of **Portaldot mainnet (runtime spec 1002)** on the official `portaldot_dev` 2.0.0 node, labelled `fork-1002-fast`. It is not V3. |
+| Contract language | WAT (WebAssembly text), hand-written for the Contracts pallet of spec 1002 (`seal0` imports only), compiled with `wat2wasm` |
 | Frontend | None. Forklift is a command-line tool. |
-| Other components | Python 3.11+, `click` (CLI), `websockets` (raw JSON-RPC), `xxhash` (storage key hashing), `hashlib` blake2b. Tests use `pytest`. |
+| Other components | Python 3.11+, `click` (CLI), `websockets` (raw JSON-RPC), `xxhash` (storage key hashing), `substrate-interface` (sr25519 keys and the SCALE type registry), `hashlib` blake2b. Tests use `pytest`. |
 
-**V3 status.** Measured 2026-10-13 (`dig @1.1.1.1`), and empty again on 2026-10-14: the V3 testnet RPC listed in the V3 guide
-(`wss://testnetv3-node.feso-apps.xyz`) did not resolve in DNS, and the organisers have said that no V3 node binary
-or chain spec is public and that an older devnet configuration should not be assumed compatible with the V3 testnet.
-Forklift therefore makes **no V3 claim**; nothing in this repository has run against V3.
-
-Measured numbers in the Demo table come from [`docs/PROOF.md`](docs/PROOF.md) (generated from [`evidence/`](evidence)); the test count comes from `pytest -q`.
+**V3 status.** Measured 2026-10-13 and again 2026-10-14 (`dig @1.1.1.1`): the V3 testnet RPC listed in the V3 guide
+(`wss://testnetv3-node.feso-apps.xyz`) did not resolve in DNS. The organisers have said no V3 node binary or chain spec
+is public and that an older devnet configuration should not be assumed compatible with the V3 testnet. Forklift
+therefore makes **no V3 claim**; nothing in this repository has run against V3.
 
 ## Smart Contracts
 
-Forklift has **no deployed contract yet**, so there is no contract address or transaction hash to list.
+One contract, the **Fork Receipt** (`forklift/contracts/receipt.wat`, compiled `receipt.wasm`, 169 bytes). It is
+hand-written for the rent-era Contracts pallet of spec 1002 and needs no Rust toolchain.
 
-- **Planned: Fork Receipt contract** (D3): `attest(mainnet_block_hash, manifest_root)` would emit the pinned
-  mainnet block hash, the manifest root and the number of lifted keys as an event, so a fork's origin is on-chain.
-- Directory: none yet. Deployment instructions will be added with the contract.
+| Function | Input | What it does |
+|---|---|---|
+| `deploy`, `call` (both run `attest`) | 72 bytes: mainnet block hash ‖ `manifest_root` ‖ `keys_lifted` (u64, little-endian) | Emits `Contracts.ContractEmitted(<contract>, <the 72 input bytes>)`. Any other input length traps, so a malformed attest fails instead of emitting. |
 
-The lift itself is pallet-free: it only calls read RPC methods: `chain_getFinalizedHead`,
-`chain_getBlockHash`, `chain_getHeader`, `state_getRuntimeVersion`, `state_getKeysPaged`, `state_queryStorageAt`,
-`state_getStorage`, `state_getMetadata`.
+Deployed on the local fork `fork-1002-fast` at mainnet #2,725,953 (fork genesis `0x9163…80ac`), by
+`forklift receipt` (full hashes and the rent measurements are in [`docs/PROOF.md`](docs/PROOF.md)):
+
+| What | Value |
+|---|---|
+| Contract address | `5EMSUfyyk1aY62M8XGdgAYAwyqd3R7sGbXFERaW5ZVBHeTXv` |
+| Instantiate | extrinsic `21-1`, tx `0xd114c4659cbbbbb7a0cf6cc7f4062aecdbdb9d070593cf7365842e10015e0003` |
+| Rent top-up | extrinsic `24-1`, tx `0x0fc273a8d888e63d6f50134494e286abbdaba36ddc092b869e7df6eb26fc7c02` |
+| Attest | extrinsic `27-1`, tx `0x610dd887f9a1a8666f06c8a206fe00da80755b0cad33f57cf3282ee1c286789a`; the emitted payload equals the fork manifest |
+
+Pallet calls Forklift composes (all on a fork): `Sudo.sudo(Balances.set_balance)`, `Sudo.sudo_as(Balances.transfer)`,
+`Sudo.sudo_as(Staking.nominate)`, `Contracts.instantiate_with_code`, `Balances.transfer`, `Contracts.call`. The lift
+itself is pallet-free: it only calls read RPC methods (`chain_getFinalizedHead`, `chain_getBlockHash`,
+`chain_getHeader`, `state_getRuntimeVersion`, `state_getKeysPaged`, `state_queryStorageAt`, `state_getStorage`,
+`state_getMetadata`).
+
+**Rebuild the contract:** `wat2wasm forklift/contracts/receipt.wat -o forklift/contracts/receipt.wasm`
+(`pytest` checks that the committed `.wasm` is exactly what `wat2wasm` builds from the `.wat`, when `wat2wasm` is installed).
 
 ## Installation & Setup
 
-**Requirements:** Python 3.11+, network access to `wss://mainnet.portaldot.io` (live lifts only; the unit tests are
-offline).
+**Requirements:** Python 3.11+; network access to `wss://mainnet.portaldot.io` (live lifts and `verify`; the unit tests
+are offline); on Apple silicon, Rosetta (`softwareupdate --install-rosetta`), because the official macOS binary is
+x86_64 only. `forklift up` downloads the official `portaldot_dev` release into `~/.cache/forklift/bin/` and checks its
+sha256 before running it.
 
 ```bash
 git clone https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu.git
@@ -122,58 +169,79 @@ cd portaldot-hackathon-2026-forklift-edycu
 python3 -m venv .venv
 . .venv/bin/activate
 pip install -e '.[dev]'
-pytest -q                       # offline unit tests
-forklift lift --at 2725639      # one lift at a pinned block (~20 s on the measurement host)
-forklift lift --at 2725639 --json   # print the manifest
+pytest -q                                   # offline unit tests
+
+forklift lift --at 2725953                  # read-only: one lift at a pinned block (~20 s)
+forklift up --at 2725953                    # lift -> splice -> boot the fork on ws://127.0.0.1:9944
+forklift verify --sample 200                # exit 0 = nothing unexplained
+forklift fund 5F1KbjNTUu6xmMCcSz2wrv7b627BKS7hUTzWFqdmpvb3rMcE 1000000
+forklift as 5DvRSgerqB5KHPqWGGnCtRJgJokj91XyGLm3aZ5DKH1rMndf Balances.transfer \
+  '["5F1KbjNTUu6xmMCcSz2wrv7b627BKS7hUTzWFqdmpvb3rMcE", 100000000000000000]'
+forklift receipt                            # deploy the Fork Receipt, keep it rent-free, attest
+forklift down                               # stop the fork (only the PID it recorded)
 ```
 
-Pinning block 2,725,639 reproduces `manifest_root`
-`0x29f18c9250683ce3da0b6ee821674de99036bbc67afc32f42647d687b4c584e7` while the node keeps serving that block.
-`--at head` pins the latest finalized block instead. Options: `--from` (node), `--out`, `--no-resume`,
-`--evidence DIR`, `--json`.
+Pinning block 2,725,953 reproduces `manifest_root`
+`0xa430d6a9f16d631da45fd0d0cb5ae600db1854612218e21aabeb7f26d7ba002b` while the public node keeps serving that block.
+`--at head` pins the latest finalized block instead. Each command takes `--json`; `--evidence DIR` records a
+run for [`docs/PROOF.md`](docs/PROOF.md) (`python scripts/proof.py`). Default ports are 9944 (WebSocket), 9933 (HTTP) and
+30333 (p2p, loopback only); override with `--ws-port`, `--rpc-port`, `--p2p-port` or `FORKLIFT_WS_PORT` /
+`FORKLIFT_RPC_PORT` / `FORKLIFT_P2P_PORT`. `forklift as` also takes any other `Pallet.call` with a JSON argument list.
 
-**Exit codes:** `0` lift complete · `4` lift could not finish (last cursor printed, checkpoint kept) · `64` usage
-error · `1` other failures. Code `2` is reserved for `verify` mismatches (planned).
+**Exit codes:** `0` success · `1` could not run · `2` mismatch (`verify`, `receipt`) · `3` node failed · `4` lift failed
+(last cursor printed, checkpoint kept) · `5` the carried call failed · `6` Receipt not rent-safe · `64` usage error.
+Per command, in [`docs/EXIT-CODES.md`](docs/EXIT-CODES.md).
 
-**Compile & deploy / launch frontend:** not applicable yet (no contract, no frontend).
+**Compile & deploy / launch frontend:** the contract is compiled and deployed by `forklift receipt` (see above); there
+is no frontend.
 
 ## Demo
 
-- **Video:** coming at check-in.
-- **Live demo:** none; Forklift is a CLI.
-- **Test accounts / test data:** none needed. The lift reads public mainnet state at block 2,725,639
-  (`0xc6fb8d8a10ae3045b7cb6b0f24ddacc538006a1fae975ec343c8654fb55a8212`).
-- **Evidence:** [`docs/PROOF.md`](docs/PROOF.md). Measured on 2026-10-14 (Darwin arm64, Python 3.11.1):
+- **Video:** coming at check-in (≤ 3 minutes: lift → boot → verify → fund / as → Receipt attest).
+- **Live demo:** none; Forklift is a CLI and its fork is local. The Installation steps above reproduce every row.
+- **Test accounts / test data:** none to create. The whale `5DvRSg…Mndf` (200,000,000 POT on mainnet) and the nominator
+  `5Cf8KJ…jchW` are real mainnet accounts that `forklift as` acts as on the fork; `5F1Kbj…rMcE` is the demo account
+  `forklift fund` credits.
+- **Evidence:** [`docs/PROOF.md`](docs/PROOF.md), generated from [`evidence/`](evidence). Measured on 2026-10-14
+  (Darwin arm64, Python 3.11.1; the official x86_64 node under Rosetta):
 
 | Measurement | Result | Evidence |
 |---|---|---|
-| Keys lifted at #2,725,639 | 16,332 | `evidence/lift-2725639.json` |
-| Independent full key listing at the same hash, minus the MMR range | 16,332 · set difference 0 missing, 0 extra | `evidence/lift-completeness-2725639.json` |
-| MMR keys skipped (listed vs derived from `NumberOfLeaves`) | 5,451,269 / 5,451,269 | same file |
-| Lift time (keys / values / total) | 7.37 s / 12.08 s / 19.45 s (fastest of 3 runs; totals 19.45–20.34 s) | `evidence/lift-2725639.json` |
-| `manifest_root` identical across fresh-process runs | 3 runs, same root | `docs/PROOF.md` |
-| Second pin, #2,725,653 | 16,316 keys (1 run, no completeness check) | `evidence/lift-2725653.json` |
-| Tests | 85 offline passed; 1 live test (deselected offline, run with `pytest -m live`) | `pytest -q` |
+| Keys lifted at #2,725,953 (`0xf9dc…5432`) | 16,324 keys, 5,589,646 B of values, 19 pages | `evidence/lift-2725953.json` |
+| Lift time (keys / values / total) | 6.88 s / 10.18 s / 17.06 s | `evidence/lift-2725953.json` |
+| Completeness against an independent full listing at the same hash, minus the MMR range | 16,324 lifted = 16,324 listed outside the MMR range · 0 missing, 0 extra · MMR range 5,451,900 listed = 5,451,900 derived (full listing: 5,468,224 keys, 5,470 pages, 645.6 s) | `evidence/lift-completeness-2725953.json` |
+| Completeness at the earlier pin #2,725,639 | 16,332 lifted = 16,332 listed · 0 missing, 0 extra | `evidence/lift-completeness-2725639.json` |
+| Fork boot (`fork-1002-fast`, genesis `0x9163…80ac`) | RPC up 11.7 s · block #1 at 17.8 s · finalized #1 at 24.9 s · 0 peers | `evidence/fork-2725953.json` |
+| Lifted keys on the fork | 16,324 = 9,524 genesis-identical + 6,796 dev-kept + 4 overridden (genesis 9,563 keys) | `evidence/fork-2725953.json` |
+| `forklift verify --sample 200` | exit 0 · 200 keys from mainnet: 120 identical, 80 dev-kept · key set, issuance, overrides, code hashes ok · seed `15629954055902865514` | `evidence/verify-2725953.json` |
+| `fund`, `as` (whale transfer), `as` (nominator `Staking.nominate`) | extrinsics `12-1`, `15-1`, `18-1`, all `Ok`; whale 200,000,000 → 199,999,000 POT with nonce unchanged; nominator targets 1 → 3 | `evidence/txs-2725953.json` |
+| Fork Receipt | instantiate `21-1`, rent top-up `24-1`, attest `27-1`; `ContractEmitted` payload = block hash ‖ manifest root ‖ 16,324 keys, equal to the manifest | `evidence/txs-2725953.json` |
+| All six transactions re-read by extrinsic id from a separate process | 6 of 6 identical | `evidence/refetch-2725953.json` |
+| Tests | 222 offline passed · 4 live tests (deselected offline; run with `pytest -m live`) | `pytest -q` |
 
-Note: two of the three runs at #2,725,639 and the run at #2,725,653 were recorded before the later hardening commits to the lift engine (same `manifest_root`); the third run used the current engine.
+One benchmark run of the lift from a fresh process (a stub: one run per file; p50/p95 over several runs is planned): #2,725,953 in 19.85 s (keys 7.41 s, values 12.44 s), same `manifest_root` (`evidence/bench-lift-2026-10-14.json`).
 
 ## Roadmap
 
-**Completed (D1, 2026-10-14)**
+**Completed (check-in slice, 2026-10-14)**
 
-- [x] JSON-RPC client with retry/backoff and the endpoint write guard
-- [x] Pinned lift with MMR cursor jump, checkpointing and exit code `4`
-- [x] `manifest.json` with per-pallet/item counts and `manifest_root`
-- [x] Completeness check of the lift against an independent listing
-- [x] Generated evidence table ([`docs/PROOF.md`](docs/PROOF.md))
+- [x] JSON-RPC client with retry/backoff and the endpoint write-guard
+- [x] Pinned lift with MMR cursor jump, checkpointing and exit code `4`; completeness check against an independent listing
+- [x] `fork.manifest.json` with per-pallet/item counts, `manifest_root`, and the full lifted-key accounting
+- [x] Splice, official-binary node runner and `forklift up` / `down` (authors and finalizes, 0 peers)
+- [x] `forklift verify` (keys drawn from mainnet, whole-fork checks, exit codes)
+- [x] `forklift fund`, `as`, `tx`, and the Fork Receipt contract with its rent check
+- [x] Generated evidence ([`docs/PROOF.md`](docs/PROOF.md)), [`ARCHITECTURE.md`](ARCHITECTURE.md),
+      [`docs/DX-REPORT.md`](docs/DX-REPORT.md), [`docs/EXIT-CODES.md`](docs/EXIT-CODES.md)
 
-**Next phase (check-in slice)**
+**Next phase**
 
-- [ ] D2: splice the lift into the official node's chain spec, boot the fork, `forklift verify`
-- [ ] D3: `fund`, `as`, and the Fork Receipt contract with on-chain proof
-- [ ] D4: README v1, architecture document, demo video
-
-Afterwards: replay, an `exact` runtime profile, benchmarks and packaging.
+- [ ] Demo video (recorded by the author for the check-in)
+- [ ] `--runtime exact`: mainnet's own wasm on the fork, and a generated runtime-difference report
+- [ ] `forklift replay <block>:<index>`: a mainnet extrinsic re-run on a fork of its parent block
+- [ ] Benchmarks with p50/p95 over several runs
+- [ ] A hosted fork, a PyPI package and a CI action
+- [ ] A V3 target once a V3 node or chain spec is public
 
 ## Team
 
@@ -183,9 +251,11 @@ Afterwards: replay, an `exact` runtime profile, benchmarks and packaging.
 
 **AI assistance disclosure.** Claude Code (Anthropic) drafted most of the code, tests and this README under the
 author's direction. The architecture, protocol choices and the on-chain design were decided by the author, who reviews
-the code and can explain how the lift works. All code in this repository was committed from 2026-10-14 (first commit `fa113a6`); earlier research is not included.
+the code and can explain how the lift, the splice, `verify` and the Receipt work. All code in this repository was
+committed from 2026-10-14 (first commit `fa113a6`); earlier research is not included.
 
-Open-source libraries: `click`, `websockets`, `xxhash`, `pytest`, `hatchling`.
+Open-source libraries: `click`, `websockets`, `xxhash`, `substrate-interface`, `pytest`, `hatchling`. The node binary
+is the Foundation's `portaldot_dev` 2.0.0 release (`portaldotVolunteer/Portaldot-node`), downloaded at run time.
 
 ## License
 
