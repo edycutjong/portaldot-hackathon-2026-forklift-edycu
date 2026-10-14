@@ -243,3 +243,47 @@ def test_value_batch_is_halved_when_the_node_rejects_it():
 
     res = lift(client_for(SizeCapped(store())), "head", page_size=4, value_batch=8)
     assert res.values == {k: v for k, v in store().items() if not k.startswith(MMR)}
+
+
+@pytest.mark.parametrize("method,bad", [
+    ("state_queryStorageAt", None),
+    ("state_queryStorageAt", [{"block": "0x"}]),
+    ("state_getKeysPaged", {"not": "a list"}),
+    ("chain_getHeader", {"parentHash": "0x"}),
+])
+def test_malformed_replies_fail_as_lift_errors(method, bad):
+    class Odd(FakeChain):
+        def __call__(self, m, params):
+            return bad if m == method else super().__call__(m, params)
+
+    with pytest.raises(LiftError):
+        lift(client_for(Odd(store())), "head", page_size=4)
+
+
+def test_disk_error_while_checkpointing_is_a_lift_error(tmp_path, monkeypatch):
+    from forklift import lift as lift_mod
+
+    def full(*a, **k):
+        raise OSError(28, "No space left on device")
+
+    monkeypatch.setattr(lift_mod.Checkpoint, "save", full)
+    with pytest.raises(LiftError) as err:
+        lift(client_for(FakeChain(store())), "head", out_root=tmp_path, page_size=4)
+    assert err.value.phase == "keys"
+
+
+def test_value_batch_zero_does_not_loop():
+    from forklift.lift import fetch_values
+
+    chain = FakeChain(store())
+    assert fetch_values(client_for(chain), ["0x0101"], chain.block_hash, batch=0) == {"0x0101": "0x01"}
+
+
+def test_rerun_drops_an_earlier_manifest_before_rewriting(tmp_path):
+    d = tmp_path / "42"
+    d.mkdir()
+    (d / "manifest.json").write_text("{}")
+    flaky = Flaky(FakeChain(store(), number=42), fail_on_page=2)
+    with pytest.raises(LiftError):
+        lift(client_for(flaky, retries=0), "head", out_root=tmp_path, page_size=3)
+    assert not (d / "manifest.json").exists()

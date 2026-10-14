@@ -152,3 +152,11 @@ def test_non_json_reply_is_retried():
 
     c = RpcClient("wss://mainnet.portaldot.io", connect=connect, sleep=lambda s: None)
     assert c.call("chain_getFinalizedHead") == "ok" and c.reconnects == 1
+
+
+@pytest.mark.parametrize("genesis", [None, "0x1234", "0x83B5212C69F85F3996F8696BB35BF913AF51B176A5F53D0A74FD3A83DC0B8A54"])
+def test_fork_genesis_check_fails_closed(genesis):
+    c = client(lambda m, p: genesis if m == "chain_getBlockHash" else "0x00", endpoint="ws://127.0.0.1:59944",
+               fork=True)
+    with pytest.raises(WriteGuardError):
+        c.call("author_submitExtrinsic", ["0x00"])

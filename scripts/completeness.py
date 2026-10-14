@@ -44,6 +44,8 @@ def full_listing(client: RpcClient, block_hash: str, progress_every: int = 500):
             print(f"  {pages} pages · {len(keys) + mmr:,} keys · {time.monotonic() - t0:.0f} s", flush=True)
         if not page:  # only an empty page ends the listing: a node may return short pages early
             return keys, mmr, pages
+        if cursor is not None and page[0] <= cursor:
+            raise SystemExit(f"node did not advance past cursor {cursor}: listing aborted")
         cursor = page[-1]
 
 

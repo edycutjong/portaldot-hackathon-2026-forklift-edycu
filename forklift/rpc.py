@@ -191,7 +191,9 @@ class RpcClient:
         if self._fork_checked:
             return
         genesis = self._call("chain_getBlockHash", [0])
-        if genesis == MAINNET_GENESIS:
+        if not isinstance(genesis, str) or len(genesis) != 66 or not genesis.startswith("0x"):
+            raise WriteGuardError(f"{self.endpoint}: cannot read a genesis hash ({genesis!r}): refusing writes (I3)")
+        if genesis.lower() == MAINNET_GENESIS:
             raise WriteGuardError(f"{self.endpoint} serves Portaldot mainnet's genesis: refusing writes (I3)")
         self._fork_checked = True
 

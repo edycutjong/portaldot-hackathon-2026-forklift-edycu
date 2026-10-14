@@ -122,6 +122,8 @@ def page_keys(
     while True:
         page = client.call("state_getKeysPaged", ["0x", page_size, cursor, block_hash])
         pages += 1
+        if not isinstance(page, list) or not all(isinstance(k, str) and k.startswith("0x") for k in page):
+            raise PagingError(f"malformed key page after cursor {cursor}: {str(page)[:80]}")
         if not page:
             break
         if any(b <= a for a, b in zip(page, page[1:])) or (cursor is not None and page[0] <= cursor):
@@ -130,7 +132,7 @@ def page_keys(
         mmr_seen += len(page) - len(kept)
         keys.extend(kept)
         cursor = page[-1]
-        if in_mmr(cursor):
+        if in_mmr(cursor) and cursor < MMR_JUMP:
             # The range is ~5.4 M keys long: jump past it instead of paging through.
             cursor = MMR_JUMP
             jumps += 1
@@ -146,6 +148,7 @@ def fetch_values(client: RpcClient, keys: list[str], block_hash: str, *, batch: 
     halved and retried, down to one key.
     """
     values: dict[str, str] = {}
+    batch = max(1, batch)
     i = 0
     while i < len(keys):
         chunk = keys[i:i + batch]
@@ -157,6 +160,9 @@ def fetch_values(client: RpcClient, keys: list[str], block_hash: str, *, batch: 
             batch = max(1, batch // 2)
             continue
         i += len(chunk)
+        if not isinstance(sets, list) or not all(isinstance(s, dict) and isinstance(s.get("changes"), list)
+                                                 for s in sets):
+            raise ValueError(f"malformed state_queryStorageAt reply: {str(sets)[:80]}")
         got = {k: v for s in sets for k, v in s["changes"]}
         missing = [k for k in chunk if got.get(k) is None]
         if missing:
@@ -233,7 +239,7 @@ def lift(
         version = client.call("state_getRuntimeVersion", [pin.hash])
         if not isinstance(version, dict) or "specVersion" not in version:
             raise ValueError(f"no runtime version at {pin.hash}")
-    except (RpcError, RpcUnavailable, ValueError) as exc:
+    except (RpcError, RpcUnavailable, ValueError, KeyError, TypeError) as exc:
         raise LiftError(f"could not pin a block: {exc}", cursor=None, phase="pin", block_hash=None) from exc
 
     out_dir = None
@@ -241,13 +247,19 @@ def lift(
     prior: list[str] = []
     if out_root is not None:
         out_dir = Path(out_root) / str(pin.number)
-        out_dir.mkdir(parents=True, exist_ok=True)
-        ckpt = Checkpoint(out_dir / "checkpoint.json", pin.hash)
-        if resume:
-            cursor, prior = ckpt.load()
-        if cursor is None:
-            prior = []
-            ckpt.reset()
+        try:
+            out_dir.mkdir(parents=True, exist_ok=True)
+            # A lift is complete only with its manifest: drop any earlier one before rewriting.
+            (out_dir / "manifest.json").unlink(missing_ok=True)
+            ckpt = Checkpoint(out_dir / "checkpoint.json", pin.hash)
+            if resume:
+                cursor, prior = ckpt.load()
+            if cursor is None:
+                prior = []
+                ckpt.reset()
+        except OSError as exc:
+            raise LiftError(f"cannot write the lift directory: {exc}", cursor=None, phase="write",
+                            block_hash=pin.hash) from exc
     resumed_from = cursor
     total = len(prior)
     last_key = prior[-1] if prior else None
@@ -262,7 +274,7 @@ def lift(
 
     try:
         paged = page_keys(client, pin.hash, page_size=page_size, start=cursor, on_page=on_page)
-    except (RpcError, RpcUnavailable, PagingError) as exc:
+    except (RpcError, RpcUnavailable, PagingError, OSError) as exc:
         raise LiftError(f"key paging failed: {exc}", cursor=cursor, phase="keys", block_hash=pin.hash) from exc
     keys = prior + paged.keys
     t_keys = time.monotonic()
@@ -272,7 +284,7 @@ def lift(
                         block_hash=pin.hash)
     try:
         values = fetch_values(client, keys, pin.hash, batch=value_batch)
-    except (RpcError, RpcUnavailable, ValueError) as exc:
+    except (RpcError, RpcUnavailable, ValueError, KeyError, TypeError) as exc:
         raise LiftError(f"value fetch failed: {exc}", cursor=cursor, phase="values", block_hash=pin.hash) from exc
     t_end = time.monotonic()
 
@@ -293,8 +305,12 @@ def lift(
         resumed_from=resumed_from,
     )
     if out_dir is not None:
-        _atomic_write(out_dir / "state.json", json.dumps({"block_hash": pin.hash, "block_number": pin.number,
-                                                          "storage": values}))
+        try:
+            _atomic_write(out_dir / "state.json", json.dumps({"block_hash": pin.hash, "block_number": pin.number,
+                                                              "storage": values}))
+        except OSError as exc:
+            raise LiftError(f"cannot write state.json: {exc}", cursor=cursor, phase="write",
+                            block_hash=pin.hash) from exc
         if not keep_checkpoint:
             ckpt.clear()
     return result

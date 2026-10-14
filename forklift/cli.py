@@ -34,14 +34,18 @@ def run_lift(endpoint: str, at: str | int | None, out_root: Path, *, resume: boo
             index = StorageIndex(decode_hex(client.call("state_getMetadata", [result.pin.hash])))
             mmr = mmr_summary(client, result.pin.hash)
             manifest = build_manifest(result, index, endpoint=endpoint, mmr=mmr)
-        except (RpcError, RpcUnavailable, MetadataError, ValueError, AttributeError) as exc:
+        except (RpcError, RpcUnavailable, MetadataError, ValueError, KeyError, TypeError, AttributeError) as exc:
             # state.json is on disk but without a manifest it is not a complete lift;
             # the checkpoint stays, so a re-run resumes instead of paging again.
             raise LiftError(f"manifest step failed: {exc}", cursor=None, phase="manifest",
                             block_hash=result.pin.hash) from exc
     manifest["load"]["resumed_from_cursor"] = result.resumed_from
     path = result.out_dir / "manifest.json"
-    _atomic_write(path, json.dumps(manifest, indent=2) + "\n")
+    try:
+        _atomic_write(path, json.dumps(manifest, indent=2) + "\n")
+    except OSError as exc:
+        raise LiftError(f"cannot write manifest.json: {exc}", cursor=None, phase="write",
+                        block_hash=result.pin.hash) from exc
     Checkpoint(result.out_dir / "checkpoint.json", result.pin.hash).clear()
     manifest["_paths"] = {"dir": str(result.out_dir), "manifest": str(path)}
     return manifest
