@@ -340,10 +340,10 @@ def dispatch_error_name(rt: Runtime, err: Any) -> str:
 
 def result_of(rt: Runtime, value: Any) -> tuple[bool, str | None]:
     """A decoded ``DispatchResult`` → (ok, error name)."""
-    if isinstance(value, dict) and set(value) & {"Ok", "Err"}:
+    if isinstance(value, dict) and set(value) & {"Ok", "Err", "Error"}:  # scalecodec names the Err arm "Error"
         if "Ok" in value:
             return True, None
-        return False, dispatch_error_name(rt, value["Err"])
+        return False, dispatch_error_name(rt, value["Err"] if "Err" in value else value["Error"])
     if value == "Ok":
         return True, None
     if isinstance(value, bool):  # older pallets report the dispatch outcome as a bool

@@ -138,6 +138,9 @@ def test_error_names_come_from_metadata(rt):
     assert tx.result_of(rt, {"Ok": ()}) == (True, None)
     assert tx.result_of(rt, "Ok") == (True, None)
     assert tx.result_of(rt, {"Err": {"BadOrigin": None}}) == (False, "BadOrigin")
+    # a live runtime's Result decodes with the arm named "Error" (seen by the live fund/as/receipt test)
+    assert tx.result_of(rt, {"Error": {"Module": {"index": 6, "error": 2}}}) == (False, "Balances.InsufficientBalance")
+    assert tx.result_of(rt, {"Error": {"BadOrigin": None}}) == (False, "BadOrigin")
 
 
 def test_result_of_fails_closed_on_nothing_decoded_and_reads_bools(rt):
