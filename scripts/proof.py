@@ -26,6 +26,15 @@ def _load(pattern: str) -> list[dict]:
     return rows
 
 
+def _short(v) -> str:
+    if isinstance(v, dict) and isinstance(v.get("data"), dict) and "free" in v["data"]:
+        return f"free {v['data']['free']:,} planck, nonce {v['nonce']}"
+    if isinstance(v, dict) and "targets" in v:
+        return f"{len(v['targets'])} target(s) " + ", ".join(f"`{t[:6]}…{t[-4:]}`" for t in v["targets"]) \
+            + f" (submitted in era {v.get('submitted_in')})"
+    return f"`{json.dumps(v)}`"
+
+
 def render() -> str:
     lifts = sorted(_load("lift-[0-9]*.json"), key=lambda d: d["pin"]["block_number"])
     complete = {d["pin"]["block_number"]: d for d in _load("lift-completeness-*.json")}
@@ -123,6 +132,91 @@ def render() -> str:
                     f"{r['draws']} → {r['unique_keys']} | {classes} | {flags} | {r['exit_code']} | "
                     f"{r['seed']} | `{d['_file']}` |"
                 )
+    for d in sorted(_load("txs-[0-9]*.json"), key=lambda d: d["pin"]["block_number"]):
+        refetch = {}
+        rp = EVIDENCE / d["_file"].split("/")[-1].replace("txs-", "refetch-")
+        if rp.exists():
+            rf = json.loads(rp.read_text())
+            refetch = {r["extrinsic_id"]: (r["ok"], rf["refetched_utc"]) for r in rf["rows"]}
+        rows = [r for r in d["rows"] if r.get("persistent_base_path")]
+        if not rows:
+            continue
+        out += [
+            "",
+            f"## Transactions on the fork (pin #{d['pin']['block_number']:,})",
+            "",
+            "Signed by the fork's dev sudo key `//Alice` (the `Sudo.Key` override) on a local fork with a persistent",
+            "archive database; block numbers and hashes are on that fork, not on mainnet. `as` rows run through",
+            "`Sudo.sudo_as`, which skips the fee, the nonce and signed extensions. Re-fetched = read again by",
+            "extrinsic id from a separate process (`scripts/refetch.py`): same block hash, tx hash and outcome.",
+            "",
+            "| Command | Call | As | Extrinsic | Block hash | Tx hash | Result | Label | Re-fetched |",
+            "|---|---|---|---|---|---|---|---|---|",
+        ]
+        for r in rows:
+            disp = r.get("dispatch") or {}
+            result = ("Ok" if r["success"] and disp.get("ok", True) else "**Err** " + str(disp.get("error")))
+            ok, when = refetch.get(r["extrinsic_id"], (None, None))
+            ref = "not yet" if ok is None else f"yes ({when})" if ok else "**DIFFERS**"
+            who = r["who"]
+            out.append(
+                f"| {'`receipt` (' + r['kind'] + ')' if r['kind'] in ('instantiate', 'rent_top_up', 'attest') else '`' + r['kind'] + '`'}"
+                f" | `{r['call']}` | `{who[:6]}…{who[-4:]}` | `{r['extrinsic_id']}` | "
+                f"`{r['block_hash']}` | `{r['tx_hash']}` | {result} | `{r['label']}` | {ref} |"
+            )
+        changes = [r for r in rows if r["kind"] in ("fund", "as") and r.get("changed")]
+        if changes:
+            out += ["", "What changed (read on the fork before the call and at the block that included it):", ""]
+            for r in changes:
+                for item, ch in r["changed"].items():
+                    out.append(f"- `{r['extrinsic_id']}` {item}: {_short(ch['before'])} → {_short(ch['after'])}")
+        receipts = [r for r in rows if r["kind"] in ("instantiate", "rent_top_up", "attest")]
+        if receipts:
+            att = [r for r in receipts if r["kind"] == "attest"][-1:]
+            inst = [r for r in receipts if r["kind"] == "instantiate"][:1]
+            top = [r for r in receipts if r["kind"] == "rent_top_up"]
+            out += ["", "### Fork Receipt contract", ""]
+            if inst:
+                out.append(f"- Contract address: `{inst[0]['contract']}` (code hash `{inst[0]['code_hash']}`), "
+                           f"instantiated in `{inst[0]['extrinsic_id']}`, tx `{inst[0]['tx_hash']}`.")
+            for t in top:
+                out.append(f"- Rent check, `{t['extrinsic_id']}`: {t['why']}.")
+            for a in att:
+                em = (a.get("emitted") or [{}])[0].get("decoded") or {}
+                proof = a.get("rent_proof") or {}
+                out.append(f"- Attest `{a['extrinsic_id']}`, tx `{a['tx_hash']}`: `Contracts.ContractEmitted` = mainnet "
+                           f"block hash `{em.get('mainnet_block_hash')}` ‖ manifest root `{em.get('manifest_root')}` ‖ "
+                           f"{em.get('keys_lifted', 0):,} keys lifted; equals the manifest: "
+                           f"{'yes' if a.get('matches_manifest') else '**NO**'}.")
+                if proof:
+                    out.append(f"- Rent measured across the attest: `rent_paid` {proof['rent_paid_before']:,} → "
+                               f"{proof['rent_paid_after']:,} planck, `deduct_block` {proof['deduct_block_before']} → "
+                               f"{proof['deduct_block_after']}, balance {proof['free_before_attest']:,} → "
+                               f"{proof['free_after_attest']:,} planck: "
+                               f"{'no rent charged' if proof['no_rent_charged'] else '**rent charged**'}.")
+        out.append(f"\nEvidence: `{d['_file']}`" + (f", `evidence/{rp.name}`" if rp.exists() else ""))
+    soaks = _load("soak-*.json")
+    if soaks:
+        out += [
+            "",
+            "## Soak",
+            "",
+            "A fork left running on a persistent database, checked over RPC. An epoch is "
+            "`Babe.EpochDuration` slots of the dev runtime (1,200 x 6 s = 2 h).",
+            "",
+            "| Fork | Genesis hash | Started (UTC) | Checked (UTC) | Measured | Epoch index | Epoch transitions (block) | "
+            "Authoring / finalizing at check | Peers | Pass | Evidence |",
+            "|---|---|---|---|---|---|---|---|---|---|---|",
+        ]
+        for d in soaks:
+            tr = ", ".join(f"epoch {t['epoch']} at #{t['block']:,}" for t in d["epochs"]["transitions"]) or "none"
+            out.append(
+                f"| `{d['fork']['label']}` `{d['fork']['name']}` | `{d['fork']['genesis_hash']}` | {d['started_utc']} | "
+                f"{d['checked_utc']} | {d['measured_hours']} h | {d['epochs']['epoch_index']} | {tr} | "
+                f"best #{d['authoring']['best_before']:,} → #{d['authoring']['best_after']:,}, finalized "
+                f"#{d['finalizing']['finalized_before']:,} → #{d['finalizing']['finalized_after']:,} | "
+                f"{d['peers']} | {'yes' if d['pass'] else '**NO**'} | `{d['_file']}` |"
+            )
     if benches:
         out += [
             "",

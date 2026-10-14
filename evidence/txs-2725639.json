@@ -1,0 +1,314 @@
+{
+  "pin": {
+    "block_number": 2725639,
+    "block_hash": "0xc6fb8d8a10ae3045b7cb6b0f24ddacc538006a1fae975ec343c8654fb55a8212"
+  },
+  "source_endpoint": "wss://mainnet.portaldot.io",
+  "manifest_root": "0x29f18c9250683ce3da0b6ee821674de99036bbc67afc32f42647d687b4c584e7",
+  "keys_lifted": 16332,
+  "note": "block numbers and hashes are on the fork named in each row, not on mainnet",
+  "reproduce": "forklift tx <extrinsic_id> --endpoint <fork_endpoint> re-reads a row from the fork",
+  "rows": [
+    {
+      "recorded_utc": "2026-10-14T12:13:49+00:00",
+      "label": "fork-1002-fast",
+      "fork_name": "proof",
+      "fork_endpoint": "ws://127.0.0.1:59944",
+      "fork_genesis_hash": "0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b",
+      "persistent_base_path": true,
+      "kind": "fund",
+      "call": "Sudo.sudo(Balances.set_balance)",
+      "who": "5F1KbjNTUu6xmMCcSz2wrv7b627BKS7hUTzWFqdmpvb3rMcE",
+      "extrinsic_id": "6-1",
+      "block_number": 6,
+      "block_hash": "0x2d1f540e77eab30e3176bfe27949a2d28cdfbfce8e0ce73ff2894df76588f435",
+      "tx_hash": "0x20d8fb459f9abed586ff4ea4f17205c4eb5ccb9e8705eb13e9d2c5a0ee05478c",
+      "success": true,
+      "finalized": true,
+      "seconds": 14.8,
+      "dispatch": {
+        "ok": true,
+        "error": null
+      },
+      "changed": {
+        "System.Account": {
+          "before": {
+            "nonce": 0,
+            "consumers": 0,
+            "providers": 0,
+            "sufficients": 0,
+            "data": {
+              "free": 0,
+              "reserved": 0,
+              "misc_frozen": 0,
+              "fee_frozen": 0
+            }
+          },
+          "after": {
+            "nonce": 0,
+            "consumers": 0,
+            "providers": 1,
+            "sufficients": 0,
+            "data": {
+              "free": 100000000000000000000,
+              "reserved": 0,
+              "misc_frozen": 0,
+              "fee_frozen": 0
+            }
+          }
+        }
+      },
+      "inner_events": [
+        {
+          "event": "System.NewAccount",
+          "attributes": [
+            {
+              "type": "AccountId",
+              "value": "5F1KbjNTUu6xmMCcSz2wrv7b627BKS7hUTzWFqdmpvb3rMcE"
+            }
+          ]
+        },
+        {
+          "event": "Balances.Endowed",
+          "attributes": [
+            {
+              "type": "AccountId",
+              "value": "5F1KbjNTUu6xmMCcSz2wrv7b627BKS7hUTzWFqdmpvb3rMcE"
+            },
+            {
+              "type": "Balance",
+              "value": 100000000000000000000
+            }
+          ]
+        },
+        {
+          "event": "Balances.BalanceSet",
+          "attributes": [
+            {
+              "type": "AccountId",
+              "value": "5F1KbjNTUu6xmMCcSz2wrv7b627BKS7hUTzWFqdmpvb3rMcE"
+            },
+            {
+              "type": "Balance",
+              "value": 100000000000000000000
+            },
+            {
+              "type": "Balance",
+              "value": 0
+            }
+          ]
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "recorded_utc": "2026-10-14T12:14:18+00:00",
+      "label": "fork-1002-fast",
+      "fork_name": "proof",
+      "fork_endpoint": "ws://127.0.0.1:59944",
+      "fork_genesis_hash": "0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b",
+      "persistent_base_path": true,
+      "kind": "as",
+      "call": "Sudo.sudo_as(Balances.transfer)",
+      "who": "5DvRSgerqB5KHPqWGGnCtRJgJokj91XyGLm3aZ5DKH1rMndf",
+      "extrinsic_id": "11-1",
+      "block_number": 11,
+      "block_hash": "0x4fabd35ccdc38924c885d249259c30814800322b0ba934c5ce86e3e4cf01ddc9",
+      "tx_hash": "0xb2cdc54c904dee3a9caff1cc1e5f5a97a79f016689c067b7e815f915aa392768",
+      "success": true,
+      "finalized": true,
+      "seconds": 18.8,
+      "dispatch": {
+        "ok": true,
+        "error": null
+      },
+      "changed": {
+        "System.Account": {
+          "before": {
+            "nonce": 0,
+            "consumers": 0,
+            "providers": 1,
+            "sufficients": 0,
+            "data": {
+              "free": 20000000000000000000000,
+              "reserved": 0,
+              "misc_frozen": 0,
+              "fee_frozen": 0
+            }
+          },
+          "after": {
+            "nonce": 0,
+            "consumers": 0,
+            "providers": 1,
+            "sufficients": 0,
+            "data": {
+              "free": 19999900000000000000000,
+              "reserved": 0,
+              "misc_frozen": 0,
+              "fee_frozen": 0
+            }
+          }
+        }
+      },
+      "inner_events": [
+        {
+          "event": "Balances.Transfer",
+          "attributes": [
+            {
+              "type": "AccountId",
+              "value": "5DvRSgerqB5KHPqWGGnCtRJgJokj91XyGLm3aZ5DKH1rMndf"
+            },
+            {
+              "type": "AccountId",
+              "value": "5F1KbjNTUu6xmMCcSz2wrv7b627BKS7hUTzWFqdmpvb3rMcE"
+            },
+            {
+              "type": "Balance",
+              "value": 100000000000000000
+            }
+          ]
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "recorded_utc": "2026-10-14T12:14:37+00:00",
+      "label": "fork-1002-fast",
+      "fork_name": "proof",
+      "fork_endpoint": "ws://127.0.0.1:59944",
+      "fork_genesis_hash": "0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b",
+      "persistent_base_path": true,
+      "kind": "as",
+      "call": "Sudo.sudo_as(Staking.nominate)",
+      "who": "5Cf8KJFLVrY43yEZN3vgFktGZvhUhrt7WBvfjJoTr54EjchW",
+      "extrinsic_id": "14-1",
+      "block_number": 14,
+      "block_hash": "0x5cf19f6de9b965602fac10c1fce8fe21eb8fb75e27fdb97bad2665b5aa676cb3",
+      "tx_hash": "0x14ad312722d021bb58667665519de190d7a5301a9e72e92601645d18e28c7972",
+      "success": true,
+      "finalized": true,
+      "seconds": 18.1,
+      "dispatch": {
+        "ok": true,
+        "error": null
+      },
+      "changed": {
+        "Staking.Nominators": {
+          "before": {
+            "targets": [
+              "5CtnsMuscb2qYf7L3DQCD1AKwJ8S3YLvsjRMmaCWr7YZXwpT"
+            ],
+            "submitted_in": 3180,
+            "suppressed": false
+          },
+          "after": {
+            "targets": [
+              "5DSHUMkUHoT78nPaACjs85TjxoHosinc47Yfpes38wWknDCD",
+              "5FCM6payzb4zo3oWPKUZDpgcBAMSyYS4vY5b3YuRtCCGRnmn",
+              "5EhWJRiq4XLw2mErQXZoHeASfC8MjujgBYhomDD9YeWMYgF6"
+            ],
+            "submitted_in": 3890,
+            "suppressed": false
+          }
+        }
+      },
+      "inner_events": [],
+      "warnings": []
+    },
+    {
+      "recorded_utc": "2026-10-14T12:15:31+00:00",
+      "label": "fork-1002-fast",
+      "fork_name": "proof",
+      "fork_endpoint": "ws://127.0.0.1:59944",
+      "fork_genesis_hash": "0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b",
+      "persistent_base_path": true,
+      "kind": "instantiate",
+      "call": "Contracts.instantiate_with_code",
+      "who": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+      "contract": "5EMSUfyyk1aY62M8XGdgAYAwyqd3R7sGbXFERaW5ZVBHeTXv",
+      "code_hash": "0xd54b527c1aa809166d6f0a48d2d5a682adb55c8412fdb806b92d0607ff874eda",
+      "extrinsic_id": "17-1",
+      "block_number": 17,
+      "block_hash": "0x372a25e2e605dda6a0387e67371bc42cd6f26cd9773e728343a70b52c438131b",
+      "tx_hash": "0x6776580961ab0ee7aa088fae23b83854b9a19ded05e8e3968f9a40ee217ded76",
+      "success": true,
+      "finalized": true,
+      "seconds": 17.1,
+      "endowment": 1670000000000000,
+      "emitted": [
+        {
+          "contract": "5EMSUfyyk1aY62M8XGdgAYAwyqd3R7sGbXFERaW5ZVBHeTXv",
+          "data": "0xc6fb8d8a10ae3045b7cb6b0f24ddacc538006a1fae975ec343c8654fb55a821229f18c9250683ce3da0b6ee821674de99036bbc67afc32f42647d687b4c584e7cc3f000000000000",
+          "decoded": {
+            "mainnet_block_hash": "0xc6fb8d8a10ae3045b7cb6b0f24ddacc538006a1fae975ec343c8654fb55a8212",
+            "manifest_root": "0x29f18c9250683ce3da0b6ee821674de99036bbc67afc32f42647d687b4c584e7",
+            "keys_lifted": 16332
+          }
+        }
+      ]
+    },
+    {
+      "recorded_utc": "2026-10-14T12:15:31+00:00",
+      "label": "fork-1002-fast",
+      "fork_name": "proof",
+      "fork_endpoint": "ws://127.0.0.1:59944",
+      "fork_genesis_hash": "0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b",
+      "persistent_base_path": true,
+      "kind": "rent_top_up",
+      "call": "Balances.transfer",
+      "who": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+      "contract": "5EMSUfyyk1aY62M8XGdgAYAwyqd3R7sGbXFERaW5ZVBHeTXv",
+      "code_hash": "0xd54b527c1aa809166d6f0a48d2d5a682adb55c8412fdb806b92d0607ff874eda",
+      "extrinsic_id": "20-1",
+      "block_number": 20,
+      "block_hash": "0x8fc5f26dfc518f092c32925df2d096a56e4edbd849e5427fd466510a0ad4a912",
+      "tx_hash": "0x6c8ab070507e76438494c67d85925c44f9b74fce6fd54852bcf3fad141a50af7",
+      "success": true,
+      "finalized": true,
+      "seconds": 18.7,
+      "amount": 2451704514614000,
+      "why": "rent was up to 4,806,188,447 planck/block: eviction in about 173,733 blocks (~12.1 days of 6 s blocks) at that rate; topped up to the deposit bound + 10 % so the rent is 0 and the Receipt is never evicted"
+    },
+    {
+      "recorded_utc": "2026-10-14T12:15:31+00:00",
+      "label": "fork-1002-fast",
+      "fork_name": "proof",
+      "fork_endpoint": "ws://127.0.0.1:59944",
+      "fork_genesis_hash": "0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b",
+      "persistent_base_path": true,
+      "kind": "attest",
+      "call": "Contracts.call(attest)",
+      "who": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+      "contract": "5EMSUfyyk1aY62M8XGdgAYAwyqd3R7sGbXFERaW5ZVBHeTXv",
+      "code_hash": "0xd54b527c1aa809166d6f0a48d2d5a682adb55c8412fdb806b92d0607ff874eda",
+      "extrinsic_id": "23-1",
+      "block_number": 23,
+      "block_hash": "0xf7b81b0bf9e39893d19891b2ffad5b9898da6cf39fb6c72e821dd28a088200da",
+      "tx_hash": "0x639d836680e40b4244549bc0d8e6ffd07515292e8e0e9aee0d8f544d8542c642",
+      "success": true,
+      "finalized": true,
+      "seconds": 17.2,
+      "emitted": [
+        {
+          "contract": "5EMSUfyyk1aY62M8XGdgAYAwyqd3R7sGbXFERaW5ZVBHeTXv",
+          "data": "0xc6fb8d8a10ae3045b7cb6b0f24ddacc538006a1fae975ec343c8654fb55a821229f18c9250683ce3da0b6ee821674de99036bbc67afc32f42647d687b4c584e7cc3f000000000000",
+          "decoded": {
+            "mainnet_block_hash": "0xc6fb8d8a10ae3045b7cb6b0f24ddacc538006a1fae975ec343c8654fb55a8212",
+            "manifest_root": "0x29f18c9250683ce3da0b6ee821674de99036bbc67afc32f42647d687b4c584e7",
+            "keys_lifted": 16332
+          }
+        }
+      ],
+      "matches_manifest": true,
+      "rent_proof": {
+        "free_before_attest": 4121700000000000,
+        "free_after_attest": 4121700000000000,
+        "rent_paid_before": 4514614000,
+        "rent_paid_after": 4514614000,
+        "deduct_block_before": 17,
+        "deduct_block_after": 23,
+        "no_rent_charged": true
+      }
+    }
+  ]
+}

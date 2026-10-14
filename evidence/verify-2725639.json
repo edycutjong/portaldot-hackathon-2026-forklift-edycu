@@ -431,6 +431,82 @@
         "finalized": 7
       },
       "exit_code": 0
+    },
+    {
+      "recorded_utc": "2026-10-14T12:16:03+00:00",
+      "label": "fork-1002-fast",
+      "fork_genesis_hash": "0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b",
+      "fork_endpoint": "ws://127.0.0.1:59944",
+      "seed": 13670441464817013211,
+      "draws": 200,
+      "unique_keys": 200,
+      "classes": {
+        "dev-kept": 89,
+        "identical": 111
+      },
+      "mismatches": [],
+      "checks": {
+        "overrides": {
+          "ok": true,
+          "count": 5,
+          "rows": [
+            {
+              "name": "System.Account[dev key]",
+              "fork_holds_override": true,
+              "mainnet_as_recorded": true
+            },
+            {
+              "name": ":code",
+              "fork_holds_override": true,
+              "mainnet_as_recorded": true
+            },
+            {
+              "name": "Sudo.Key",
+              "fork_holds_override": true,
+              "mainnet_as_recorded": true
+            },
+            {
+              "name": "Staking.ForceEra",
+              "fork_holds_override": true,
+              "mainnet_as_recorded": true
+            },
+            {
+              "name": "Balances.TotalIssuance",
+              "fork_holds_override": true,
+              "mainnet_as_recorded": true
+            }
+          ]
+        },
+        "genesis_key_set": {
+          "ok": true,
+          "expected_keys": 9568,
+          "fork_keys": 9568,
+          "expected_set_hash": "0x34f77c402f9c79ee919ec13ac4e08709ddb27a597774aba7a44909697c6a21d1",
+          "fork_set_hash": "0x34f77c402f9c79ee919ec13ac4e08709ddb27a597774aba7a44909697c6a21d1"
+        },
+        "issuance": {
+          "ok": true,
+          "mainnet": "101678150944019349511407",
+          "added": "5000000000000000000",
+          "fork": "101683150944019349511407"
+        },
+        "runtime": {
+          "ok": true,
+          "mainnet_code_hash": "0xc8e7e77fe84f1231787e75a751af48c52e68675ad55de062c81cc8df24066e55",
+          "fork_code_hash": "0x8c0d4d9d638ad05e7d214e1496321cea00274698e4bcf5b2006c3eaf86b7fa80",
+          "fork_runtime": "fast"
+        },
+        "compared_with_mainnet": {
+          "ok": true,
+          "keys": 111,
+          "dev_kept_checked_against_dev_genesis": true
+        }
+      },
+      "fork_head_at_verify": {
+        "best": 30,
+        "finalized": 28
+      },
+      "exit_code": 0
     }
   ]
 }

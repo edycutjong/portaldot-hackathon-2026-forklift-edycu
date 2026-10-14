@@ -1,0 +1,170 @@
+{
+  "refetched_utc": "2026-10-14T12:16:30+00:00",
+  "process": {
+    "pid": 29660,
+    "note": "a separate process from the one that submitted"
+  },
+  "source": "evidence/txs-2725639.json",
+  "pin": {
+    "block_number": 2725639,
+    "block_hash": "0xc6fb8d8a10ae3045b7cb6b0f24ddacc538006a1fae975ec343c8654fb55a8212"
+  },
+  "rows_checked": 6,
+  "all_identical": true,
+  "rows": [
+    {
+      "extrinsic_id": "6-1",
+      "kind": "fund",
+      "call": "Sudo.sudo",
+      "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+      "block_hash": "0x2d1f540e77eab30e3176bfe27949a2d28cdfbfce8e0ce73ff2894df76588f435",
+      "tx_hash": "0x20d8fb459f9abed586ff4ea4f17205c4eb5ccb9e8705eb13e9d2c5a0ee05478c",
+      "success": true,
+      "error": null,
+      "events": [
+        "System.NewAccount",
+        "Balances.Endowed",
+        "Balances.BalanceSet",
+        "Sudo.Sudid",
+        "System.ExtrinsicSuccess"
+      ],
+      "checks": {
+        "block_hash": true,
+        "tx_hash": true,
+        "success": true
+      },
+      "ok": true
+    },
+    {
+      "extrinsic_id": "11-1",
+      "kind": "as",
+      "call": "Sudo.sudo_as",
+      "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+      "block_hash": "0x4fabd35ccdc38924c885d249259c30814800322b0ba934c5ce86e3e4cf01ddc9",
+      "tx_hash": "0xb2cdc54c904dee3a9caff1cc1e5f5a97a79f016689c067b7e815f915aa392768",
+      "success": true,
+      "error": null,
+      "events": [
+        "Balances.Transfer",
+        "Sudo.SudoAsDone",
+        "System.ExtrinsicSuccess"
+      ],
+      "checks": {
+        "block_hash": true,
+        "tx_hash": true,
+        "success": true
+      },
+      "ok": true
+    },
+    {
+      "extrinsic_id": "14-1",
+      "kind": "as",
+      "call": "Sudo.sudo_as",
+      "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+      "block_hash": "0x5cf19f6de9b965602fac10c1fce8fe21eb8fb75e27fdb97bad2665b5aa676cb3",
+      "tx_hash": "0x14ad312722d021bb58667665519de190d7a5301a9e72e92601645d18e28c7972",
+      "success": true,
+      "error": null,
+      "events": [
+        "Sudo.SudoAsDone",
+        "System.ExtrinsicSuccess"
+      ],
+      "checks": {
+        "block_hash": true,
+        "tx_hash": true,
+        "success": true
+      },
+      "ok": true
+    },
+    {
+      "extrinsic_id": "17-1",
+      "kind": "instantiate",
+      "call": "Contracts.instantiate_with_code",
+      "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+      "block_hash": "0x372a25e2e605dda6a0387e67371bc42cd6f26cd9773e728343a70b52c438131b",
+      "tx_hash": "0x6776580961ab0ee7aa088fae23b83854b9a19ded05e8e3968f9a40ee217ded76",
+      "success": true,
+      "error": null,
+      "events": [
+        "System.NewAccount",
+        "Balances.Endowed",
+        "Balances.Transfer",
+        "Contracts.CodeStored",
+        "Contracts.ContractEmitted",
+        "Contracts.Instantiated",
+        "Treasury.Deposit",
+        "System.ExtrinsicSuccess"
+      ],
+      "emitted": [
+        {
+          "contract": "5EMSUfyyk1aY62M8XGdgAYAwyqd3R7sGbXFERaW5ZVBHeTXv",
+          "decoded": {
+            "mainnet_block_hash": "0xc6fb8d8a10ae3045b7cb6b0f24ddacc538006a1fae975ec343c8654fb55a8212",
+            "manifest_root": "0x29f18c9250683ce3da0b6ee821674de99036bbc67afc32f42647d687b4c584e7",
+            "keys_lifted": 16332
+          }
+        }
+      ],
+      "checks": {
+        "block_hash": true,
+        "tx_hash": true,
+        "success": true,
+        "receipt_payload_matches_manifest": true
+      },
+      "ok": true
+    },
+    {
+      "extrinsic_id": "20-1",
+      "kind": "rent_top_up",
+      "call": "Balances.transfer",
+      "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+      "block_hash": "0x8fc5f26dfc518f092c32925df2d096a56e4edbd849e5427fd466510a0ad4a912",
+      "tx_hash": "0x6c8ab070507e76438494c67d85925c44f9b74fce6fd54852bcf3fad141a50af7",
+      "success": true,
+      "error": null,
+      "events": [
+        "Balances.Transfer",
+        "Treasury.Deposit",
+        "System.ExtrinsicSuccess"
+      ],
+      "checks": {
+        "block_hash": true,
+        "tx_hash": true,
+        "success": true
+      },
+      "ok": true
+    },
+    {
+      "extrinsic_id": "23-1",
+      "kind": "attest",
+      "call": "Contracts.call",
+      "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+      "block_hash": "0xf7b81b0bf9e39893d19891b2ffad5b9898da6cf39fb6c72e821dd28a088200da",
+      "tx_hash": "0x639d836680e40b4244549bc0d8e6ffd07515292e8e0e9aee0d8f544d8542c642",
+      "success": true,
+      "error": null,
+      "events": [
+        "Contracts.ContractEmitted",
+        "Treasury.Deposit",
+        "System.ExtrinsicSuccess"
+      ],
+      "emitted": [
+        {
+          "contract": "5EMSUfyyk1aY62M8XGdgAYAwyqd3R7sGbXFERaW5ZVBHeTXv",
+          "decoded": {
+            "mainnet_block_hash": "0xc6fb8d8a10ae3045b7cb6b0f24ddacc538006a1fae975ec343c8654fb55a8212",
+            "manifest_root": "0x29f18c9250683ce3da0b6ee821674de99036bbc67afc32f42647d687b4c584e7",
+            "keys_lifted": 16332
+          }
+        }
+      ],
+      "checks": {
+        "block_hash": true,
+        "tx_hash": true,
+        "success": true,
+        "receipt_payload_matches_manifest": true
+      },
+      "ok": true
+    }
+  ]
+}
