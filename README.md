@@ -25,7 +25,7 @@ Portaldot Hacker House 2026 · Track: Node Operations & Tooling
 
 ### Problem Statement
 
-A local `portaldot_dev --dev` chain starts from a fresh genesis, not from mainnet's accounts, stakes or nominators.
+A local `portaldot_dev --dev` chain is a development chain; it does not carry mainnet's accounts, stakes or nominators.
 A builder who wants to test one staking call, or one contract, against the state their users are actually on has no
 simple way to get that state locally.
 
@@ -44,6 +44,7 @@ key/value pair).
   fetched. (One probe page reaches the range, so that page's MMR keys, at most 1,000, are listed and dropped.)
 - Progress is checkpointed after every page. If the node fails for good, the lift exits with code `4` and prints the
   last cursor; a partial lift is never written as complete.
+- Top trie only: child tries are not lifted.
 - A write guard refuses to send `author_*` calls to anything that is not a local fork.
 - Every key is named by pallet and item at both pinned blocks (0 unknown), including storage the spec-1002 metadata does not describe.
 
@@ -61,7 +62,7 @@ than an empty dev chain. It never signs or submits anything to mainnet.
 ```mermaid
 flowchart LR
     M[("Portaldot mainnet\nspec 1002\nread-only RPC")]
-    subgraph shipped["Shipped (P1)"]
+    subgraph shipped["Shipped (D1)"]
       RPC["rpc.py\nJSON-RPC client\n+ write guard"]
       LIFT["lift.py\npinned key paging\nMMR cursor jump"]
       META["metadata.py\nstorage names"]
@@ -86,23 +87,23 @@ flowchart LR
 
 | Layer | Choice |
 |---|---|
-| Blockchain platform | **Portaldot V3** is the platform named in the hackathon's README template. Current runs are a read-only lift of **Portaldot mainnet (runtime spec 1002)**, not V3. A local mainnet fork profile (`fork-1002-*`) is planned. |
+| Blockchain platform | **Portaldot V3** is the hackathon's target platform. Current runs are a read-only lift of **Portaldot mainnet (runtime spec 1002)**, not V3. A local mainnet fork profile (`fork-1002-*`) is planned. |
 | Contract language | Planned: a small Fork Receipt contract (see Smart Contracts). None exists yet. |
 | Frontend | None. Forklift is a command-line tool. |
 | Other components | Python 3.11+, `click` (CLI), `websockets` (raw JSON-RPC), `xxhash` (storage key hashing), `hashlib` blake2b. Tests use `pytest`. |
 
-**V3 status.** As of 2026-10-14 the V3 testnet RPC listed in the V3 guide
+**V3 status.** Measured 2026-10-13 (`dig @1.1.1.1`), and empty again on 2026-10-14: the V3 testnet RPC listed in the V3 guide
 (`wss://testnetv3-node.feso-apps.xyz`) did not resolve in DNS, and the organisers have said that no V3 node binary
 or chain spec is public and that an older devnet configuration should not be assumed compatible with the V3 testnet.
 Forklift therefore makes **no V3 claim**; nothing in this repository has run against V3.
 
-Measured source of every number below: [`docs/PROOF.md`](docs/PROOF.md), generated from [`evidence/`](evidence).
+Measured numbers in the Demo table come from [`docs/PROOF.md`](docs/PROOF.md) (generated from [`evidence/`](evidence)); the test count comes from `pytest -q`.
 
 ## Smart Contracts
 
 Forklift has **no deployed contract yet**, so there is no contract address or transaction hash to list.
 
-- **Planned: Fork Receipt contract** (phase P4): `attest(mainnet_block_hash, manifest_root)` would emit the pinned
+- **Planned: Fork Receipt contract** (D3): `attest(mainnet_block_hash, manifest_root)` would emit the pinned
   mainnet block hash, the manifest root and the number of lifted keys as an event, so a fork's origin is on-chain.
 - Directory: none yet. Deployment instructions will be added with the contract.
 
@@ -132,7 +133,7 @@ Pinning block 2,725,639 reproduces `manifest_root`
 `--evidence DIR`, `--json`.
 
 **Exit codes:** `0` lift complete · `4` lift could not finish (last cursor printed, checkpoint kept) · `64` usage
-error. Code `2` is reserved for `verify` mismatches (planned).
+error · `1` other failures. Code `2` is reserved for `verify` mismatches (planned).
 
 **Compile & deploy / launch frontend:** not applicable yet (no contract, no frontend).
 
@@ -154,9 +155,11 @@ error. Code `2` is reserved for `verify` mismatches (planned).
 | Second pin, #2,725,653 | 16,316 keys (1 run, no completeness check) | `evidence/lift-2725653.json` |
 | Tests | 85 offline passed; 1 live test (deselected offline, run with `pytest -m live`) | `pytest -q` |
 
+Note: two of the three runs at #2,725,639 and the run at #2,725,653 were recorded before the later hardening commits to the lift engine (same `manifest_root`); the third run used the current engine.
+
 ## Roadmap
 
-**Completed (P1, 2026-10-14)**
+**Completed (D1, 2026-10-14)**
 
 - [x] JSON-RPC client with retry/backoff and the endpoint write guard
 - [x] Pinned lift with MMR cursor jump, checkpointing and exit code `4`
@@ -180,8 +183,7 @@ Afterwards: replay, an `exact` runtime profile, benchmarks and packaging.
 
 **AI assistance disclosure.** Claude Code (Anthropic) drafted most of the code, tests and this README under the
 author's direction. The architecture, protocol choices and the on-chain design were decided by the author, who reviews
-the code and can explain how the lift works. All code in this repository was written during the hackathon window
-(from 2026-10-14); earlier research is not included.
+the code and can explain how the lift works. All code in this repository was committed from 2026-10-14 (first commit `fa113a6`); earlier research is not included.
 
 Open-source libraries: `click`, `websockets`, `xxhash`, `pytest`, `hatchling`.
 
