@@ -2,7 +2,7 @@
 
 # Forklift
 
-**Portaldot mainnet state, lifted at a pinned block, checked key by key.**
+**Portaldot mainnet state, lifted at a pinned block, with its key set checked against an independent listing.**
 
 ![status](https://img.shields.io/badge/status-work_in_progress-orange)
 ![python](https://img.shields.io/badge/python-3.11%2B-blue)
@@ -25,27 +25,27 @@ Portaldot Hacker House 2026 · Track: Node Operations & Tooling
 
 ### Problem Statement
 
-Portaldot's official testnet client boots an empty chain: one validator (Alice) and none of mainnet's accounts,
-stakes or nominators. A builder who wants to test one staking call, or one contract, against the state their users
-are actually on has no faucet to lean on and no way to get that state locally.
+A local `portaldot_dev --dev` chain starts from a fresh genesis, not from mainnet's accounts, stakes or nominators.
+A builder who wants to test one staking call, or one contract, against the state their users are actually on has no
+simple way to get that state locally.
 
 ### Solution
 
-Forklift reads the whole storage of a Portaldot chain at one pinned block hash and records what it read in a
-`fork.manifest.json` (source block and hash, key counts per pallet and item, a `manifest_root` hash over every
+Forklift reads every top-level storage key of a Portaldot chain (except the MMR range) at one pinned block hash and records what it read in a
+`manifest.json` (source block and hash, key counts per pallet and item, a `manifest_root` hash over every
 key/value pair).
 
 **Shipped (this repo, today):**
 
 - `forklift lift --at N|0xhash|head` pages every storage key **at the pinned block hash**, fetches values at the
   same hash, and writes the lift to `~/.cache/forklift/lifts/<block>/`.
-- The Merkle Mountain Range (MMR) storage is skipped without being listed: the lift pages keys until the page that
+- The Merkle Mountain Range (MMR) storage is skipped without being paged through or fetched: the lift pages keys until the page that
   reaches the MMR prefix, then jumps the cursor past it. The MMR holds 5,451,269 keys at the pinned block; none are
-  fetched. (One probe page reaches the range, so up to 999 MMR keys can be listed by that page and are dropped.)
+  fetched. (One probe page reaches the range, so that page's MMR keys, at most 1,000, are listed and dropped.)
 - Progress is checkpointed after every page. If the node fails for good, the lift exits with code `4` and prints the
   last cursor; a partial lift is never written as complete.
 - A write guard refuses to send `author_*` calls to anything that is not a local fork.
-- Every key is named by pallet and item, including storage the spec-1002 metadata does not describe.
+- Every key is named by pallet and item at both pinned blocks (0 unknown), including storage the spec-1002 metadata does not describe.
 
 **Planned (not built yet, not claimed):** splice the lift into the official node's chain spec and boot a local fork
 (`fork-1002-fast`), `verify` the fork against mainnet, `fund` / `as` (act as a real account), a Fork Receipt contract,
@@ -53,8 +53,7 @@ an `exact` runtime profile, and a hosted fork.
 
 ### Blockchain Relevance
 
-Forklift is node-operations and developer tooling for Portaldot. It reads real chain state through the public
-archive node (`wss://mainnet.portaldot.io`) and is designed so tests run against the state of the live chain rather
+Forklift is node-operations and developer tooling for Portaldot. It reads real chain state through the public node (`wss://mainnet.portaldot.io`) and is designed so tests run against the state of the live chain rather
 than an empty dev chain. It never signs or submits anything to mainnet.
 
 ## Technical Architecture
@@ -87,12 +86,12 @@ flowchart LR
 
 | Layer | Choice |
 |---|---|
-| Blockchain platform | **Portaldot V3** is the hackathon target. Current runs are a read-only lift of **Portaldot mainnet (runtime spec 1002)**, not V3. A local mainnet fork profile (`fork-1002-*`) is planned. |
+| Blockchain platform | **Portaldot V3** is the platform named in the hackathon's README template. Current runs are a read-only lift of **Portaldot mainnet (runtime spec 1002)**, not V3. A local mainnet fork profile (`fork-1002-*`) is planned. |
 | Contract language | Planned: a small Fork Receipt contract (see Smart Contracts). None exists yet. |
 | Frontend | None. Forklift is a command-line tool. |
 | Other components | Python 3.11+, `click` (CLI), `websockets` (raw JSON-RPC), `xxhash` (storage key hashing), `hashlib` blake2b. Tests use `pytest`. |
 
-**V3 status.** As of 2026-10-14 the V3 testnet RPC listed in the organisers' guide
+**V3 status.** As of 2026-10-14 the V3 testnet RPC listed in the V3 guide
 (`wss://testnetv3-node.feso-apps.xyz`) did not resolve in DNS, and the organisers have said that no V3 node binary
 or chain spec is public and that an older devnet configuration should not be assumed compatible with the V3 testnet.
 Forklift therefore makes **no V3 claim**; nothing in this repository has run against V3.
@@ -149,10 +148,10 @@ error. Code `2` is reserved for `verify` mismatches (planned).
 | Keys lifted at #2,725,639 | 16,332 | `evidence/lift-2725639.json` |
 | Independent full key listing at the same hash, minus the MMR range | 16,332 · set difference 0 missing, 0 extra | `evidence/lift-completeness-2725639.json` |
 | MMR keys skipped (listed vs derived from `NumberOfLeaves`) | 5,451,269 / 5,451,269 | same file |
-| Lift time (keys / values / total) | 7.37 s / 12.08 s / 19.45 s | `evidence/lift-2725639.json` |
+| Lift time (keys / values / total) | 7.37 s / 12.08 s / 19.45 s (fastest of 3 runs; totals 19.45–20.34 s) | `evidence/lift-2725639.json` |
 | `manifest_root` identical across fresh-process runs | 3 runs, same root | `docs/PROOF.md` |
-| Second pin, #2,725,653 | 16,316 keys, clean | `evidence/lift-2725653.json` |
-| Tests | 85 offline passed, plus 1 live test (skipped offline) | `pytest -q` |
+| Second pin, #2,725,653 | 16,316 keys (1 run, no completeness check) | `evidence/lift-2725653.json` |
+| Tests | 85 offline passed; 1 live test (deselected offline, run with `pytest -m live`) | `pytest -q` |
 
 ## Roadmap
 
@@ -160,17 +159,17 @@ error. Code `2` is reserved for `verify` mismatches (planned).
 
 - [x] JSON-RPC client with retry/backoff and the endpoint write guard
 - [x] Pinned lift with MMR cursor jump, checkpointing and exit code `4`
-- [x] `fork.manifest.json` with per-pallet/item counts and `manifest_root`
+- [x] `manifest.json` with per-pallet/item counts and `manifest_root`
 - [x] Completeness check of the lift against an independent listing
 - [x] Generated evidence table ([`docs/PROOF.md`](docs/PROOF.md))
 
-**Next phase (slice A, check-in on Oct 24)**
+**Next phase (check-in slice)**
 
 - [ ] D2: splice the lift into the official node's chain spec, boot the fork, `forklift verify`
 - [ ] D3: `fund`, `as`, and the Fork Receipt contract with on-chain proof
 - [ ] D4: README v1, architecture document, demo video
 
-Afterwards: replay, an `exact` runtime profile, benchmarks and packaging (build-plan D5–D12).
+Afterwards: replay, an `exact` runtime profile, benchmarks and packaging.
 
 ## Team
 
