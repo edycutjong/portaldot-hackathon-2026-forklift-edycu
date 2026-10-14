@@ -203,7 +203,7 @@ def lift(
     try:
         pin = resolve_pin(client, at)
         version = client.call("state_getRuntimeVersion", [pin.hash])
-    except (RpcError, RpcUnavailable) as exc:
+    except (RpcError, RpcUnavailable, ValueError) as exc:
         raise LiftError(f"could not pin a block: {exc}", cursor=None, phase="pin", block_hash=None) from exc
 
     out_dir = None
