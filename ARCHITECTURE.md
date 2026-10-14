@@ -13,7 +13,7 @@ Portaldot V3 testnet and nothing here has run against V3 (see the README, *V3 st
 ```mermaid
 flowchart TB
     MN[("Portaldot mainnet\nwss://mainnet.portaldot.io\nspec 1002, read-only")]
-    BIN[["portaldot_dev 2.0.0\n(release tarball,\nsha256-checked)"]]
+    BIN[["portaldot_dev 2.0.0\n(tarball sha256-checked\non download)"]]
     FORK[("local fork\nfork-1002-fast\nloopback ports, 0 peers")]
 
     subgraph cli["cli.py: forklift ..."]
@@ -43,8 +43,9 @@ flowchart TB
 
     C_LIFT --> LIFT
     C_UP --> UP --> LIFT
-    UP --> SPL --> NODE
-    C_UP --> NODE
+    UP --> SPL
+    UP --> NODE
+    C_UP -- "down" --> NODE
     C_VER --> VER
     C_ACT --> ACT --> TX
     C_REC --> REC --> TX
@@ -84,7 +85,7 @@ transaction by extrinsic id from a separate process).
 | `metadata.py`, `hashing.py` | Storage names from runtime metadata V13 (`twox128(pallet) ‖ twox128(item)` to `Pallet.Item`); `twox128`, blake2 hashes and `manifest_root` (blake2-256 over the key-sorted, length-framed key/value pairs). |
 | `manifest.py` | `fork.manifest.json`: source (endpoint, block number and hash, spec version, mainnet `:code` hash), load (keys lifted, bytes, MMR keys skipped, counts per pallet and item), `manifest_root`; the fork, node and overrides blocks are filled by `up`. |
 | `splice.py` | Takes the node's own `build-spec --dev --raw` genesis and replaces it with the lift. **Dev** values stay for Babe, Grandpa, Session, AuthorityDiscovery, ImOnline, Authorship, `:grandpa_authorities`, `:extrinsic_index` and every `System` item except `System.Account`; the MMR prefix is **reset**; five **overrides** are listed with their reason: `Sudo.Key`, `Staking.ForceEra`, the dev key's `System.Account`, `Balances.TotalIssuance`, `:code`. Every lifted key lands in exactly one class (identical, dev-kept, override, or reset for the MMR range; reset is 0 for a lift that skips it). |
-| `node.py` | Finds or downloads the `portaldot_dev` binary (the release tarball is sha256-checked on download; the binary's sha256 is recorded in every manifest), builds a loopback-only command line (`--reserved-only`, no mDNS, no telemetry, no boot nodes), waits for readiness **over RPC** (a new block within two slots, finalization, 0 peers), writes a PID record and stops only a process whose recorded command line (or, failing an exact match, its binary, WebSocket port and chain spec) matches it. |
+| `node.py` | Finds or downloads the `portaldot_dev` binary (the tarball is sha256-checked on download; the binary's sha256 is recorded in every manifest), builds a loopback-only command line (`--reserved-only`, no mDNS, no telemetry, no boot nodes), waits for readiness **over RPC** (a new block within two slots, finalization, 0 peers), writes a PID record and stops only a process whose recorded command line (or, failing an exact match, its binary, WebSocket port and chain spec) matches it. |
 | `up.py` | `forklift up`: lift (or reuse a cached complete lift of the same block hash) → splice → boot → write the manifest and print the data plate. |
 | `verify.py` | Draws keys **from mainnet** at the pin inside storage maps (weighted by per-item counts), reads each on mainnet at the pin and on the fork at genesis, classifies it (identical, dev-kept, override, reset, mismatch), and runs whole-fork checks: genesis key-set hash, issuance, the five overrides on both sides, both runtime code hashes. Exit 0 only when nothing is unexplained. |
 | `tx.py`, `act.py` | Build the version-4 extrinsic envelope explicitly (the seven signed extensions of spec 1002; any other list is refused), sign with the fork's dev key, submit through the fork client, find the extrinsic by block scan, await finalization, decode events and the dispatch result. `fund` = `Sudo.sudo(Balances.set_balance)`; `as` = `Sudo.sudo_as(<call>)` with the call composed from metadata and the account's storage read before and after. |
@@ -123,4 +124,5 @@ standard library. The `portaldot_dev` binary is downloaded at run time and is no
 - `forklift replay <block>:<index>` (re-run a mainnet extrinsic on a fork of its parent block).
 - A hosted fork and a browser verify page.
 - A PyPI package and a CI action.
-- A V3 target. No V3 node binary or chain spec is public, so none of this can be built or measured yet.
+- A V3 target. Per the organisers' Discord messages (not archived here) no V3 node binary or chain spec is public, so it
+  cannot be built or measured yet.

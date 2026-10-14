@@ -33,7 +33,7 @@ actually on has no simple way to get that state onto a local node, and no way to
 
 ### Solution
 
-Forklift is four steps behind one command each.
+Forklift is four steps.
 
 1. **Lift.** `forklift lift` reads every top-level storage key of Portaldot mainnet at one pinned block hash (the
    Merkle Mountain Range storage is skipped, not paged through) and records what it read in a manifest with a
@@ -53,7 +53,7 @@ Forklift is four steps behind one command each.
 - The lift engine: pinned paging, MMR cursor jump, per-page checkpoints, exit code `4` with the last cursor when the node
   fails for good (a partial lift is never written as complete), completeness checked against an independent full
   listing (`scripts/completeness.py`).
-- The splice, node runner (release tarball sha256-checked on download, binary sha256 recorded in the manifest, PID guard, no peers), `up` / `down`.
+- The splice, node runner (tarball sha256-checked on download, binary sha256 recorded in the manifest, PID guard, no peers), `up` / `down`.
 - `verify` with exit codes `0` / `2` and a reproducible seed.
 - `fund`, `as`, `tx` (re-read any extrinsic by id), and the **Fork Receipt** contract with a rent check.
 - An endpoint write-guard: nothing is ever submitted to mainnet, and a fork client refuses any non-loopback
@@ -82,7 +82,7 @@ nobody mistakes it for a testnet or for V3.
 - **A local fork is not V3, and not mainnet's runtime.** `fork-1002-fast` runs the dev runtime wasm (the manifest records
   both code hashes), with dev consensus keys, 6-second blocks and staking era changes disabled (`Staking.ForceEra`
   override). It is a dev tool, not an audit tool.
-- **Top trie only.** Child tries are not lifted (the manifest has a `child_trie_roots_not_lifted` count).
+- **Top trie only.** Child tries are not lifted (the manifest reports a `child_trie_roots_not_lifted` count; it is not recorded in `evidence/`).
 - **Evidence is local.** The contract address and transaction hashes below live on a local fork, not on a public
   explorer; `forklift tx <block-index>` re-reads any of them from the fork.
 
@@ -119,7 +119,7 @@ The full module-level diagram, the splice rules and the invariants the code enfo
 | Layer | Choice |
 |---|---|
 | Blockchain platform | **Portaldot V3** is the hackathon's target platform. Forklift's chain today is a local fork of **Portaldot mainnet state (spec 1002)** on the `portaldot_dev` 2.0.0 node with its dev runtime, labelled `fork-1002-fast`. It is not V3. |
-| Contract language | WAT (WebAssembly text), hand-written for the Contracts pallet of spec 1002 (`seal0` imports only), compiled with `wat2wasm` |
+| Contract language | WAT (WebAssembly text), hand-written for the rent-era Contracts pallet of the dev runtime the fork runs (`seal0` imports only), compiled with `wat2wasm` |
 | Frontend | None. Forklift is a command-line tool. |
 | Other components | Python 3.11+, `click` (CLI), `websockets` (raw JSON-RPC), `xxhash` (storage key hashing), `substrate-interface` (sr25519 keys and the SCALE type registry), `hashlib` blake2b. Tests use `pytest`. |
 
@@ -131,7 +131,7 @@ Forklift therefore makes **no V3 claim**; nothing in this repository has run aga
 ## Smart Contracts
 
 One contract, the **Fork Receipt** (`forklift/contracts/receipt.wat`, compiled `receipt.wasm`, 169 bytes). It is
-hand-written for the rent-era Contracts pallet of spec 1002 and needs no Rust toolchain.
+hand-written for the rent-era Contracts pallet of the dev runtime the fork runs (`fork-1002-fast`); it has not been run on mainnet's runtime wasm. It needs no Rust toolchain.
 
 | Function | Input | What it does |
 |---|---|---|
@@ -160,8 +160,9 @@ itself is pallet-free: it only calls read RPC methods (`chain_getFinalizedHead`,
 
 **Requirements:** Python 3.11+; network access to `wss://mainnet.portaldot.io` (live lifts and `verify`; the unit tests
 are offline); on Apple silicon, Rosetta (`softwareupdate --install-rosetta`), because the macOS `portaldot_dev` binary is
-x86_64 only. `forklift up` downloads the `portaldot_dev` 2.0.0 release tarball from `portaldotVolunteer/Portaldot-node`
-into `~/.cache/forklift/bin/` and checks its sha256 before unpacking it.
+x86_64 only. `forklift up` downloads the `portaldot_dev` 2.0.0 tarball (`portaldot-testnet-*.tar.gz` in the community repository
+`portaldotVolunteer/Portaldot-node`, not a GitHub Release) into `~/.cache/forklift/bin/` and checks its sha256 before
+unpacking it.
 
 ```bash
 git clone https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu.git
@@ -177,6 +178,9 @@ forklift verify --sample 200                # exit 0 = nothing unexplained
 forklift fund 5F1KbjNTUu6xmMCcSz2wrv7b627BKS7hUTzWFqdmpvb3rMcE 1000000
 forklift as 5DvRSgerqB5KHPqWGGnCtRJgJokj91XyGLm3aZ5DKH1rMndf Balances.transfer \
   '["5F1KbjNTUu6xmMCcSz2wrv7b627BKS7hUTzWFqdmpvb3rMcE", 100000000000000000]'
+# act as a real nominator: targets = the first three keys of Staking.Validators at the pin
+forklift as 5Cf8KJFLVrY43yEZN3vgFktGZvhUhrt7WBvfjJoTr54EjchW Staking.nominate \
+  '[["5DSHUMkUHoT78nPaACjs85TjxoHosinc47Yfpes38wWknDCD","5FCM6payzb4zo3oWPKUZDpgcBAMSyYS4vY5b3YuRtCCGRnmn","5EhWJRiq4XLw2mErQXZoHeASfC8MjujgBYhomDD9YeWMYgF6"]]'
 forklift receipt                            # deploy the Fork Receipt, keep it rent-free, attest
 forklift down                               # stop the fork (only the PID it recorded)
 ```
@@ -255,7 +259,7 @@ the code and can explain how the lift, the splice, `verify` and the Receipt work
 committed from 2026-10-14 (first commit `fa113a6`); earlier research is not included.
 
 Open-source libraries: `click`, `websockets`, `xxhash`, `substrate-interface`, `pytest`, `hatchling`. The node binary
-is the `portaldot_dev` 2.0.0 release published at `portaldotVolunteer/Portaldot-node`, downloaded at run time.
+is `portaldot_dev` 2.0.0 from the `portaldot-testnet-*.tar.gz` tarballs in `portaldotVolunteer/Portaldot-node`, downloaded at run time.
 
 ## License
 

@@ -1,4 +1,4 @@
-"""Run the ``portaldot_dev`` 2.0.0 node (release at portaldotVolunteer/Portaldot-node) on a spliced chain spec.
+"""Run the ``portaldot_dev`` 2.0.0 node (tarballs in portaldotVolunteer/Portaldot-node) on a spliced chain spec.
 
 Forklift never ships a node of its own. It finds the ``portaldot_dev`` binary (or
 downloads the release tarball and checks its sha256), records the binary's

@@ -4,7 +4,7 @@
 a ``Contracts.ContractEmitted`` event. The contract (``contracts/receipt.wat``) is
 instantiated on the first ``forklift receipt`` of a fork and called on every run.
 
-Rent. Spec 1002 runs the rent-era Contracts pallet: a contract whose free balance
+Rent. The dev runtime of ``fork-1002-fast`` runs the rent-era Contracts pallet: a contract whose free balance
 does not cover its deposit (``DepositPerContract`` + ``DepositPerStorageByte`` x
 bytes + ``DepositPerStorageItem`` x items) pays ``RentFraction`` of the uncovered
 part every block and is evicted once its balance falls below the subsistence

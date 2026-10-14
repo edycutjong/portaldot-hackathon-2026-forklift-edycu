@@ -1,6 +1,5 @@
-;; Forklift Fork Receipt: a contract for the rent-era Contracts pallet of Portaldot spec 1002.
-;; seal0 ABI only, hand-written, so it needs no Rust toolchain (ink! 5 needs seal1/seal2,
-;; which spec 1002 does not have).
+;; Forklift Fork Receipt: a contract for the rent-era Contracts pallet of the dev runtime that
+;; portaldot_dev 2.0.0 runs (fork-1002-fast). seal0 ABI only, hand-written, so it needs no Rust toolchain.
 ;;
 ;; deploy and call both run attest(input):
 ;;   input = mainnet_block_hash (32 B) ‖ manifest_root (32 B) ‖ keys_lifted (u64, little-endian)
