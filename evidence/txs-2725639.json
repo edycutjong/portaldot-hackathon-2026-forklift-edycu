@@ -10,7 +10,7 @@
   "reproduce": "forklift tx <extrinsic_id> --endpoint <fork_endpoint> re-reads a row from the fork",
   "rows": [
     {
-      "recorded_utc": "2026-10-14T12:13:49+00:00",
+      "recorded_utc": "2026-10-14T12:32:32+00:00",
       "label": "fork-1002-fast",
       "fork_name": "proof",
       "fork_endpoint": "ws://127.0.0.1:59944",
@@ -21,11 +21,11 @@
       "who": "5F1KbjNTUu6xmMCcSz2wrv7b627BKS7hUTzWFqdmpvb3rMcE",
       "extrinsic_id": "6-1",
       "block_number": 6,
-      "block_hash": "0x2d1f540e77eab30e3176bfe27949a2d28cdfbfce8e0ce73ff2894df76588f435",
-      "tx_hash": "0x20d8fb459f9abed586ff4ea4f17205c4eb5ccb9e8705eb13e9d2c5a0ee05478c",
+      "block_hash": "0x1485c57b9dc95e9e9018cf9da78f5fd3d393f05308931e6f3da4d2b646f5164b",
+      "tx_hash": "0x279102c44ebf94706e10c96e65bda3da8ae63c52b9a4a8507f9921fbaa3a74c8",
       "success": true,
       "finalized": true,
-      "seconds": 14.8,
+      "seconds": 18.7,
       "dispatch": {
         "ok": true,
         "error": null
@@ -102,7 +102,7 @@
       "warnings": []
     },
     {
-      "recorded_utc": "2026-10-14T12:14:18+00:00",
+      "recorded_utc": "2026-10-14T12:32:49+00:00",
       "label": "fork-1002-fast",
       "fork_name": "proof",
       "fork_endpoint": "ws://127.0.0.1:59944",
@@ -111,13 +111,13 @@
       "kind": "as",
       "call": "Sudo.sudo_as(Balances.transfer)",
       "who": "5DvRSgerqB5KHPqWGGnCtRJgJokj91XyGLm3aZ5DKH1rMndf",
-      "extrinsic_id": "11-1",
-      "block_number": 11,
-      "block_hash": "0x4fabd35ccdc38924c885d249259c30814800322b0ba934c5ce86e3e4cf01ddc9",
-      "tx_hash": "0xb2cdc54c904dee3a9caff1cc1e5f5a97a79f016689c067b7e815f915aa392768",
+      "extrinsic_id": "9-1",
+      "block_number": 9,
+      "block_hash": "0xb209f97f7d57be85721fd74022335b0814fcfb7b00658940b980814056b74688",
+      "tx_hash": "0x859345b414f730fa14892321f94b3c29d4e3ec604145f6e7db9cda9f46ea2fd5",
       "success": true,
       "finalized": true,
-      "seconds": 18.8,
+      "seconds": 17.2,
       "dispatch": {
         "ok": true,
         "error": null
@@ -172,7 +172,7 @@
       "warnings": []
     },
     {
-      "recorded_utc": "2026-10-14T12:14:37+00:00",
+      "recorded_utc": "2026-10-14T12:33:07+00:00",
       "label": "fork-1002-fast",
       "fork_name": "proof",
       "fork_endpoint": "ws://127.0.0.1:59944",
@@ -181,13 +181,13 @@
       "kind": "as",
       "call": "Sudo.sudo_as(Staking.nominate)",
       "who": "5Cf8KJFLVrY43yEZN3vgFktGZvhUhrt7WBvfjJoTr54EjchW",
-      "extrinsic_id": "14-1",
-      "block_number": 14,
-      "block_hash": "0x5cf19f6de9b965602fac10c1fce8fe21eb8fb75e27fdb97bad2665b5aa676cb3",
-      "tx_hash": "0x14ad312722d021bb58667665519de190d7a5301a9e72e92601645d18e28c7972",
+      "extrinsic_id": "12-1",
+      "block_number": 12,
+      "block_hash": "0x7be356c47e07d70a99d57e886e9aa338c1943bc04ffd333ca78f6768af6b47d6",
+      "tx_hash": "0xd7a4334cae4de7a0fe906007c0f0d5fc4981796929089369b9a56fbabb432d0b",
       "success": true,
       "finalized": true,
-      "seconds": 18.1,
+      "seconds": 16.8,
       "dispatch": {
         "ok": true,
         "error": null
@@ -216,7 +216,7 @@
       "warnings": []
     },
     {
-      "recorded_utc": "2026-10-14T12:15:31+00:00",
+      "recorded_utc": "2026-10-14T12:33:25+00:00",
       "label": "fork-1002-fast",
       "fork_name": "proof",
       "fork_endpoint": "ws://127.0.0.1:59944",
@@ -225,15 +225,15 @@
       "kind": "instantiate",
       "call": "Contracts.instantiate_with_code",
       "who": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-      "contract": "5EMSUfyyk1aY62M8XGdgAYAwyqd3R7sGbXFERaW5ZVBHeTXv",
-      "code_hash": "0xd54b527c1aa809166d6f0a48d2d5a682adb55c8412fdb806b92d0607ff874eda",
-      "extrinsic_id": "17-1",
-      "block_number": 17,
-      "block_hash": "0x372a25e2e605dda6a0387e67371bc42cd6f26cd9773e728343a70b52c438131b",
-      "tx_hash": "0x6776580961ab0ee7aa088fae23b83854b9a19ded05e8e3968f9a40ee217ded76",
+      "extrinsic_id": "15-1",
+      "block_number": 15,
+      "block_hash": "0x3199f12038c501f0c31866c745fbab7cd3781cc628114e8b1965ff643b4facf3",
+      "tx_hash": "0xbfa957dc4afddd73f9b32ba1fc5a1ff0a9fa6aa617b336a21ca37672ef86f2f8",
       "success": true,
       "finalized": true,
-      "seconds": 17.1,
+      "seconds": 18.2,
+      "contract": "5EMSUfyyk1aY62M8XGdgAYAwyqd3R7sGbXFERaW5ZVBHeTXv",
+      "code_hash": "0xd54b527c1aa809166d6f0a48d2d5a682adb55c8412fdb806b92d0607ff874eda",
       "endowment": 1670000000000000,
       "emitted": [
         {
@@ -248,7 +248,7 @@
       ]
     },
     {
-      "recorded_utc": "2026-10-14T12:15:31+00:00",
+      "recorded_utc": "2026-10-14T12:33:43+00:00",
       "label": "fork-1002-fast",
       "fork_name": "proof",
       "fork_endpoint": "ws://127.0.0.1:59944",
@@ -257,20 +257,35 @@
       "kind": "rent_top_up",
       "call": "Balances.transfer",
       "who": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-      "contract": "5EMSUfyyk1aY62M8XGdgAYAwyqd3R7sGbXFERaW5ZVBHeTXv",
-      "code_hash": "0xd54b527c1aa809166d6f0a48d2d5a682adb55c8412fdb806b92d0607ff874eda",
-      "extrinsic_id": "20-1",
-      "block_number": 20,
-      "block_hash": "0x8fc5f26dfc518f092c32925df2d096a56e4edbd849e5427fd466510a0ad4a912",
-      "tx_hash": "0x6c8ab070507e76438494c67d85925c44f9b74fce6fd54852bcf3fad141a50af7",
+      "extrinsic_id": "18-1",
+      "block_number": 18,
+      "block_hash": "0x98f53a01bfa7c5f557e04df35cce95249c4766a10ff4d7bbbbb9aa5b03e7354c",
+      "tx_hash": "0x6af8d8a148300eb5744618c5114892a6df3ed6ff83f9c899b14ff67c49511142",
       "success": true,
       "finalized": true,
-      "seconds": 18.7,
+      "seconds": 17.7,
+      "contract": "5EMSUfyyk1aY62M8XGdgAYAwyqd3R7sGbXFERaW5ZVBHeTXv",
       "amount": 2451704514614000,
-      "why": "rent was up to 4,806,188,447 planck/block: eviction in about 173,733 blocks (~12.1 days of 6 s blocks) at that rate; topped up to the deposit bound + 10 % so the rent is 0 and the Receipt is never evicted"
+      "rent_before": {
+        "free": 1669995485386000,
+        "deposit_bound": 3747000000000000,
+        "code_bytes_counted": 502,
+        "subsistence_threshold": 835000000000000,
+        "rent_per_block": 4806188447,
+        "blocks_until_eviction": 173733,
+        "constants": {
+          "DepositPerContract": 735000000000000,
+          "DepositPerStorageByte": 6000000000000,
+          "DepositPerStorageItem": 15000000000000,
+          "TombstoneDeposit": 735000000000000,
+          "RentFraction_perbill": 2314,
+          "ExistentialDeposit": 100000000000000
+        }
+      },
+      "why": "rent was up to 4,806,188,447 planck/block: eviction in about 173,733 blocks (~12.1 days of 6 s blocks) at that rate; topped up to the deposit bound + 10 % so the rent is 0 at the balance held"
     },
     {
-      "recorded_utc": "2026-10-14T12:15:31+00:00",
+      "recorded_utc": "2026-10-14T12:34:02+00:00",
       "label": "fork-1002-fast",
       "fork_name": "proof",
       "fork_endpoint": "ws://127.0.0.1:59944",
@@ -279,15 +294,15 @@
       "kind": "attest",
       "call": "Contracts.call(attest)",
       "who": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-      "contract": "5EMSUfyyk1aY62M8XGdgAYAwyqd3R7sGbXFERaW5ZVBHeTXv",
-      "code_hash": "0xd54b527c1aa809166d6f0a48d2d5a682adb55c8412fdb806b92d0607ff874eda",
-      "extrinsic_id": "23-1",
-      "block_number": 23,
-      "block_hash": "0xf7b81b0bf9e39893d19891b2ffad5b9898da6cf39fb6c72e821dd28a088200da",
-      "tx_hash": "0x639d836680e40b4244549bc0d8e6ffd07515292e8e0e9aee0d8f544d8542c642",
+      "extrinsic_id": "21-1",
+      "block_number": 21,
+      "block_hash": "0xff3563974221d6a6d9a4f9e1a0193a38feff71507d3af5d6aa54a00da841a346",
+      "tx_hash": "0xa056bb3113ad613a508451310b8c48114684fb8d9cc729f97c1bdc545d90a568",
       "success": true,
       "finalized": true,
-      "seconds": 17.2,
+      "seconds": 18.8,
+      "contract": "5EMSUfyyk1aY62M8XGdgAYAwyqd3R7sGbXFERaW5ZVBHeTXv",
+      "code_hash": "0xd54b527c1aa809166d6f0a48d2d5a682adb55c8412fdb806b92d0607ff874eda",
       "emitted": [
         {
           "contract": "5EMSUfyyk1aY62M8XGdgAYAwyqd3R7sGbXFERaW5ZVBHeTXv",
@@ -300,15 +315,17 @@
         }
       ],
       "matches_manifest": true,
+      "mismatched_fields": [],
       "rent_proof": {
         "free_before_attest": 4121700000000000,
         "free_after_attest": 4121700000000000,
         "rent_paid_before": 4514614000,
         "rent_paid_after": 4514614000,
-        "deduct_block_before": 17,
-        "deduct_block_after": 23,
+        "deduct_block_before": 15,
+        "deduct_block_after": 21,
         "no_rent_charged": true
-      }
+      },
+      "rent_safe": true
     }
   ]
 }

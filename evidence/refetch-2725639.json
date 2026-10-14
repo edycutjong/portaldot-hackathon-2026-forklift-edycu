@@ -1,10 +1,12 @@
 {
-  "refetched_utc": "2026-10-14T12:16:30+00:00",
+  "refetched_utc": "2026-10-14T12:34:27+00:00",
   "process": {
-    "pid": 29660,
+    "pid": 41714,
     "note": "a separate process from the one that submitted"
   },
   "source": "evidence/txs-2725639.json",
+  "checked_against": "evidence/lift-2725639.json",
+  "txs_file_agrees_with_lift": true,
   "pin": {
     "block_number": 2725639,
     "block_hash": "0xc6fb8d8a10ae3045b7cb6b0f24ddacc538006a1fae975ec343c8654fb55a8212"
@@ -17,8 +19,8 @@
       "kind": "fund",
       "call": "Sudo.sudo",
       "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-      "block_hash": "0x2d1f540e77eab30e3176bfe27949a2d28cdfbfce8e0ce73ff2894df76588f435",
-      "tx_hash": "0x20d8fb459f9abed586ff4ea4f17205c4eb5ccb9e8705eb13e9d2c5a0ee05478c",
+      "block_hash": "0x1485c57b9dc95e9e9018cf9da78f5fd3d393f05308931e6f3da4d2b646f5164b",
+      "tx_hash": "0x279102c44ebf94706e10c96e65bda3da8ae63c52b9a4a8507f9921fbaa3a74c8",
       "success": true,
       "error": null,
       "events": [
@@ -31,17 +33,18 @@
       "checks": {
         "block_hash": true,
         "tx_hash": true,
-        "success": true
+        "success": true,
+        "dispatch": true
       },
       "ok": true
     },
     {
-      "extrinsic_id": "11-1",
+      "extrinsic_id": "9-1",
       "kind": "as",
       "call": "Sudo.sudo_as",
       "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-      "block_hash": "0x4fabd35ccdc38924c885d249259c30814800322b0ba934c5ce86e3e4cf01ddc9",
-      "tx_hash": "0xb2cdc54c904dee3a9caff1cc1e5f5a97a79f016689c067b7e815f915aa392768",
+      "block_hash": "0xb209f97f7d57be85721fd74022335b0814fcfb7b00658940b980814056b74688",
+      "tx_hash": "0x859345b414f730fa14892321f94b3c29d4e3ec604145f6e7db9cda9f46ea2fd5",
       "success": true,
       "error": null,
       "events": [
@@ -52,17 +55,18 @@
       "checks": {
         "block_hash": true,
         "tx_hash": true,
-        "success": true
+        "success": true,
+        "dispatch": true
       },
       "ok": true
     },
     {
-      "extrinsic_id": "14-1",
+      "extrinsic_id": "12-1",
       "kind": "as",
       "call": "Sudo.sudo_as",
       "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-      "block_hash": "0x5cf19f6de9b965602fac10c1fce8fe21eb8fb75e27fdb97bad2665b5aa676cb3",
-      "tx_hash": "0x14ad312722d021bb58667665519de190d7a5301a9e72e92601645d18e28c7972",
+      "block_hash": "0x7be356c47e07d70a99d57e886e9aa338c1943bc04ffd333ca78f6768af6b47d6",
+      "tx_hash": "0xd7a4334cae4de7a0fe906007c0f0d5fc4981796929089369b9a56fbabb432d0b",
       "success": true,
       "error": null,
       "events": [
@@ -72,17 +76,18 @@
       "checks": {
         "block_hash": true,
         "tx_hash": true,
-        "success": true
+        "success": true,
+        "dispatch": true
       },
       "ok": true
     },
     {
-      "extrinsic_id": "17-1",
+      "extrinsic_id": "15-1",
       "kind": "instantiate",
       "call": "Contracts.instantiate_with_code",
       "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-      "block_hash": "0x372a25e2e605dda6a0387e67371bc42cd6f26cd9773e728343a70b52c438131b",
-      "tx_hash": "0x6776580961ab0ee7aa088fae23b83854b9a19ded05e8e3968f9a40ee217ded76",
+      "block_hash": "0x3199f12038c501f0c31866c745fbab7cd3781cc628114e8b1965ff643b4facf3",
+      "tx_hash": "0xbfa957dc4afddd73f9b32ba1fc5a1ff0a9fa6aa617b336a21ca37672ef86f2f8",
       "success": true,
       "error": null,
       "events": [
@@ -109,17 +114,17 @@
         "block_hash": true,
         "tx_hash": true,
         "success": true,
-        "receipt_payload_matches_manifest": true
+        "receipt_payload_matches_lift": true
       },
       "ok": true
     },
     {
-      "extrinsic_id": "20-1",
+      "extrinsic_id": "18-1",
       "kind": "rent_top_up",
       "call": "Balances.transfer",
       "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-      "block_hash": "0x8fc5f26dfc518f092c32925df2d096a56e4edbd849e5427fd466510a0ad4a912",
-      "tx_hash": "0x6c8ab070507e76438494c67d85925c44f9b74fce6fd54852bcf3fad141a50af7",
+      "block_hash": "0x98f53a01bfa7c5f557e04df35cce95249c4766a10ff4d7bbbbb9aa5b03e7354c",
+      "tx_hash": "0x6af8d8a148300eb5744618c5114892a6df3ed6ff83f9c899b14ff67c49511142",
       "success": true,
       "error": null,
       "events": [
@@ -135,12 +140,12 @@
       "ok": true
     },
     {
-      "extrinsic_id": "23-1",
+      "extrinsic_id": "21-1",
       "kind": "attest",
       "call": "Contracts.call",
       "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-      "block_hash": "0xf7b81b0bf9e39893d19891b2ffad5b9898da6cf39fb6c72e821dd28a088200da",
-      "tx_hash": "0x639d836680e40b4244549bc0d8e6ffd07515292e8e0e9aee0d8f544d8542c642",
+      "block_hash": "0xff3563974221d6a6d9a4f9e1a0193a38feff71507d3af5d6aa54a00da841a346",
+      "tx_hash": "0xa056bb3113ad613a508451310b8c48114684fb8d9cc729f97c1bdc545d90a568",
       "success": true,
       "error": null,
       "events": [
@@ -162,7 +167,7 @@
         "block_hash": true,
         "tx_hash": true,
         "success": true,
-        "receipt_payload_matches_manifest": true
+        "receipt_payload_matches_lift": true
       },
       "ok": true
     }
