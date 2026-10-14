@@ -47,7 +47,7 @@ def render() -> str:
     for d in lifts:
         last = d["runs"][-1]
         s = last["seconds"]
-        sk = (d.get("skipped") or {}).get("keys_in_range_derived")
+        sk = (d.get("skipped") or {}).get("keys_in_range_derived") or 0
         same = "yes" if d["roots_identical_across_runs"] else "**NO**"
         out.append(
             f"| #{d['pin']['block_number']:,} | `{d['pin']['block_hash']}` | {d['keys_lifted']:,} | "
@@ -68,7 +68,7 @@ def render() -> str:
         c = complete[n]
         out.append(
             f"| #{n:,} | {c['lifted_keys']:,} | {c['listing_keys_outside_mmr']:,} | "
-            f"{c['mmr_range_keys']:,} / {c['mmr_range_keys_derived_by_lift']:,} | {c['missing_from_lift']} | "
+            f"{c['mmr_range_keys']:,} / {c['mmr_range_keys_derived_by_lift'] or 0:,} | {c['missing_from_lift']} | "
             f"{c['extra_in_lift']} | {c['listing_pages']:,} pages, {c['listing_seconds']} s | "
             f"{'yes' if c['pass'] else '**NO**'} | `{c['_file']}` |"
         )

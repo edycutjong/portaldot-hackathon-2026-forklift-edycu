@@ -239,6 +239,7 @@ def lift(
         version = client.call("state_getRuntimeVersion", [pin.hash])
         if not isinstance(version, dict) or "specVersion" not in version:
             raise ValueError(f"no runtime version at {pin.hash}")
+        spec_version = int(version["specVersion"])
     except (RpcError, RpcUnavailable, ValueError, KeyError, TypeError) as exc:
         raise LiftError(f"could not pin a block: {exc}", cursor=None, phase="pin", block_hash=None) from exc
 
@@ -291,7 +292,7 @@ def lift(
     result = LiftResult(
         pin=pin,
         spec_name=version.get("specName", ""),
-        spec_version=int(version["specVersion"]),
+        spec_version=spec_version,
         keys=keys,
         values=values,
         pages=paged.pages,

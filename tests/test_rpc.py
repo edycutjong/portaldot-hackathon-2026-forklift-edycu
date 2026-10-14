@@ -160,3 +160,15 @@ def test_fork_genesis_check_fails_closed(genesis):
                fork=True)
     with pytest.raises(WriteGuardError):
         c.call("author_submitExtrinsic", ["0x00"])
+
+
+def test_string_error_object_is_an_rpc_error():
+    with pytest.raises(RpcError):
+        client(lambda m, p: {"__error__": "oops"}).call("chain_getFinalizedHead")
+
+
+def test_fork_genesis_must_be_hex():
+    c = client(lambda m, p: "0x" + "z" * 64 if m == "chain_getBlockHash" else "0x00",
+               endpoint="ws://127.0.0.1:59944", fork=True)
+    with pytest.raises(WriteGuardError):
+        c.call("author_submitExtrinsic", ["0x00"])

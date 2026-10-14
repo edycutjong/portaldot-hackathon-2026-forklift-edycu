@@ -20,6 +20,7 @@ from __future__ import annotations
 import contextlib
 import itertools
 import json
+import re
 import time
 from typing import Any, Callable, Protocol
 from urllib.parse import urlparse
@@ -44,7 +45,8 @@ READ_METHODS = frozenset({
 class RpcError(Exception):
     """The node answered with a JSON-RPC error object."""
 
-    def __init__(self, method: str, error: dict[str, Any]):
+    def __init__(self, method: str, error: Any):
+        error = error if isinstance(error, dict) else {"message": str(error)}
         self.method = method
         self.code = error.get("code")
         self.error = error
@@ -191,7 +193,7 @@ class RpcClient:
         if self._fork_checked:
             return
         genesis = self._call("chain_getBlockHash", [0])
-        if not isinstance(genesis, str) or len(genesis) != 66 or not genesis.startswith("0x"):
+        if not isinstance(genesis, str) or not re.fullmatch(r"0x[0-9a-fA-F]{64}", genesis):
             raise WriteGuardError(f"{self.endpoint}: cannot read a genesis hash ({genesis!r}): refusing writes (I3)")
         if genesis.lower() == MAINNET_GENESIS:
             raise WriteGuardError(f"{self.endpoint} serves Portaldot mainnet's genesis: refusing writes (I3)")
