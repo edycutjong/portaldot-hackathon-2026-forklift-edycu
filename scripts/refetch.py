@@ -6,9 +6,12 @@ For each row of ``evidence/txs-<block>.json`` (by default only rows on a persist
 fork, the ones PROOF.md cites) it connects to the row's fork endpoint with a
 read-only client, checks the chain is the same fork (genesis hash), fetches the
 extrinsic at ``<block>-<index>`` and compares block hash, tx hash and outcome with
-what was recorded. Receipt rows also have their ``ContractEmitted`` payload decoded
-again and compared with the pin's manifest root. Writes ``evidence/refetch-<block>.json``.
-Exit 0 when every row re-reads identically, 2 otherwise, 1 if a fork is unreachable.
+what was recorded; for fund/as rows also the result of the call the Sudo wrapper carried
+(``Sudid`` / ``SudoAsDone``). Receipt rows have their ``ContractEmitted`` payload decoded
+again and compared with ``evidence/lift-<block>.json`` (the lift's own record of the pin,
+root and key count), not with the txs file. Writes ``evidence/refetch-<block>.json``.
+Exit 0 when every row re-reads identically, 2 otherwise (also: no rows to check, or the
+txs file disagrees with the lift evidence), 1 if a fork is unreachable.
 """
 
 from __future__ import annotations
@@ -34,6 +37,9 @@ def refetch_row(client: RpcClient, rt: tx.Runtime, row: dict, manifest_like: dic
         "tx_hash": got["tx_hash"] == row["tx_hash"],
         "success": got["success"] == row["success"],
     }
+    if "dispatch" in row:  # fund / as: the carried call's own result, not only the wrapper extrinsic's
+        d = got.get("dispatch") or {}
+        checks["dispatch"] = (d.get("ok"), d.get("error")) == (row["dispatch"]["ok"], row["dispatch"]["error"])
     out = {"extrinsic_id": row["extrinsic_id"], "kind": row["kind"], "call": f"{got['call']['pallet']}.{got['call']['function']}",
            "signer": got["signer"], "block_hash": got["block_hash"], "tx_hash": got["tx_hash"],
            "success": got["success"], "error": got["error"], "events": [e["event"] for e in got["events"]]}
@@ -42,11 +48,13 @@ def refetch_row(client: RpcClient, rt: tx.Runtime, row: dict, manifest_like: dic
         payloads = []
         for e in emitted:
             contract, data = (a["value"] for a in e["attributes"])
-            raw = bytes.fromhex(data[2:])
-            payloads.append({"contract": contract, "decoded": receipt.decode_payload(raw)})
-        checks["receipt_payload_matches_manifest"] = bool(payloads) and all(
-            p["contract"] == row["contract"] and not receipt.compare_to_manifest(p["decoded"], manifest_like)
-            for p in payloads)
+            try:
+                decoded = receipt.decode_payload(receipt._bytes_of(data))
+            except ValueError:
+                decoded = None
+            payloads.append({"contract": contract, "decoded": decoded})
+        mine = [p for p in payloads if p["contract"] == row["contract"]]
+        checks["receipt_payload_matches_lift"] = receipt.mismatched_fields(mine, manifest_like) == []
         out["emitted"] = payloads
     out["checks"] = checks
     out["ok"] = all(checks.values())
@@ -59,10 +67,21 @@ def main() -> int:
     ap.add_argument("--all", action="store_true", help="also rows on throwaway (--tmp) forks")
     a = ap.parse_args()
     code = 0
-    for path in sorted(a.evidence.glob("txs-*.json")):
+    paths = sorted(a.evidence.glob("txs-*.json"))
+    if not paths:
+        print("no evidence/txs-*.json to re-fetch", file=sys.stderr)
+        return 2
+    for path in paths:
         ev = json.loads(path.read_text())
-        manifest_like = {"source": {"block_hash": ev["pin"]["block_hash"]}, "manifest_root": ev["manifest_root"],
-                         "load": {"keys_lifted": ev["keys_lifted"]}}
+        lift_path = a.evidence / f"lift-{ev['pin']['block_number']}.json"
+        if not lift_path.exists():
+            print(f"{path.name}: no {lift_path.name} to check the Receipt payload against", file=sys.stderr)
+            return 2
+        lift = json.loads(lift_path.read_text())
+        manifest_like = {"source": {"block_hash": lift["pin"]["block_hash"]}, "manifest_root": lift["manifest_root"],
+                         "load": {"keys_lifted": lift["keys_lifted"]}}
+        txs_agree = (ev["pin"]["block_hash"] == lift["pin"]["block_hash"]
+                     and ev["manifest_root"] == lift["manifest_root"] and ev["keys_lifted"] == lift["keys_lifted"])
         rows = [r for r in ev["rows"] if a.all or r.get("persistent_base_path")]
         results, clients = [], {}
         try:
@@ -84,11 +103,12 @@ def main() -> int:
         finally:
             for c, _, _ in clients.values():
                 c.close()
-        ok = all(r["ok"] for r in results)
+        ok = bool(results) and txs_agree and all(r["ok"] for r in results)
         code = max(code, 0 if ok else 2)
         out = {"refetched_utc": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
                "process": {"pid": os.getpid(), "note": "a separate process from the one that submitted"},
-               "source": f"evidence/{path.name}", "pin": ev["pin"], "rows_checked": len(results),
+               "source": f"evidence/{path.name}", "checked_against": f"evidence/{lift_path.name}",
+               "txs_file_agrees_with_lift": txs_agree, "pin": ev["pin"], "rows_checked": len(results),
                "all_identical": ok, "rows": results}
         dest = a.evidence / path.name.replace("txs-", "refetch-")
         dest.write_text(json.dumps(out, indent=2) + "\n")

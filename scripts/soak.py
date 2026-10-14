@@ -15,7 +15,6 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
-import subprocess
 import sys
 import time
 from pathlib import Path
@@ -25,7 +24,7 @@ sys.path.insert(0, str(ROOT))
 
 from forklift import tx  # noqa: E402
 from forklift.hashing import twox128  # noqa: E402
-from forklift.node import read_pid  # noqa: E402
+from forklift.node import NodeError, owns, process_command, read_pid  # noqa: E402
 from forklift.rpc import RpcClient, RpcError, RpcUnavailable  # noqa: E402
 
 EPOCH_INDEX = "0x" + (twox128("Babe") + twox128("EpochIndex")).hex()
@@ -62,8 +61,12 @@ def heads(c: RpcClient) -> tuple[int, int]:
     return best, fin
 
 
-def alive(pid: int) -> bool:
-    return subprocess.run(["ps", "-p", str(pid)], capture_output=True).returncode == 0
+def alive(rec: dict) -> bool:
+    """The recorded PID is still the node this record started (not just any process with that PID)."""
+    try:
+        return owns(rec, process_command(int(rec["pid"])))
+    except NodeError:
+        return False
 
 
 def main() -> int:
@@ -85,7 +88,8 @@ def main() -> int:
             epoch_slots = rt.constant_int("Babe", "EpochDuration")
             genesis = c.call("chain_getBlockHash", [0])
             best0, fin0 = heads(c)
-            index = _u64(c.call("state_getStorage", [EPOCH_INDEX]))
+            best0_hash = c.call("chain_getBlockHash", [best0])
+            index = _u64(c.call("state_getStorage", [EPOCH_INDEX, best0_hash]))  # same block as the search bound
             transitions = []
             for e in range(1, index + 1):
                 n = first_block_of_epoch(c, e, best0)
@@ -97,21 +101,25 @@ def main() -> int:
             time.sleep(a.wait if a.wait is not None else 2 * slot_ms / 1000 + 1)
             best1, fin1 = heads(c)
             peers = c.call("system_health", [])["peers"]
-    except (RpcError, RpcUnavailable, OSError) as exc:
+    except RpcError as exc:
+        print(f"fork {a.name!r} answered with an error (is it an archive node? soak needs old state): {exc}",
+              file=sys.stderr)
+        return 1
+    except (RpcUnavailable, OSError) as exc:
         print(f"fork {a.name!r} unreachable: {exc}", file=sys.stderr)
         return 1
     now = time.time()
     started = float(rec.get("started_unix") or 0)
-    ok = {"process_alive": alive(int(rec["pid"])), "same_genesis": genesis == rec.get("genesis_hash"),
+    ok = {"started_recorded": started > 0, "process_alive": alive(rec), "same_genesis": genesis == rec.get("genesis_hash"),
           "epochs": index >= a.min_epochs, "authoring": best1 > best0, "finalizing": fin1 > fin0, "no_peers": peers == 0}
     out = {
         "fork": {"name": a.name, "label": manifest["fork"]["label"], "endpoint": rec["endpoint"],
                  "genesis_hash": genesis, "pin": manifest["source"]["block_number"],
                  "base_path": rec.get("base_path"), "pid": rec["pid"]},
-        "started_utc": dt.datetime.fromtimestamp(started, dt.timezone.utc).isoformat(timespec="seconds"),
+        "started_utc": dt.datetime.fromtimestamp(started, dt.timezone.utc).isoformat(timespec="seconds") if started else None,
         "block_1_utc": _utc(first_ts) if first_ts else None,
         "checked_utc": dt.datetime.fromtimestamp(now, dt.timezone.utc).isoformat(timespec="seconds"),
-        "measured_hours": round((now - started) / 3600, 2),
+        "measured_hours": round((now - started) / 3600, 2) if started else None,
         "epochs": {"epoch_index": index, "required": a.min_epochs, "epoch_duration_slots": epoch_slots,
                    "slot_ms": slot_ms, "transitions": transitions},
         "authoring": {"best_before": best0, "best_after": best1},
@@ -121,7 +129,7 @@ def main() -> int:
     print(json.dumps(out, indent=2))
     if a.evidence is not None:
         a.evidence.mkdir(parents=True, exist_ok=True)
-        dest = a.evidence / f"soak-{dt.datetime.fromtimestamp(now).date().isoformat()}.json"
+        dest = a.evidence / f"soak-{dt.datetime.fromtimestamp(now, dt.timezone.utc).date().isoformat()}.json"
         dest.write_text(json.dumps(out, indent=2) + "\n")
         print(f"wrote {dest}", file=sys.stderr)
     return 0 if out["pass"] else 2

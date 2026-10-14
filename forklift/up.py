@@ -9,6 +9,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from forklift import node as nodes
+from forklift.hashing import manifest_root
 from forklift.lift import LiftError, _atomic_write, default_cache
 from forklift.rpc import RpcClient, RpcError, RpcUnavailable
 from forklift.splice import fork_chain_spec, genesis_key_set_hash, load_dev_spec, splice_state
@@ -30,7 +31,10 @@ def cached_lift(out_root: Path, block_hash: str) -> tuple[dict, dict] | None:
                 continue
             state = json.loads(s_path.read_text())
             complete = state["block_hash"] == block_hash and len(state["storage"]) == m["load"]["keys_lifted"]
-        except (OSError, ValueError, KeyError, TypeError):
+            if complete:  # the root the Receipt attests must be the root of the state we boot
+                pairs = ((bytes.fromhex(k[2:]), bytes.fromhex(v[2:])) for k, v in state["storage"].items())
+                complete = "0x" + manifest_root(pairs).hex() == m["manifest_root"]
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
             continue
         if complete:
             m["_paths"] = {"dir": str(d), "manifest": str(m_path)}
