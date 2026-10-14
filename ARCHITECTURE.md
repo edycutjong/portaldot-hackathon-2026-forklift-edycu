@@ -96,7 +96,7 @@ transaction by extrinsic id from a separate process).
 - **Mainnet is read-only.** Only allowlisted read methods can reach a mainnet client, and a write client refuses any
   endpoint that is not loopback or whose genesis is mainnet's.
 - **A complete lift is the whole key set.** Paging ends only on an empty page, the cursor checkpoint is verified, and
-  `scripts/completeness.py` compares the lifted key *set* with an independent full listing at the same hash (minus the
+  `scripts/completeness.py` compares the lifted key *set* with a second, unskipped full listing at the same hash (same RPC) (minus the
   MMR range).
 - **Every lifted key is accounted for:** identical + dev-kept + overridden (+ reset, 0 here) = lifted (`splice.py`, checked
   again by `verify`).
@@ -109,7 +109,7 @@ transaction by extrinsic id from a separate process).
 ## Exit codes and evidence
 
 Exit codes `0/1/2/3/4/5/6/64` are documented per command in [`docs/EXIT-CODES.md`](docs/EXIT-CODES.md). Every measured
-number in the README comes from [`docs/PROOF.md`](docs/PROOF.md), which `scripts/proof.py` regenerates from
+number in the README's evidence table comes from [`docs/PROOF.md`](docs/PROOF.md), which `scripts/proof.py` regenerates from
 [`evidence/`](evidence).
 
 ## Dependencies (`pyproject.toml`)

@@ -5,8 +5,7 @@ downloads the tarball and checks its sha256), records the binary's
 sha256 in the manifest, and spawns it on loopback-only ports with no boot
 nodes, no mDNS and ``--reserved-only``: a fork never peers with anything.
 
-Readiness is read over RPC, not from the log: off a TTY the node buffers its
-output, so a log poller sees block #1 long after it was authored.
+Readiness is read over RPC, not from the log (log timing off a TTY is not measured here).
 """
 
 from __future__ import annotations
@@ -35,7 +34,7 @@ EXIT_NODE_FAILED = 3
 
 BINARY_NAME = "portaldot_dev"
 TARBALL_URL = "https://github.com/portaldotVolunteer/Portaldot-node/raw/main/portaldot-testnet-{os}.tar.gz"
-# sha256 of the tarballs, measured 2026-10-11 (macos) and 2026-10-13 (ubuntu).
+# sha256 of the tarballs: macos recomputed 2026-10-14 (matches); ubuntu recorded earlier, not run in this window.
 TARBALL_SHA256 = {
     "macos": "0826f3da6473a0610c1764c0f94be16f8e03a37eb4ba4cc8cc8ac3e8bca78f72",
     "ubuntu": "9df4d6332e84ab81707b5d2e3376c572f058eac4212bd99ba6f1908b75a6327c",
@@ -54,7 +53,7 @@ PORT_ENV = {"ws": "FORKLIFT_WS_PORT", "rpc": "FORKLIFT_RPC_PORT", "p2p": "FORKLI
 KNOWN_CAUSES = [
     (re.compile(r"Address already in use|os error 48|os error 98"), "a port is already in use: pick other ports"),
     (re.compile(r"Timestamp slot must match CurrentSlot"),
-     "the native runtime is running mainnet's wasm: an exact-runtime fork needs --execution Wasm"),
+     "the native runtime is running mainnet's wasm: an exact-runtime fork needs --execution Wasm (not reproduced here)"),
     (re.compile(r"Bad CPU type|cannot execute binary|Exec format error"),
      "this binary is x86_64: on Apple silicon install Rosetta (softwareupdate --install-rosetta)"),
     (re.compile(r"cannot be used with|Found argument .* which wasn't expected"),
