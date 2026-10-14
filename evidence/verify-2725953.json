@@ -1,0 +1,145 @@
+{
+  "pin": {
+    "block_number": 2725953,
+    "block_hash": "0xf9dc8fdc6c2c77e7ec3b46d80ee6943459ff70d61319176b6486d60c205c5432"
+  },
+  "source_endpoint": "wss://mainnet.portaldot.io",
+  "spec_version": 1002,
+  "keys_lifted": 16324,
+  "manifest_root": "0xa430d6a9f16d631da45fd0d0cb5ae600db1854612218e21aabeb7f26d7ba002b",
+  "accounting": {
+    "keys_lifted": 16324,
+    "genesis_identical": 9524,
+    "dev_kept": 6796,
+    "dev_kept_per_prefix": {
+      ":grandpa_authorities": 1,
+      "AuthorityDiscovery": 3,
+      "Authorship": 2,
+      "Babe": 13,
+      "Grandpa": 3898,
+      "ImOnline": 14,
+      "Session": 454,
+      "System": 2411
+    },
+    "overridden": 4,
+    "reset": 0,
+    "sums": true,
+    "genesis_keys": 9563,
+    "genesis_from_dev": 34,
+    "genesis_from_dev_per_prefix": {
+      ":extrinsic_index": 1,
+      ":grandpa_authorities": 1,
+      "AuthorityDiscovery": 3,
+      "Authorship": 1,
+      "Babe": 5,
+      "Grandpa": 3,
+      "ImOnline": 2,
+      "Session": 11,
+      "System": 7
+    },
+    "genesis_added_by_overrides": 1,
+    "dev_genesis_keys_dropped": 67,
+    "genesis_sums": true
+  },
+  "overrides": [
+    {
+      "name": "Sudo.Key",
+      "reason": "root on the fork: the dev key 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY (//Alice) replaces mainnet's sudo key"
+    },
+    {
+      "name": "Staking.ForceEra",
+      "reason": "ForceNone: mainnet validators have no session keys here and must never be rotated in"
+    },
+    {
+      "name": "System.Account[dev key]",
+      "reason": "the dev key's dev-genesis AccountInfo, so the sudo key can pay fees on block 1"
+    },
+    {
+      "name": "Balances.TotalIssuance",
+      "reason": "mainnet issuance + 5000000000000000000 planck added with the dev key's account, so issuance = sum of balances"
+    },
+    {
+      "name": ":code",
+      "reason": "runtime fast: the dev runtime wasm (6 s slots); mainnet's wasm is recorded as source.code_hash"
+    }
+  ],
+  "reproduce": "forklift verify --sample <draws> --seed <seed> against a fork of this pin",
+  "runs": [
+    {
+      "recorded_utc": "2026-10-14T14:33:34+00:00",
+      "label": "fork-1002-fast",
+      "fork_genesis_hash": "0x916363cfdcdb0f705ca06fc0658c50bea72be2efea8fbf3e85712687cf3980ac",
+      "fork_endpoint": "ws://127.0.0.1:59944",
+      "seed": 15629954055902865514,
+      "draws": 200,
+      "unique_keys": 200,
+      "classes": {
+        "dev-kept": 80,
+        "identical": 120
+      },
+      "mismatches": [],
+      "checks": {
+        "overrides": {
+          "ok": true,
+          "count": 5,
+          "rows": [
+            {
+              "name": "System.Account[dev key]",
+              "fork_holds_override": true,
+              "mainnet_as_recorded": true
+            },
+            {
+              "name": ":code",
+              "fork_holds_override": true,
+              "mainnet_as_recorded": true
+            },
+            {
+              "name": "Sudo.Key",
+              "fork_holds_override": true,
+              "mainnet_as_recorded": true
+            },
+            {
+              "name": "Staking.ForceEra",
+              "fork_holds_override": true,
+              "mainnet_as_recorded": true
+            },
+            {
+              "name": "Balances.TotalIssuance",
+              "fork_holds_override": true,
+              "mainnet_as_recorded": true
+            }
+          ]
+        },
+        "genesis_key_set": {
+          "ok": true,
+          "expected_keys": 9563,
+          "fork_keys": 9563,
+          "expected_set_hash": "0xcca92f47ae2aafb1aa41c528dbf287f39999afa24390710c758f5fb6f51ea664",
+          "fork_set_hash": "0xcca92f47ae2aafb1aa41c528dbf287f39999afa24390710c758f5fb6f51ea664"
+        },
+        "issuance": {
+          "ok": true,
+          "mainnet": "101678150944019349511407",
+          "added": "5000000000000000000",
+          "fork": "101683150944019349511407"
+        },
+        "runtime": {
+          "ok": true,
+          "mainnet_code_hash": "0xc8e7e77fe84f1231787e75a751af48c52e68675ad55de062c81cc8df24066e55",
+          "fork_code_hash": "0x8c0d4d9d638ad05e7d214e1496321cea00274698e4bcf5b2006c3eaf86b7fa80",
+          "fork_runtime": "fast"
+        },
+        "compared_with_mainnet": {
+          "ok": true,
+          "keys": 120,
+          "dev_kept_checked_against_dev_genesis": true
+        }
+      },
+      "fork_head_at_verify": {
+        "best": 11,
+        "finalized": 9
+      },
+      "exit_code": 0
+    }
+  ]
+}

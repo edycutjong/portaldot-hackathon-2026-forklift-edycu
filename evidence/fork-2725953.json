@@ -1,0 +1,134 @@
+{
+  "pin": {
+    "block_number": 2725953,
+    "block_hash": "0xf9dc8fdc6c2c77e7ec3b46d80ee6943459ff70d61319176b6486d60c205c5432"
+  },
+  "source_endpoint": "wss://mainnet.portaldot.io",
+  "spec_version": 1002,
+  "source_code_hash": "0xc8e7e77fe84f1231787e75a751af48c52e68675ad55de062c81cc8df24066e55",
+  "manifest_root": "0xa430d6a9f16d631da45fd0d0cb5ae600db1854612218e21aabeb7f26d7ba002b",
+  "binary": {
+    "version": "portaldot_dev 2.0.0-unknown-x86_64-macos",
+    "sha256": "301a311779e5658aa880953b052c0de3fff9d9d0f3c039030872510a6eedd6e2",
+    "known_build": "portaldot_dev 2.0.0 (macos x86_64)"
+  },
+  "runtime_mode": "fast",
+  "fork_code_hash": "0x8c0d4d9d638ad05e7d214e1496321cea00274698e4bcf5b2006c3eaf86b7fa80",
+  "chain_id": "forklift_1002_2725953_fast",
+  "accounting": {
+    "keys_lifted": 16324,
+    "genesis_identical": 9524,
+    "dev_kept": 6796,
+    "dev_kept_per_prefix": {
+      ":grandpa_authorities": 1,
+      "AuthorityDiscovery": 3,
+      "Authorship": 2,
+      "Babe": 13,
+      "Grandpa": 3898,
+      "ImOnline": 14,
+      "Session": 454,
+      "System": 2411
+    },
+    "overridden": 4,
+    "reset": 0,
+    "sums": true,
+    "genesis_keys": 9563,
+    "genesis_from_dev": 34,
+    "genesis_from_dev_per_prefix": {
+      ":extrinsic_index": 1,
+      ":grandpa_authorities": 1,
+      "AuthorityDiscovery": 3,
+      "Authorship": 1,
+      "Babe": 5,
+      "Grandpa": 3,
+      "ImOnline": 2,
+      "Session": 11,
+      "System": 7
+    },
+    "genesis_added_by_overrides": 1,
+    "dev_genesis_keys_dropped": 67,
+    "genesis_sums": true
+  },
+  "issuance": {
+    "mainnet": "101678150944019349511407",
+    "added": "5000000000000000000",
+    "added_accounts": [
+      {
+        "account": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+        "free": "5000000000000000000",
+        "reserved": "0",
+        "previous_total_on_mainnet": "0"
+      }
+    ],
+    "fork": "101683150944019349511407"
+  },
+  "overrides": [
+    {
+      "key": "0x5c0d1176a568c1f92944340dbfed9e9c530ebca703c85910e7164cb7d1c9e47b",
+      "name": "Sudo.Key",
+      "value": "0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d",
+      "mainnet_value": "0xecdbca89116f9f6ca40dd9a3f84bec7472b86ea0e26cac8caeb0c5164b1bf027",
+      "reason": "root on the fork: the dev key 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY (//Alice) replaces mainnet's sudo key"
+    },
+    {
+      "key": "0x5f3e4907f716ac89b6347d15ececedcaf7dad0317324aecae8744b87fc95f2f3",
+      "name": "Staking.ForceEra",
+      "value": "0x02",
+      "mainnet_value": "0x00",
+      "reason": "ForceNone: mainnet validators have no session keys here and must never be rotated in"
+    },
+    {
+      "key": "0x26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da9de1e86a9a8c739864cf3cc5ec2bea59fd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d",
+      "name": "System.Account[dev key]",
+      "value": "0x000000000300000001000000000000000000f4448291634500000000000000000000000000000000000000000000000000002cf61a24a229000000000000000000002cf61a24a2290000000000000000",
+      "mainnet_value": null,
+      "reason": "the dev key's dev-genesis AccountInfo, so the sudo key can pay fees on block 1"
+    },
+    {
+      "key": "0xc2261276cc9d1f8598ea4b6a74b15c2f57c875e4cff74148e4628f264b974c80",
+      "name": "Balances.TotalIssuance",
+      "value": "0xef1c389b294331418815000000000000",
+      "mainnet_value": "0xef1c4456a7b1cdfb8715000000000000",
+      "reason": "mainnet issuance + 5000000000000000000 planck added with the dev key's account, so issuance = sum of balances"
+    },
+    {
+      "key": "0x3a636f6465",
+      "name": ":code",
+      "value": "blake2_256 0x8c0d4d9d638ad05e7d214e1496321cea00274698e4bcf5b2006c3eaf86b7fa80 (729,580 B)",
+      "mainnet_value": "blake2_256 0xc8e7e77fe84f1231787e75a751af48c52e68675ad55de062c81cc8df24066e55 (2,505,842 B)",
+      "reason": "runtime fast: the dev runtime wasm (6 s slots); mainnet's wasm is recorded as source.code_hash"
+    }
+  ],
+  "genesis_hash_stable_across_runs": true,
+  "runs": [
+    {
+      "recorded_utc": "2026-10-14T14:32:43+00:00",
+      "label": "fork-1002-fast",
+      "name": "proof",
+      "persistent_base_path": true,
+      "genesis_hash": "0x916363cfdcdb0f705ca06fc0658c50bea72be2efea8fbf3e85712687cf3980ac",
+      "genesis_keys": 9563,
+      "genesis_key_set_hash": "0xcca92f47ae2aafb1aa41c528dbf287f39999afa24390710c758f5fb6f51ea664",
+      "boot": {
+        "endpoint": "ws://127.0.0.1:59944",
+        "rpc_ready_s": 11.7,
+        "first_block_s": 17.8,
+        "finalized_s": 24.9,
+        "best": 3,
+        "finalized": 1,
+        "slot_ms": 6000,
+        "epoch_length": 1200,
+        "genesis_hash": "0x916363cfdcdb0f705ca06fc0658c50bea72be2efea8fbf3e85712687cf3980ac",
+        "peers": 0,
+        "best_at_rpc_ready": 1
+      },
+      "timings": {
+        "lift_s": 0.97,
+        "lift_reused": true,
+        "splice_s": 1.01,
+        "boot_to_finalized_s": 24.9,
+        "total_s": 26.93
+      }
+    }
+  ]
+}

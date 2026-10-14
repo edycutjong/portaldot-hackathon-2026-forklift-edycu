@@ -15,6 +15,7 @@ Portaldot V3 testnet.
 |---|---|---|---|---|---|---|---|---|
 | #2,725,639 | `0xc6fb8d8a10ae3045b7cb6b0f24ddacc538006a1fae975ec343c8654fb55a8212` | 16,332 | 5,451,269 | 19 | 7.37 / 12.08 / 19.45 | 3, yes | `0x29f18c9250683ce3da0b6ee821674de99036bbc67afc32f42647d687b4c584e7` | `evidence/lift-2725639.json` |
 | #2,725,653 | `0x1f4071dc75d69aff5bcab6fd0dd6aa3d5d5a4dc46f801a939569c27724bb55b0` | 16,316 | 5,451,297 | 18 | 7.61 / 11.97 / 19.58 | 1, yes | `0xe6e7f10e8bef25d1e8cf035884606f4339781f23496d92b2bd475514c185469d` | `evidence/lift-2725653.json` |
+| #2,725,953 | `0xf9dc8fdc6c2c77e7ec3b46d80ee6943459ff70d61319176b6486d60c205c5432` | 16,324 | 5,451,900 | 19 | 6.88 / 10.18 / 17.06 | 1, yes | `0xa430d6a9f16d631da45fd0d0cb5ae600db1854612218e21aabeb7f26d7ba002b` | `evidence/lift-2725953.json` |
 
 ## Completeness (I1b)
 
@@ -24,6 +25,7 @@ The lifted key **set** compared with an independent listing of every key at the 
 | Pin block | Lifted | Listing outside MMR | MMR range keys (listed / derived) | Missing from lift | Extra in lift | Listing time | Pass | Evidence |
 |---|---|---|---|---|---|---|---|---|
 | #2,725,639 | 16,332 | 16,332 | 5,451,269 / 5,451,269 | 0 | 0 | 5,468 pages, 621.1 s | yes | `evidence/lift-completeness-2725639.json` |
+| #2,725,953 | 16,324 | 16,324 | 5,451,900 / 5,451,900 | 0 | 0 | 5,470 pages, 645.6 s | yes | `evidence/lift-completeness-2725953.json` |
 
 ## Forks (`forklift up`)
 
@@ -32,7 +34,7 @@ seconds from node launch, read over RPC.
 
 | Pin block | Label | Fork genesis hash | Lifted = identical + dev-kept + overridden | Genesis keys | RPC up / block #1 / finalized #1 (s) | Peers | Boots, same genesis | Evidence |
 |---|---|---|---|---|---|---|---|---|
-| #2,725,639 | `fork-1002-fast` | `0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b` | 16,332 = 9,529 + 6,799 + 4 | 9,568 | 11.6 / 12.1 / 25.3 | 0 | 6, yes | `evidence/fork-2725639.json` |
+| #2,725,953 | `fork-1002-fast` | `0x916363cfdcdb0f705ca06fc0658c50bea72be2efea8fbf3e85712687cf3980ac` | 16,324 = 9,524 + 6,796 + 4 | 9,563 | 11.7 / 17.8 / 24.9 | 0 | 1, yes | `evidence/fork-2725953.json` |
 
 ## Verify (I1, I2, I4)
 
@@ -42,15 +44,9 @@ the five overrides and both runtime code hashes match the manifest. Re-run a row
 
 | Pin block | Fork genesis hash | Fork finalized at verify | Draws → keys | Classes | Key set / issuance / overrides / code | Exit | Seed | Evidence |
 |---|---|---|---|---|---|---|---|---|
-| #2,725,639 | `0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b` | not recorded | 200 → 194 | dev-kept 80, identical 114 | ok / ok / ok / ok | 0 | 18192902814187631806 | `evidence/verify-2725639.json` |
-| #2,725,639 | `0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b` | #7 | 200 → 196 | dev-kept 88, identical 108 | ok / ok / ok / ok | 0 | 1197921109834038660 | `evidence/verify-2725639.json` |
-| #2,725,639 | `0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b` | #7 | 200 → 198 | dev-kept 84, identical 113, override 1 | ok / ok / ok / ok | 0 | 17654518152265610976 | `evidence/verify-2725639.json` |
-| #2,725,639 | `0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b` | #130 | 200 → 197 | dev-kept 89, identical 108 | ok / ok / ok / ok | 0 | 9005202512978171212 | `evidence/verify-2725639.json` |
-| #2,725,639 | `0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b` | #7 | 200 → 198 | dev-kept 82, identical 116 | ok / ok / ok / ok | 0 | 4437180734999365232 | `evidence/verify-2725639.json` |
-| #2,725,639 | `0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b` | #28 | 200 → 200 | dev-kept 89, identical 111 | ok / ok / ok / ok | 0 | 13670441464817013211 | `evidence/verify-2725639.json` |
-| #2,725,639 | `0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b` | #25 | 200 → 199 | dev-kept 80, identical 119 | ok / ok / ok / ok | 0 | 534842480755845199 | `evidence/verify-2725639.json` |
+| #2,725,953 | `0x916363cfdcdb0f705ca06fc0658c50bea72be2efea8fbf3e85712687cf3980ac` | #9 | 200 → 200 | dev-kept 80, identical 120 | ok / ok / ok / ok | 0 | 15629954055902865514 | `evidence/verify-2725953.json` |
 
-## Transactions on the fork (pin #2,725,639)
+## Transactions on the fork (pin #2,725,953)
 
 Every extrinsic is signed by the fork's dev sudo key `//Alice` (the `Sudo.Key` override) on a local
 fork with a persistent archive database; block numbers and hashes are on that fork, not on mainnet.
@@ -61,30 +57,30 @@ process after the commands: same block hash, tx hash and outcome (and the Sudo-c
 
 | Command | Call | Target (`fund`/`as`) or signer | Extrinsic | Block hash | Tx hash | Result | Label | Re-fetched |
 |---|---|---|---|---|---|---|---|---|
-| `fund` | `Sudo.sudo(Balances.set_balance)` | `5F1Kbj…rMcE` | `6-1` | `0x1485c57b9dc95e9e9018cf9da78f5fd3d393f05308931e6f3da4d2b646f5164b` | `0x279102c44ebf94706e10c96e65bda3da8ae63c52b9a4a8507f9921fbaa3a74c8` | Ok | `fork-1002-fast` | yes (2026-10-14T12:34:27+00:00) |
-| `as` | `Sudo.sudo_as(Balances.transfer)` | `5DvRSg…Mndf` | `9-1` | `0xb209f97f7d57be85721fd74022335b0814fcfb7b00658940b980814056b74688` | `0x859345b414f730fa14892321f94b3c29d4e3ec604145f6e7db9cda9f46ea2fd5` | Ok | `fork-1002-fast` | yes (2026-10-14T12:34:27+00:00) |
-| `as` | `Sudo.sudo_as(Staking.nominate)` | `5Cf8KJ…jchW` | `12-1` | `0x7be356c47e07d70a99d57e886e9aa338c1943bc04ffd333ca78f6768af6b47d6` | `0xd7a4334cae4de7a0fe906007c0f0d5fc4981796929089369b9a56fbabb432d0b` | Ok | `fork-1002-fast` | yes (2026-10-14T12:34:27+00:00) |
-| `receipt` (instantiate) | `Contracts.instantiate_with_code` | `5Grwva…utQY` | `15-1` | `0x3199f12038c501f0c31866c745fbab7cd3781cc628114e8b1965ff643b4facf3` | `0xbfa957dc4afddd73f9b32ba1fc5a1ff0a9fa6aa617b336a21ca37672ef86f2f8` | Ok | `fork-1002-fast` | yes (2026-10-14T12:34:27+00:00) |
-| `receipt` (rent_top_up) | `Balances.transfer` | `5Grwva…utQY` | `18-1` | `0x98f53a01bfa7c5f557e04df35cce95249c4766a10ff4d7bbbbb9aa5b03e7354c` | `0x6af8d8a148300eb5744618c5114892a6df3ed6ff83f9c899b14ff67c49511142` | Ok | `fork-1002-fast` | yes (2026-10-14T12:34:27+00:00) |
-| `receipt` (attest) | `Contracts.call(attest)` | `5Grwva…utQY` | `21-1` | `0xff3563974221d6a6d9a4f9e1a0193a38feff71507d3af5d6aa54a00da841a346` | `0xa056bb3113ad613a508451310b8c48114684fb8d9cc729f97c1bdc545d90a568` | Ok | `fork-1002-fast` | yes (2026-10-14T12:34:27+00:00) |
+| `fund` | `Sudo.sudo(Balances.set_balance)` | `5F1Kbj…rMcE` | `12-1` | `0xa03862c29d7b532f6c4b774e7db32da0d80fe96851e5015c82e5bdb2b92221b8` | `0x48719138d732e7628986f837cd56fe5de269e1d8e0339c4cc9a4e5c4f23ff83d` | Ok | `fork-1002-fast` | yes (2026-10-14T14:35:27+00:00) |
+| `as` | `Sudo.sudo_as(Balances.transfer)` | `5DvRSg…Mndf` | `15-1` | `0x34a2346299a9e95867315d43e08c9e76e4172eef516c5d1d896ce2d196537ed1` | `0xec84c6172d004d64824036aaa80fb2fa14c91bbc791425da5faacf897ab1bbe6` | Ok | `fork-1002-fast` | yes (2026-10-14T14:35:27+00:00) |
+| `as` | `Sudo.sudo_as(Staking.nominate)` | `5Cf8KJ…jchW` | `18-1` | `0xe64e361bba25044110434666bdae5b5990fd503ce023c3b5ab6b054166e3eb9e` | `0x6178ee6f4faefaf58d1dd96db9690ca6d38c93cc9b17977fdf2803aeccff2d7f` | Ok | `fork-1002-fast` | yes (2026-10-14T14:35:27+00:00) |
+| `receipt` (instantiate) | `Contracts.instantiate_with_code` | `5Grwva…utQY` | `21-1` | `0x8dea4b3eb7ca143ae3b6f0010a18ea9d7b46cbb136736609dd804099810d8b83` | `0xd114c4659cbbbbb7a0cf6cc7f4062aecdbdb9d070593cf7365842e10015e0003` | Ok | `fork-1002-fast` | yes (2026-10-14T14:35:27+00:00) |
+| `receipt` (rent_top_up) | `Balances.transfer` | `5Grwva…utQY` | `24-1` | `0x1d114094a1bb1229a25d6668abe7cb77ab3e92115a69d82448b48f888e13d6bb` | `0x0fc273a8d888e63d6f50134494e286abbdaba36ddc092b869e7df6eb26fc7c02` | Ok | `fork-1002-fast` | yes (2026-10-14T14:35:27+00:00) |
+| `receipt` (attest) | `Contracts.call(attest)` | `5Grwva…utQY` | `27-1` | `0xff5a64fb1504443c619bd94de3dba822508604b8e7ce1b93c952e4566983b65b` | `0x610dd887f9a1a8666f06c8a206fe00da80755b0cad33f57cf3282ee1c286789a` | Ok | `fork-1002-fast` | yes (2026-10-14T14:35:27+00:00) |
 
 What changed (read on the fork before the call and at the block that included it):
 
-- `6-1` System.Account: free 0 planck, nonce 0 → free 100,000,000,000,000,000,000 planck, nonce 0
-- `9-1` System.Account: free 20,000,000,000,000,000,000,000 planck, nonce 0 → free 19,999,900,000,000,000,000,000 planck, nonce 0
-- `12-1` Staking.Nominators: 1 target(s) `5CtnsM…XwpT` (submitted in era 3180) → 3 target(s) `5DSHUM…nDCD`, `5FCM6p…Rnmn`, `5EhWJR…YgF6` (submitted in era 3890)
+- `12-1` System.Account: free 0 planck, nonce 0 → free 100,000,000,000,000,000,000 planck, nonce 0
+- `15-1` System.Account: free 20,000,000,000,000,000,000,000 planck, nonce 0 → free 19,999,900,000,000,000,000,000 planck, nonce 0
+- `18-1` Staking.Nominators: 1 target(s) `5CtnsM…XwpT` (submitted in era 3180) → 3 target(s) `5DSHUM…nDCD`, `5FCM6p…Rnmn`, `5EhWJR…YgF6` (submitted in era 3891)
 
 ### Fork Receipt contract
 
-- Contract address: `5EMSUfyyk1aY62M8XGdgAYAwyqd3R7sGbXFERaW5ZVBHeTXv` (code hash `0xd54b527c1aa809166d6f0a48d2d5a682adb55c8412fdb806b92d0607ff874eda`), instantiated in `15-1`, tx `0xbfa957dc4afddd73f9b32ba1fc5a1ff0a9fa6aa617b336a21ca37672ef86f2f8`.
-- Rent check, `18-1`: rent was up to 4,806,188,447 planck/block: eviction in about 173,733 blocks (~12.1 days of 6 s blocks) at that rate; topped up to the deposit bound + 10 % so the rent is 0 at the balance held.
-- Attest `21-1`, tx `0xa056bb3113ad613a508451310b8c48114684fb8d9cc729f97c1bdc545d90a568`: `Contracts.ContractEmitted` = mainnet block hash `0xc6fb8d8a10ae3045b7cb6b0f24ddacc538006a1fae975ec343c8654fb55a8212` ‖ manifest root `0x29f18c9250683ce3da0b6ee821674de99036bbc67afc32f42647d687b4c584e7` ‖ 16,332 keys lifted; equals the manifest: yes.
-- Rent measured across the attest: `rent_paid` 4,514,614,000 → 4,514,614,000 planck, `deduct_block` 15 → 21, balance 4,121,700,000,000,000 → 4,121,700,000,000,000 planck: no rent charged.
+- Contract address: `5EMSUfyyk1aY62M8XGdgAYAwyqd3R7sGbXFERaW5ZVBHeTXv` (code hash `0xd54b527c1aa809166d6f0a48d2d5a682adb55c8412fdb806b92d0607ff874eda`), instantiated in `21-1`, tx `0xd114c4659cbbbbb7a0cf6cc7f4062aecdbdb9d070593cf7365842e10015e0003`.
+- Rent check, `24-1`: rent was up to 4,806,188,447 planck/block: eviction in about 173,733 blocks (~12.1 days of 6 s blocks) at that rate; topped up to the deposit bound + 10 % so the rent is 0 at the balance held.
+- Attest `27-1`, tx `0x610dd887f9a1a8666f06c8a206fe00da80755b0cad33f57cf3282ee1c286789a`: `Contracts.ContractEmitted` = mainnet block hash `0xf9dc8fdc6c2c77e7ec3b46d80ee6943459ff70d61319176b6486d60c205c5432` ‖ manifest root `0xa430d6a9f16d631da45fd0d0cb5ae600db1854612218e21aabeb7f26d7ba002b` ‖ 16,324 keys lifted; equals the manifest: yes.
+- Rent measured across the attest: `rent_paid` 4,514,614,000 → 4,514,614,000 planck, `deduct_block` 21 → 27, balance 4,121,700,000,000,000 → 4,121,700,000,000,000 planck: no rent charged.
 
-Evidence: `evidence/txs-2725639.json`, `evidence/refetch-2725639.json`
+Evidence: `evidence/txs-2725953.json`, `evidence/refetch-2725953.json`
 
 ## Bench (stub: one run per file)
 
 | Date (UTC) | Pin block | Keys | keys s | values s | total s | Host | Evidence |
 |---|---|---|---|---|---|---|---|
-| 2026-10-14T09:40:27+00:00 | #2,725,639 | 16,332 | 8.11 | 12.19 | 20.3 | Darwin arm64, Python 3.11.1 | `evidence/bench-lift-2026-10-14.json` |
+| 2026-10-14T14:43:25+00:00 | #2,725,953 | 16,324 | 7.41 | 12.44 | 19.85 | Darwin arm64, Python 3.11.1 | `evidence/bench-lift-2026-10-14.json` |

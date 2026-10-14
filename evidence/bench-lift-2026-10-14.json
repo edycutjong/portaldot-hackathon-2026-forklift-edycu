@@ -3,20 +3,20 @@
   "profile": "mainnet-read (spec 1002)",
   "endpoint": "wss://mainnet.portaldot.io",
   "pin": {
-    "block_number": 2725639,
-    "block_hash": "0xc6fb8d8a10ae3045b7cb6b0f24ddacc538006a1fae975ec343c8654fb55a8212"
+    "block_number": 2725953,
+    "block_hash": "0xf9dc8fdc6c2c77e7ec3b46d80ee6943459ff70d61319176b6486d60c205c5432"
   },
-  "keys_lifted": 16332,
+  "keys_lifted": 16324,
   "key_pages": 19,
-  "keys_s": 8.11,
-  "values_s": 12.19,
-  "total_s": 20.3,
-  "wall_s_incl_metadata_and_mmr_reads": 20.89,
-  "manifest_root": "0x29f18c9250683ce3da0b6ee821674de99036bbc67afc32f42647d687b4c584e7",
+  "keys_s": 7.41,
+  "values_s": 12.44,
+  "total_s": 19.85,
+  "wall_s_incl_metadata_and_mmr_reads": 20.38,
+  "manifest_root": "0xa430d6a9f16d631da45fd0d0cb5ae600db1854612218e21aabeb7f26d7ba002b",
   "host": {
     "machine": "arm64",
     "system": "Darwin",
     "python": "3.11.1"
   },
-  "recorded_utc": "2026-10-14T09:40:27+00:00"
+  "recorded_utc": "2026-10-14T14:43:25+00:00"
 }

@@ -1,31 +1,31 @@
 {
   "pin": {
-    "block_number": 2725639,
-    "block_hash": "0xc6fb8d8a10ae3045b7cb6b0f24ddacc538006a1fae975ec343c8654fb55a8212"
+    "block_number": 2725953,
+    "block_hash": "0xf9dc8fdc6c2c77e7ec3b46d80ee6943459ff70d61319176b6486d60c205c5432"
   },
   "source_endpoint": "wss://mainnet.portaldot.io",
-  "manifest_root": "0x29f18c9250683ce3da0b6ee821674de99036bbc67afc32f42647d687b4c584e7",
-  "keys_lifted": 16332,
+  "manifest_root": "0xa430d6a9f16d631da45fd0d0cb5ae600db1854612218e21aabeb7f26d7ba002b",
+  "keys_lifted": 16324,
   "note": "block numbers and hashes are on the fork named in each row, not on mainnet",
   "reproduce": "forklift tx <extrinsic_id> --endpoint <fork_endpoint> re-reads a row from the fork",
   "rows": [
     {
-      "recorded_utc": "2026-10-14T12:32:32+00:00",
+      "recorded_utc": "2026-10-14T14:33:49+00:00",
       "label": "fork-1002-fast",
       "fork_name": "proof",
       "fork_endpoint": "ws://127.0.0.1:59944",
-      "fork_genesis_hash": "0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b",
+      "fork_genesis_hash": "0x916363cfdcdb0f705ca06fc0658c50bea72be2efea8fbf3e85712687cf3980ac",
       "persistent_base_path": true,
       "kind": "fund",
       "call": "Sudo.sudo(Balances.set_balance)",
       "who": "5F1KbjNTUu6xmMCcSz2wrv7b627BKS7hUTzWFqdmpvb3rMcE",
-      "extrinsic_id": "6-1",
-      "block_number": 6,
-      "block_hash": "0x1485c57b9dc95e9e9018cf9da78f5fd3d393f05308931e6f3da4d2b646f5164b",
-      "tx_hash": "0x279102c44ebf94706e10c96e65bda3da8ae63c52b9a4a8507f9921fbaa3a74c8",
+      "extrinsic_id": "12-1",
+      "block_number": 12,
+      "block_hash": "0xa03862c29d7b532f6c4b774e7db32da0d80fe96851e5015c82e5bdb2b92221b8",
+      "tx_hash": "0x48719138d732e7628986f837cd56fe5de269e1d8e0339c4cc9a4e5c4f23ff83d",
       "success": true,
       "finalized": true,
-      "seconds": 18.7,
+      "seconds": 14.8,
       "dispatch": {
         "ok": true,
         "error": null
@@ -102,22 +102,22 @@
       "warnings": []
     },
     {
-      "recorded_utc": "2026-10-14T12:32:49+00:00",
+      "recorded_utc": "2026-10-14T14:34:08+00:00",
       "label": "fork-1002-fast",
       "fork_name": "proof",
       "fork_endpoint": "ws://127.0.0.1:59944",
-      "fork_genesis_hash": "0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b",
+      "fork_genesis_hash": "0x916363cfdcdb0f705ca06fc0658c50bea72be2efea8fbf3e85712687cf3980ac",
       "persistent_base_path": true,
       "kind": "as",
       "call": "Sudo.sudo_as(Balances.transfer)",
       "who": "5DvRSgerqB5KHPqWGGnCtRJgJokj91XyGLm3aZ5DKH1rMndf",
-      "extrinsic_id": "9-1",
-      "block_number": 9,
-      "block_hash": "0xb209f97f7d57be85721fd74022335b0814fcfb7b00658940b980814056b74688",
-      "tx_hash": "0x859345b414f730fa14892321f94b3c29d4e3ec604145f6e7db9cda9f46ea2fd5",
+      "extrinsic_id": "15-1",
+      "block_number": 15,
+      "block_hash": "0x34a2346299a9e95867315d43e08c9e76e4172eef516c5d1d896ce2d196537ed1",
+      "tx_hash": "0xec84c6172d004d64824036aaa80fb2fa14c91bbc791425da5faacf897ab1bbe6",
       "success": true,
       "finalized": true,
-      "seconds": 17.2,
+      "seconds": 18.3,
       "dispatch": {
         "ok": true,
         "error": null
@@ -172,19 +172,19 @@
       "warnings": []
     },
     {
-      "recorded_utc": "2026-10-14T12:33:07+00:00",
+      "recorded_utc": "2026-10-14T14:34:25+00:00",
       "label": "fork-1002-fast",
       "fork_name": "proof",
       "fork_endpoint": "ws://127.0.0.1:59944",
-      "fork_genesis_hash": "0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b",
+      "fork_genesis_hash": "0x916363cfdcdb0f705ca06fc0658c50bea72be2efea8fbf3e85712687cf3980ac",
       "persistent_base_path": true,
       "kind": "as",
       "call": "Sudo.sudo_as(Staking.nominate)",
       "who": "5Cf8KJFLVrY43yEZN3vgFktGZvhUhrt7WBvfjJoTr54EjchW",
-      "extrinsic_id": "12-1",
-      "block_number": 12,
-      "block_hash": "0x7be356c47e07d70a99d57e886e9aa338c1943bc04ffd333ca78f6768af6b47d6",
-      "tx_hash": "0xd7a4334cae4de7a0fe906007c0f0d5fc4981796929089369b9a56fbabb432d0b",
+      "extrinsic_id": "18-1",
+      "block_number": 18,
+      "block_hash": "0xe64e361bba25044110434666bdae5b5990fd503ce023c3b5ab6b054166e3eb9e",
+      "tx_hash": "0x6178ee6f4faefaf58d1dd96db9690ca6d38c93cc9b17977fdf2803aeccff2d7f",
       "success": true,
       "finalized": true,
       "seconds": 16.8,
@@ -207,7 +207,7 @@
               "5FCM6payzb4zo3oWPKUZDpgcBAMSyYS4vY5b3YuRtCCGRnmn",
               "5EhWJRiq4XLw2mErQXZoHeASfC8MjujgBYhomDD9YeWMYgF6"
             ],
-            "submitted_in": 3890,
+            "submitted_in": 3891,
             "suppressed": false
           }
         }
@@ -216,54 +216,54 @@
       "warnings": []
     },
     {
-      "recorded_utc": "2026-10-14T12:33:25+00:00",
+      "recorded_utc": "2026-10-14T14:34:43+00:00",
       "label": "fork-1002-fast",
       "fork_name": "proof",
       "fork_endpoint": "ws://127.0.0.1:59944",
-      "fork_genesis_hash": "0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b",
+      "fork_genesis_hash": "0x916363cfdcdb0f705ca06fc0658c50bea72be2efea8fbf3e85712687cf3980ac",
       "persistent_base_path": true,
       "kind": "instantiate",
       "call": "Contracts.instantiate_with_code",
       "who": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-      "extrinsic_id": "15-1",
-      "block_number": 15,
-      "block_hash": "0x3199f12038c501f0c31866c745fbab7cd3781cc628114e8b1965ff643b4facf3",
-      "tx_hash": "0xbfa957dc4afddd73f9b32ba1fc5a1ff0a9fa6aa617b336a21ca37672ef86f2f8",
+      "extrinsic_id": "21-1",
+      "block_number": 21,
+      "block_hash": "0x8dea4b3eb7ca143ae3b6f0010a18ea9d7b46cbb136736609dd804099810d8b83",
+      "tx_hash": "0xd114c4659cbbbbb7a0cf6cc7f4062aecdbdb9d070593cf7365842e10015e0003",
       "success": true,
       "finalized": true,
-      "seconds": 18.2,
+      "seconds": 17.3,
       "contract": "5EMSUfyyk1aY62M8XGdgAYAwyqd3R7sGbXFERaW5ZVBHeTXv",
       "code_hash": "0xd54b527c1aa809166d6f0a48d2d5a682adb55c8412fdb806b92d0607ff874eda",
       "endowment": 1670000000000000,
       "emitted": [
         {
           "contract": "5EMSUfyyk1aY62M8XGdgAYAwyqd3R7sGbXFERaW5ZVBHeTXv",
-          "data": "0xc6fb8d8a10ae3045b7cb6b0f24ddacc538006a1fae975ec343c8654fb55a821229f18c9250683ce3da0b6ee821674de99036bbc67afc32f42647d687b4c584e7cc3f000000000000",
+          "data": "0xf9dc8fdc6c2c77e7ec3b46d80ee6943459ff70d61319176b6486d60c205c5432a430d6a9f16d631da45fd0d0cb5ae600db1854612218e21aabeb7f26d7ba002bc43f000000000000",
           "decoded": {
-            "mainnet_block_hash": "0xc6fb8d8a10ae3045b7cb6b0f24ddacc538006a1fae975ec343c8654fb55a8212",
-            "manifest_root": "0x29f18c9250683ce3da0b6ee821674de99036bbc67afc32f42647d687b4c584e7",
-            "keys_lifted": 16332
+            "mainnet_block_hash": "0xf9dc8fdc6c2c77e7ec3b46d80ee6943459ff70d61319176b6486d60c205c5432",
+            "manifest_root": "0xa430d6a9f16d631da45fd0d0cb5ae600db1854612218e21aabeb7f26d7ba002b",
+            "keys_lifted": 16324
           }
         }
       ]
     },
     {
-      "recorded_utc": "2026-10-14T12:33:43+00:00",
+      "recorded_utc": "2026-10-14T14:35:02+00:00",
       "label": "fork-1002-fast",
       "fork_name": "proof",
       "fork_endpoint": "ws://127.0.0.1:59944",
-      "fork_genesis_hash": "0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b",
+      "fork_genesis_hash": "0x916363cfdcdb0f705ca06fc0658c50bea72be2efea8fbf3e85712687cf3980ac",
       "persistent_base_path": true,
       "kind": "rent_top_up",
       "call": "Balances.transfer",
       "who": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-      "extrinsic_id": "18-1",
-      "block_number": 18,
-      "block_hash": "0x98f53a01bfa7c5f557e04df35cce95249c4766a10ff4d7bbbbb9aa5b03e7354c",
-      "tx_hash": "0x6af8d8a148300eb5744618c5114892a6df3ed6ff83f9c899b14ff67c49511142",
+      "extrinsic_id": "24-1",
+      "block_number": 24,
+      "block_hash": "0x1d114094a1bb1229a25d6668abe7cb77ab3e92115a69d82448b48f888e13d6bb",
+      "tx_hash": "0x0fc273a8d888e63d6f50134494e286abbdaba36ddc092b869e7df6eb26fc7c02",
       "success": true,
       "finalized": true,
-      "seconds": 17.7,
+      "seconds": 18.8,
       "contract": "5EMSUfyyk1aY62M8XGdgAYAwyqd3R7sGbXFERaW5ZVBHeTXv",
       "amount": 2451704514614000,
       "rent_before": {
@@ -285,32 +285,32 @@
       "why": "rent was up to 4,806,188,447 planck/block: eviction in about 173,733 blocks (~12.1 days of 6 s blocks) at that rate; topped up to the deposit bound + 10 % so the rent is 0 at the balance held"
     },
     {
-      "recorded_utc": "2026-10-14T12:34:02+00:00",
+      "recorded_utc": "2026-10-14T14:35:19+00:00",
       "label": "fork-1002-fast",
       "fork_name": "proof",
       "fork_endpoint": "ws://127.0.0.1:59944",
-      "fork_genesis_hash": "0x75808c6d8dca93f79e10a8301355ce3e6fd439c5ac7534174e124092f3788c3b",
+      "fork_genesis_hash": "0x916363cfdcdb0f705ca06fc0658c50bea72be2efea8fbf3e85712687cf3980ac",
       "persistent_base_path": true,
       "kind": "attest",
       "call": "Contracts.call(attest)",
       "who": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-      "extrinsic_id": "21-1",
-      "block_number": 21,
-      "block_hash": "0xff3563974221d6a6d9a4f9e1a0193a38feff71507d3af5d6aa54a00da841a346",
-      "tx_hash": "0xa056bb3113ad613a508451310b8c48114684fb8d9cc729f97c1bdc545d90a568",
+      "extrinsic_id": "27-1",
+      "block_number": 27,
+      "block_hash": "0xff5a64fb1504443c619bd94de3dba822508604b8e7ce1b93c952e4566983b65b",
+      "tx_hash": "0x610dd887f9a1a8666f06c8a206fe00da80755b0cad33f57cf3282ee1c286789a",
       "success": true,
       "finalized": true,
-      "seconds": 18.8,
+      "seconds": 17.2,
       "contract": "5EMSUfyyk1aY62M8XGdgAYAwyqd3R7sGbXFERaW5ZVBHeTXv",
       "code_hash": "0xd54b527c1aa809166d6f0a48d2d5a682adb55c8412fdb806b92d0607ff874eda",
       "emitted": [
         {
           "contract": "5EMSUfyyk1aY62M8XGdgAYAwyqd3R7sGbXFERaW5ZVBHeTXv",
-          "data": "0xc6fb8d8a10ae3045b7cb6b0f24ddacc538006a1fae975ec343c8654fb55a821229f18c9250683ce3da0b6ee821674de99036bbc67afc32f42647d687b4c584e7cc3f000000000000",
+          "data": "0xf9dc8fdc6c2c77e7ec3b46d80ee6943459ff70d61319176b6486d60c205c5432a430d6a9f16d631da45fd0d0cb5ae600db1854612218e21aabeb7f26d7ba002bc43f000000000000",
           "decoded": {
-            "mainnet_block_hash": "0xc6fb8d8a10ae3045b7cb6b0f24ddacc538006a1fae975ec343c8654fb55a8212",
-            "manifest_root": "0x29f18c9250683ce3da0b6ee821674de99036bbc67afc32f42647d687b4c584e7",
-            "keys_lifted": 16332
+            "mainnet_block_hash": "0xf9dc8fdc6c2c77e7ec3b46d80ee6943459ff70d61319176b6486d60c205c5432",
+            "manifest_root": "0xa430d6a9f16d631da45fd0d0cb5ae600db1854612218e21aabeb7f26d7ba002b",
+            "keys_lifted": 16324
           }
         }
       ],
@@ -321,8 +321,8 @@
         "free_after_attest": 4121700000000000,
         "rent_paid_before": 4514614000,
         "rent_paid_after": 4514614000,
-        "deduct_block_before": 15,
-        "deduct_block_after": 21,
+        "deduct_block_before": 21,
+        "deduct_block_after": 27,
         "no_rent_charged": true
       },
       "rent_safe": true

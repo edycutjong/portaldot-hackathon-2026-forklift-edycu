@@ -1,26 +1,26 @@
 {
-  "refetched_utc": "2026-10-14T12:34:27+00:00",
+  "refetched_utc": "2026-10-14T14:35:27+00:00",
   "process": {
-    "pid": 41714,
+    "pid": 84787,
     "note": "a separate process from the one that submitted"
   },
-  "source": "evidence/txs-2725639.json",
-  "checked_against": "evidence/lift-2725639.json",
+  "source": "evidence/txs-2725953.json",
+  "checked_against": "evidence/lift-2725953.json",
   "txs_file_agrees_with_lift": true,
   "pin": {
-    "block_number": 2725639,
-    "block_hash": "0xc6fb8d8a10ae3045b7cb6b0f24ddacc538006a1fae975ec343c8654fb55a8212"
+    "block_number": 2725953,
+    "block_hash": "0xf9dc8fdc6c2c77e7ec3b46d80ee6943459ff70d61319176b6486d60c205c5432"
   },
   "rows_checked": 6,
   "all_identical": true,
   "rows": [
     {
-      "extrinsic_id": "6-1",
+      "extrinsic_id": "12-1",
       "kind": "fund",
       "call": "Sudo.sudo",
       "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-      "block_hash": "0x1485c57b9dc95e9e9018cf9da78f5fd3d393f05308931e6f3da4d2b646f5164b",
-      "tx_hash": "0x279102c44ebf94706e10c96e65bda3da8ae63c52b9a4a8507f9921fbaa3a74c8",
+      "block_hash": "0xa03862c29d7b532f6c4b774e7db32da0d80fe96851e5015c82e5bdb2b92221b8",
+      "tx_hash": "0x48719138d732e7628986f837cd56fe5de269e1d8e0339c4cc9a4e5c4f23ff83d",
       "success": true,
       "error": null,
       "events": [
@@ -39,12 +39,12 @@
       "ok": true
     },
     {
-      "extrinsic_id": "9-1",
+      "extrinsic_id": "15-1",
       "kind": "as",
       "call": "Sudo.sudo_as",
       "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-      "block_hash": "0xb209f97f7d57be85721fd74022335b0814fcfb7b00658940b980814056b74688",
-      "tx_hash": "0x859345b414f730fa14892321f94b3c29d4e3ec604145f6e7db9cda9f46ea2fd5",
+      "block_hash": "0x34a2346299a9e95867315d43e08c9e76e4172eef516c5d1d896ce2d196537ed1",
+      "tx_hash": "0xec84c6172d004d64824036aaa80fb2fa14c91bbc791425da5faacf897ab1bbe6",
       "success": true,
       "error": null,
       "events": [
@@ -61,12 +61,12 @@
       "ok": true
     },
     {
-      "extrinsic_id": "12-1",
+      "extrinsic_id": "18-1",
       "kind": "as",
       "call": "Sudo.sudo_as",
       "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-      "block_hash": "0x7be356c47e07d70a99d57e886e9aa338c1943bc04ffd333ca78f6768af6b47d6",
-      "tx_hash": "0xd7a4334cae4de7a0fe906007c0f0d5fc4981796929089369b9a56fbabb432d0b",
+      "block_hash": "0xe64e361bba25044110434666bdae5b5990fd503ce023c3b5ab6b054166e3eb9e",
+      "tx_hash": "0x6178ee6f4faefaf58d1dd96db9690ca6d38c93cc9b17977fdf2803aeccff2d7f",
       "success": true,
       "error": null,
       "events": [
@@ -82,12 +82,12 @@
       "ok": true
     },
     {
-      "extrinsic_id": "15-1",
+      "extrinsic_id": "21-1",
       "kind": "instantiate",
       "call": "Contracts.instantiate_with_code",
       "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-      "block_hash": "0x3199f12038c501f0c31866c745fbab7cd3781cc628114e8b1965ff643b4facf3",
-      "tx_hash": "0xbfa957dc4afddd73f9b32ba1fc5a1ff0a9fa6aa617b336a21ca37672ef86f2f8",
+      "block_hash": "0x8dea4b3eb7ca143ae3b6f0010a18ea9d7b46cbb136736609dd804099810d8b83",
+      "tx_hash": "0xd114c4659cbbbbb7a0cf6cc7f4062aecdbdb9d070593cf7365842e10015e0003",
       "success": true,
       "error": null,
       "events": [
@@ -104,9 +104,9 @@
         {
           "contract": "5EMSUfyyk1aY62M8XGdgAYAwyqd3R7sGbXFERaW5ZVBHeTXv",
           "decoded": {
-            "mainnet_block_hash": "0xc6fb8d8a10ae3045b7cb6b0f24ddacc538006a1fae975ec343c8654fb55a8212",
-            "manifest_root": "0x29f18c9250683ce3da0b6ee821674de99036bbc67afc32f42647d687b4c584e7",
-            "keys_lifted": 16332
+            "mainnet_block_hash": "0xf9dc8fdc6c2c77e7ec3b46d80ee6943459ff70d61319176b6486d60c205c5432",
+            "manifest_root": "0xa430d6a9f16d631da45fd0d0cb5ae600db1854612218e21aabeb7f26d7ba002b",
+            "keys_lifted": 16324
           }
         }
       ],
@@ -119,12 +119,12 @@
       "ok": true
     },
     {
-      "extrinsic_id": "18-1",
+      "extrinsic_id": "24-1",
       "kind": "rent_top_up",
       "call": "Balances.transfer",
       "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-      "block_hash": "0x98f53a01bfa7c5f557e04df35cce95249c4766a10ff4d7bbbbb9aa5b03e7354c",
-      "tx_hash": "0x6af8d8a148300eb5744618c5114892a6df3ed6ff83f9c899b14ff67c49511142",
+      "block_hash": "0x1d114094a1bb1229a25d6668abe7cb77ab3e92115a69d82448b48f888e13d6bb",
+      "tx_hash": "0x0fc273a8d888e63d6f50134494e286abbdaba36ddc092b869e7df6eb26fc7c02",
       "success": true,
       "error": null,
       "events": [
@@ -140,12 +140,12 @@
       "ok": true
     },
     {
-      "extrinsic_id": "21-1",
+      "extrinsic_id": "27-1",
       "kind": "attest",
       "call": "Contracts.call",
       "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-      "block_hash": "0xff3563974221d6a6d9a4f9e1a0193a38feff71507d3af5d6aa54a00da841a346",
-      "tx_hash": "0xa056bb3113ad613a508451310b8c48114684fb8d9cc729f97c1bdc545d90a568",
+      "block_hash": "0xff5a64fb1504443c619bd94de3dba822508604b8e7ce1b93c952e4566983b65b",
+      "tx_hash": "0x610dd887f9a1a8666f06c8a206fe00da80755b0cad33f57cf3282ee1c286789a",
       "success": true,
       "error": null,
       "events": [
@@ -157,9 +157,9 @@
         {
           "contract": "5EMSUfyyk1aY62M8XGdgAYAwyqd3R7sGbXFERaW5ZVBHeTXv",
           "decoded": {
-            "mainnet_block_hash": "0xc6fb8d8a10ae3045b7cb6b0f24ddacc538006a1fae975ec343c8654fb55a8212",
-            "manifest_root": "0x29f18c9250683ce3da0b6ee821674de99036bbc67afc32f42647d687b4c584e7",
-            "keys_lifted": 16332
+            "mainnet_block_hash": "0xf9dc8fdc6c2c77e7ec3b46d80ee6943459ff70d61319176b6486d60c205c5432",
+            "manifest_root": "0xa430d6a9f16d631da45fd0d0cb5ae600db1854612218e21aabeb7f26d7ba002b",
+            "keys_lifted": 16324
           }
         }
       ],
