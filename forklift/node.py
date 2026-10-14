@@ -91,7 +91,13 @@ def resolve_ports(ws: int | None = None, rpc: int | None = None, p2p: int | None
 
 
 def port_free(port: int, host: str = "127.0.0.1") -> bool:
+    """No listener answers on the port, and it can be bound (a just-stopped node's TIME_WAIT is fine)."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(1.0)
+        if s.connect_ex((host, port)) == 0:
+            return False
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
             s.bind((host, port))
         except OSError:
