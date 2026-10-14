@@ -156,6 +156,83 @@ def lift_cmd(at: str, endpoint: str, out_root: Path | None, no_resume: bool, evi
         click.echo(data_plate(manifest))
 
 
+def _node_failed(exc, as_json: bool) -> None:
+    from forklift.node import EXIT_NODE_FAILED
+
+    if as_json:
+        click.echo(json.dumps({"error": "node_failed", "message": str(exc), "hint": exc.hint,
+                               "log_tail": exc.log_tail}))
+    else:
+        click.echo(f"node failed: {exc}", err=True)
+        if exc.hint:
+            click.echo(f"likely cause: {exc.hint}", err=True)
+        if exc.log_tail:
+            click.echo("--- node log tail ---\n" + exc.log_tail, err=True)
+    sys.exit(EXIT_NODE_FAILED)
+
+
+def _port_options(f):
+    f = click.option("--p2p-port", type=int, default=None, help="p2p port, bound to 127.0.0.1 "
+                     "[env FORKLIFT_P2P_PORT, default 30333].")(f)
+    f = click.option("--rpc-port", type=int, default=None, help="HTTP RPC port [env FORKLIFT_RPC_PORT, default 9933].")(f)
+    f = click.option("--ws-port", type=int, default=None, help="WebSocket RPC port [env FORKLIFT_WS_PORT, default 9944].")(f)
+    return f
+
+
+@main.command("up")
+@click.option("--at", "at", default="head", show_default=True,
+              help="Mainnet block to fork: a number, a 0x block hash, or 'head' (latest finalized).")
+@click.option("--runtime", type=click.Choice(["fast"]), default="fast", show_default=True,
+              help="fast = the dev runtime wasm (6 s blocks).")
+@click.option("--from", "endpoint", default=DEFAULT_MAINNET, show_default=True,
+              help="Archive node to lift from (read-only).")
+@click.option("--name", default="fork", show_default=True, help="Name of this fork (PID file, fork directory).")
+@click.option("--base-path", type=click.Path(path_type=Path), default=None,
+              help="Persistent node database [default: --tmp, deleted when the node stops].")
+@click.option("--node-bin", default=None, help="portaldot_dev binary [env FORKLIFT_NODE_BIN; else found or downloaded].")
+@click.option("--relift", is_flag=True, help="Lift again even if a complete lift of this block is cached.")
+@_port_options
+@click.option("--json", "as_json", is_flag=True, help="Print the fork manifest as JSON.")
+def up_cmd(at: str, runtime: str, endpoint: str, name: str, base_path: Path | None, node_bin: str | None,
+           relift: bool, ws_port: int | None, rpc_port: int | None, p2p_port: int | None, as_json: bool) -> None:
+    """Lift mainnet at a pinned block, splice it into the dev chain spec, and boot the official node on it.
+
+    The node keeps running after this command returns. Exit 3 if the node does
+    not start, author a block within 2 slots, or finalize; exit 4 if the lift fails.
+    """
+    from forklift.lift import EXIT_LIFT_FAILED, LiftError
+    from forklift.node import NodeError, resolve_ports
+    from forklift.splice import SpliceError
+    from forklift.up import run_up, up_plate
+
+    try:
+        ports = resolve_ports(ws_port, rpc_port, p2p_port)
+        m = run_up(endpoint, _parse_at(at), name=name, runtime=runtime, ports=ports,
+                   base_path=base_path.expanduser().resolve() if base_path else None,
+                   node_bin=node_bin, relift=relift)
+    except LiftError as exc:
+        err = {"error": "lift_failed", "phase": exc.phase, "message": str(exc), "last_cursor": exc.cursor}
+        click.echo(json.dumps(err) if as_json else f"lift failed during {exc.phase}: {exc}", err=not as_json)
+        sys.exit(EXIT_LIFT_FAILED)
+    except (NodeError, SpliceError) as exc:
+        if isinstance(exc, SpliceError):
+            exc = NodeError(f"splice failed: {exc}")
+        _node_failed(exc, as_json)
+    click.echo(json.dumps(m, indent=2) if as_json else up_plate(m))
+
+
+@main.command("down")
+@click.option("--name", default="fork", show_default=True, help="Name the fork was started with.")
+def down_cmd(name: str) -> None:
+    """Stop a fork started by `forklift up` (only the PID it recorded, only if it is still that node)."""
+    from forklift.node import NodeError, stop
+
+    try:
+        click.echo(f"{name}: {stop(name)}")
+    except NodeError as exc:
+        raise click.UsageError(str(exc)) from None
+
+
 EXIT_USAGE = 64  # click's default (2) is reserved for "verify found a mismatch"
 
 
