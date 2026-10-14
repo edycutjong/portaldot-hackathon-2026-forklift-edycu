@@ -667,6 +667,78 @@ def tx_cmd(extrinsic_id: str, name: str, endpoint: str | None, as_json: bool) ->
                    + "\n".join(f"event     {e['event']}" for e in got["events"]))
 
 
+def receipt_plate(r, manifest: dict) -> str:
+    from forklift.tx import fmt_pot
+
+    lines = [f"receipt {r.address}  code {r.code_hash}" + ("  (deployed now)" if r.deployed_now else "")]
+    for s in r.steps:
+        inc = s["inclusion"]
+        lines.append(f"{s['kind']:<12}tx {inc.tx_hash}\n            #{inc.block_number:,} {inc.block_hash}"
+                     f"  extrinsic {inc.extrinsic_id} · {'Ok' if inc.success else 'FAILED ' + str(inc.error)}"
+                     f" · {inc.seconds} s")
+        if s["kind"] == "rent_top_up":
+            lines.append(f"            +{fmt_pot(s['amount'])}: {s['why']}")
+    ra = r.rent_after
+    lines.append(f"rent        deposit bound {fmt_pot(ra.deposit)} ({ra.code_bytes} code bytes) · "
+                 f"balance {fmt_pot(ra.free)} · rent {ra.fee_per_block}/block"
+                 f" · measured on attest: {'no rent charged' if r.rent_proof['no_rent_charged'] else 'RENT CHARGED'}")
+    for e in r.attest_emitted:
+        d = e["decoded"] or {}
+        lines.append(f"emitted     mainnet #{manifest['source']['block_number']:,} {d.get('mainnet_block_hash')}\n"
+                     f"            root {d.get('manifest_root')} · {d.get('keys_lifted', 0):,} keys")
+    if not r.attest_emitted:
+        lines.append("MISMATCH    attest emitted no Receipt event")
+    elif r.mismatch:
+        lines.append(f"MISMATCH    emitted payload differs from the manifest in: {', '.join(r.mismatch)} (exit 2)")
+    else:
+        lines.append("OK          emitted payload = the fork manifest (block hash, manifest root, keys lifted)")
+    return "\n".join(lines)
+
+
+@main.command("receipt")
+@click.option("--address", default=None, help="Receipt contract to attest to [default: the one this fork deployed].")
+@click.option("--no-top-up", is_flag=True, help="Report the rent but do not top the contract up.")
+@_act_options
+def receipt_cmd(address: str | None, no_top_up: bool, name: str, endpoint: str | None, evidence_dir: Path | None,
+                as_json: bool) -> None:
+    """Deploy the Fork Receipt contract (first run on a fork), keep it rent-free, and attest.
+
+    attest emits mainnet_block_hash ‖ manifest_root ‖ keys_lifted from the fork's
+    manifest as Contracts.ContractEmitted; the event is decoded and compared with
+    the manifest. Exit 0 when it matches, 2 when it differs, 5 when a transaction
+    failed, 1 when it could not run.
+    """
+    from forklift import receipt, tx
+
+    endpoint, manifest = _fork_endpoint(name, endpoint)
+    if manifest is None:
+        raise click.UsageError(f"the Receipt needs the fork's manifest: act on a fork started by `forklift up` "
+                               f"(--name), not a bare --endpoint")
+    try:
+        with RpcClient(endpoint, fork=True) as client:
+            r = receipt.run_receipt(client, tx.Runtime.load(client), manifest, name=name, address=address,
+                                    top_up=not no_top_up)
+    except (receipt.ReceiptError, *_act_errors()) as exc:
+        _could_not_run(exc, as_json, "receipt")
+    out = r.as_json()
+    if evidence_dir is not None:
+        for s, js in zip(r.steps, out["steps"]):
+            row = {"kind": s["kind"], "call": {"instantiate": "Contracts.instantiate_with_code",
+                                               "rent_top_up": "Balances.transfer",
+                                               "attest": "Contracts.call(attest)"}[s["kind"]],
+                   "who": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+                   "contract": r.address, "code_hash": r.code_hash,
+                   **{k: js["extrinsic"][k] for k in ("extrinsic_id", "block_number", "block_hash", "tx_hash",
+                                                      "success", "finalized", "seconds")},
+                   **{k: v for k, v in js.items() if k not in ("kind", "extrinsic")}}
+            if s["kind"] == "attest":
+                row["matches_manifest"] = out["attest"]["matches_manifest"]
+                row["rent_proof"] = out["rent"]["proof"]
+            out.setdefault("evidence", str(record_tx(row, manifest, endpoint, name, evidence_dir)))
+    click.echo(json.dumps(out, indent=2, default=str) if as_json else receipt_plate(r, manifest))
+    sys.exit(r.exit_code)
+
+
 EXIT_USAGE = 64  # click's default (2) is reserved for "verify found a mismatch"
 
 
