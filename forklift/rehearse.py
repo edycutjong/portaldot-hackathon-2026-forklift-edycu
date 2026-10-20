@@ -245,7 +245,7 @@ def advance(fc: RpcClient, chain_endpoint: str, *, chunk: int = CHUNK, best_of=N
         raise RehearseError(f"the fork is {best - have} blocks behind the chain: re-run `forklift up --target v3 --at head`")
     built = 0
     with RpcClient(fc.endpoint, fork=True, timeout=300.0, retries=0) as slow:  # the first block after a fork loads state lazily
-        for _ in range(10):
+        while built < 3 * MAX_ADVANCE:  # the chain keeps moving while the fork builds; stop once caught up
             k = best - have
             if k <= 0:
                 break
