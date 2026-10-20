@@ -1,0 +1,42 @@
+{
+  "recorded_utc": "2026-10-20T13:48:49+00:00",
+  "profile": "v3",
+  "label": "fork-v3",
+  "pin": {
+    "block_number": 118061,
+    "block_hash": "0xec57106c405af29ab9a5a75f9281050bd1f2755c4592ba3b55e0d19d4603d8ac"
+  },
+  "source_endpoint": "wss://test-node-v3.portaldot.dev",
+  "spec": [
+    "portaldot-v3",
+    3002
+  ],
+  "source_code_hash": "0xedc03c9dc81d39fea5c02893cc34cf2ec898d55d7ee8f8e89eb27597a724c7c2",
+  "keys_lifted": 5508,
+  "manifest_root": "0xfe4962de728b8a17601f3e97dc884a4c21be38a981b8c36cef47f02248c430a4",
+  "fork": {
+    "executor": "@acala-network/chopsticks@1.5.2",
+    "executor_flags": {
+      "allow_unresolved_imports": true,
+      "mock_signature_host": true,
+      "build_block_mode": "Instant"
+    },
+    "unresolved_import_without_flag": "ext_statement_store_submit_statement_version_1",
+    "genesis_hash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+    "code_hash": "0xedc03c9dc81d39fea5c02893cc34cf2ec898d55d7ee8f8e89eb27597a724c7c2",
+    "spec": [
+      "portaldot-v3",
+      3002
+    ],
+    "fork_block": {
+      "number": 118061,
+      "hash": "0xec57106c405af29ab9a5a75f9281050bd1f2755c4592ba3b55e0d19d4603d8ac"
+    }
+  },
+  "timings": {
+    "lift_s": 18.26,
+    "lift_reused": false,
+    "ready_s": 9.22,
+    "total_s": 27.95
+  }
+}

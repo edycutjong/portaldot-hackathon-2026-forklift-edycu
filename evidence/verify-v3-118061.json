@@ -1,0 +1,74 @@
+{
+  "pin": {
+    "block_number": 118061,
+    "block_hash": "0xec57106c405af29ab9a5a75f9281050bd1f2755c4592ba3b55e0d19d4603d8ac"
+  },
+  "source_endpoint": "wss://test-node-v3.portaldot.dev",
+  "spec_version": 3002,
+  "keys_lifted": 5508,
+  "manifest_root": "0xfe4962de728b8a17601f3e97dc884a4c21be38a981b8c36cef47f02248c430a4",
+  "accounting": null,
+  "overrides": [],
+  "executor": "@acala-network/chopsticks@1.5.2",
+  "reproduce": "forklift up --target v3 --at <block>; forklift verify --sample <draws> --seed <seed> against a fork of this pin",
+  "runs": [
+    {
+      "recorded_utc": "2026-10-20T13:51:07+00:00",
+      "label": "fork-v3",
+      "fork_genesis_hash": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+      "fork_endpoint": "ws://127.0.0.1:59944",
+      "seed": 3145772797887710471,
+      "draws": 200,
+      "unique_keys": 198,
+      "classes": {
+        "identical": 200
+      },
+      "mismatches": [],
+      "checks": {
+        "key_set": {
+          "fork": 5508,
+          "lift": 5508,
+          "added": 0,
+          "missing": 0,
+          "fork_set_hash": "0x8b70e0fb8ec9c41e03fd099e3db8f4aaaa6a09885f05706fa84acf3c3faff251",
+          "lift_set_hash": "0x8b70e0fb8ec9c41e03fd099e3db8f4aaaa6a09885f05706fa84acf3c3faff251",
+          "ok": true
+        },
+        "all_lifted_values": {
+          "compared": 5508,
+          "identical": 5497,
+          "child_root_not_served": 11,
+          "child_root_keys": [
+            "0x3a6368696c645f73746f726167653a64656661756c743a00dfab351f6d52611fe7737c31db8f14a7f41fa86e2fbdd739a834d4e205f70d",
+            "0x3a6368696c645f73746f726167653a64656661756c743a22a05fe9727ca3e3b85f9db21d0349b0d6f30f58918d05f58eaa9eaa8515a382",
+            "0x3a6368696c645f73746f726167653a64656661756c743a51cabf5211bd0bfc4e48f780c68cfc5f1597ec8e4c45149e74bdc30589f0cb5f",
+            "0x3a6368696c645f73746f726167653a64656661756c743a58c75ecc30dd03b241343512b6bdf37f27d63b00f4eb8dc94a118ae01ef15be2",
+            "0x3a6368696c645f73746f726167653a64656661756c743a6ad7aa6b5d708dda770ba65517411413023dd8f5c65737cc1b609e68d1f84f3d",
+            "0x3a6368696c645f73746f726167653a64656661756c743a9acd335826801abfa09f401523cb30a33bf25f0539f5da30e8840b63bb32ce47",
+            "0x3a6368696c645f73746f726167653a64656661756c743aadaf69be405020d5a451da34718fafec87ae8fcdbc957f879bcf018b99279ba3",
+            "0x3a6368696c645f73746f726167653a64656661756c743abe307c2d11dbc9391cda93d17e9772542d1300c9af14e7431918fb49e2f47c3a",
+            "0x3a6368696c645f73746f726167653a64656661756c743acd76dc2dc7ed6ede25c03f5ada4fa6b05323f1cd7dfef2e71217275295217fb8",
+            "0x3a6368696c645f73746f726167653a64656661756c743ad637eecd0e737a309200df7ad0c5407dc98a47d5cf1526894ac6513de149b19e",
+            "0x3a6368696c645f73746f726167653a64656661756c743ad670346824d7ac2bc0b932f4dd4972035aa21e69e17bb0daf937d35c2002730d"
+          ],
+          "ok": true
+        },
+        "runtime": {
+          "fork_code_hash": "0xedc03c9dc81d39fea5c02893cc34cf2ec898d55d7ee8f8e89eb27597a724c7c2",
+          "pinned": "0xedc03c9dc81d39fea5c02893cc34cf2ec898d55d7ee8f8e89eb27597a724c7c2",
+          "ok": true
+        },
+        "genesis": {
+          "fork": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+          "pinned": "0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd",
+          "ok": true
+        }
+      },
+      "fork_head_at_verify": {
+        "number": 118061,
+        "fork_block": "0xec57106c405af29ab9a5a75f9281050bd1f2755c4592ba3b55e0d19d4603d8ac"
+      },
+      "exit_code": 0
+    }
+  ]
+}
