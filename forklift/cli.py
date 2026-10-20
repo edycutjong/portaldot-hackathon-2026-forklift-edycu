@@ -188,10 +188,12 @@ def _port_options(f):
 
 
 @main.command("up")
+@click.option("--target", type=click.Choice(["mainnet", "v3"]), default="mainnet", show_default=True,
+              help="mainnet = lift mainnet (spec 1002) into portaldot_dev; v3 = fork the V3 testnet with Chopsticks.")
 @click.option("--at", "at", default="head", show_default=True,
-              help="Mainnet block to fork: a number, a 0x block hash, or 'head' (latest finalized).")
-@click.option("--runtime", type=click.Choice(["fast"]), default="fast", show_default=True,
-              help="fast = the dev runtime wasm (6 s blocks).")
+              help="Block to fork: a number, a 0x block hash, or 'head' (latest finalized).")
+@click.option("--runtime", type=click.Choice(["fast"]), default=None,
+              help="fast = the dev runtime wasm (6 s blocks) [mainnet target only; default fast].")
 @click.option("--from", "endpoint", default=DEFAULT_MAINNET, show_default=True,
               help="Archive node to lift from (read-only).")
 @click.option("--name", default="fork", show_default=True, help="Name of this fork (PID file, fork directory).")
@@ -203,27 +205,38 @@ def _port_options(f):
 @click.option("--evidence", "evidence_dir", type=click.Path(path_type=Path), default=None,
               help="Also record this boot in <DIR>/fork-<block>.json.")
 @click.option("--json", "as_json", is_flag=True, help="Print the fork manifest as JSON.")
-def up_cmd(at: str, runtime: str, endpoint: str, name: str, base_path: Path | None, node_bin: str | None,
+def up_cmd(target: str, at: str, runtime: str | None, endpoint: str, name: str, base_path: Path | None, node_bin: str | None,
            relift: bool, ws_port: int | None, rpc_port: int | None, p2p_port: int | None,
            evidence_dir: Path | None, as_json: bool) -> None:
-    """Lift mainnet at a pinned block, splice it into the dev chain spec, and boot portaldot_dev on it.
+    """Lift a chain at a pinned block and run a local fork of it.
 
-    The node keeps running after this command returns. Exit 3 if the node does
-    not start, author a block within 2 slots, or finalize; exit 4 if the lift fails.
+    mainnet: splice the lift into the dev chain spec and boot portaldot_dev on it.
+    v3: fork the V3 testnet at the lifted block with Chopsticks (V3's own runtime;
+    there is no public V3 node binary), and check it serves that block.
+
+    The fork keeps running after this command returns. Exit 3 if it does not
+    start (mainnet: or does not author a block within 2 slots, or finalize);
+    exit 4 if the lift fails.
     """
     from forklift.lift import EXIT_LIFT_FAILED, LiftError
     from forklift.node import NodeError, resolve_ports
     from forklift.splice import SpliceError
-    from forklift.up import run_up, up_plate
+    from forklift.up import run_up, run_up_v3, up_plate, up_v3_plate
 
+    if target == "v3" and (runtime or base_path or node_bin or rpc_port or p2p_port or endpoint != DEFAULT_MAINNET):
+        raise click.UsageError("--runtime/--base-path/--node-bin/--rpc-port/--p2p-port/--from apply to the mainnet "
+                               "target: a V3 fork runs V3's own runtime under Chopsticks on --ws-port only")
     try:
         ports = resolve_ports(ws_port, rpc_port, p2p_port)
     except NodeError as exc:
         raise click.UsageError(str(exc)) from None
     try:
-        m = run_up(endpoint, _parse_at(at), name=name, runtime=runtime, ports=ports,
-                   base_path=base_path.expanduser().resolve() if base_path else None,
-                   node_bin=node_bin, relift=relift)
+        if target == "v3":
+            m = run_up_v3(_parse_at(at), name=name, ws_port=ports["ws"], relift=relift)
+        else:
+            m = run_up(endpoint, _parse_at(at), name=name, runtime=runtime or "fast", ports=ports,
+                       base_path=base_path.expanduser().resolve() if base_path else None,
+                       node_bin=node_bin, relift=relift)
     except LiftError as exc:
         err = {"error": "lift_failed", "phase": exc.phase, "message": str(exc), "last_cursor": exc.cursor}
         click.echo(json.dumps(err) if as_json else f"lift failed during {exc.phase}: {exc}", err=not as_json)
@@ -235,8 +248,32 @@ def up_cmd(at: str, runtime: str, endpoint: str, name: str, base_path: Path | No
             exc = NodeError(f"{type(exc).__name__}: {exc}")
         _node_failed(exc, as_json)
     if evidence_dir is not None:
-        m["_paths"]["evidence"] = str(record_fork(m, evidence_dir))
-    click.echo(json.dumps(m, indent=2) if as_json else up_plate(m))
+        m["_paths"]["evidence"] = str((record_fork_v3 if target == "v3" else record_fork)(m, evidence_dir))
+    click.echo(json.dumps(m, indent=2) if as_json else (up_v3_plate if target == "v3" else up_plate)(m))
+
+
+def record_fork_v3(m: dict, evidence_dir: Path) -> Path:
+    """Write ``evidence/fork-v3-<block>.json``: the pin, the lift root and what the Chopsticks fork served."""
+    import datetime as dt
+
+    src = m["source"]
+    path = evidence_dir / f"fork-v3-{src['block_number']}.json"
+    ev = {
+        "recorded_utc": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+        "profile": "v3",
+        "label": m["fork"]["label"],
+        "pin": {"block_number": src["block_number"], "block_hash": src["block_hash"]},
+        "source_endpoint": src["endpoint"],
+        "spec": [src["spec_name"], src["spec_version"]],
+        "source_code_hash": src["code_hash"],
+        "keys_lifted": m["load"]["keys_lifted"],
+        "manifest_root": m["manifest_root"],
+        "fork": {k: m["fork"][k] for k in ("executor", "executor_flags", "unresolved_import_without_flag",
+                                           "genesis_hash", "code_hash", "spec", "fork_block")},
+        "timings": m["timings"],
+    }
+    _write_evidence(path, ev)
+    return path
 
 
 def record_fork(m: dict, evidence_dir: Path) -> Path:
@@ -285,27 +322,29 @@ def record_fork(m: dict, evidence_dir: Path) -> Path:
 @click.option("--name", default="fork", show_default=True, help="Name the fork was started with.")
 def down_cmd(name: str) -> None:
     """Stop a fork started by `forklift up` (only the PID it recorded, only if it is still that node)."""
-    from forklift.node import NodeError, pid_file, stop
+    from forklift import chopsticks
+    from forklift.node import NodeError, pid_file, read_pid, stop
 
     try:
         pid_file(name)
     except NodeError as exc:
         raise click.UsageError(str(exc)) from None
     try:
-        click.echo(f"{name}: {stop(name)}")
+        rec = read_pid(name)
+        click.echo(f"{name}: {chopsticks.stop(rec) if rec and rec.get('executor') == 'chopsticks' else stop(name)}")
     except NodeError as exc:
         _node_failed(exc, False)
 
 
-def record_verify(report, m: dict, evidence_dir: Path, endpoint: str) -> Path:
+def record_verify(report, m: dict, evidence_dir: Path, endpoint: str, prefix: str = "verify") -> Path:
     """Write or extend ``evidence/verify-<block>.json``: one run per verify, with its seed to reproduce it."""
     import datetime as dt
 
     src, fork = m["source"], m["fork"]
-    path = evidence_dir / f"verify-{src['block_number']}.json"
+    path = evidence_dir / f"{prefix}-{src['block_number']}.json"
     prior = json.loads(path.read_text()) if path.exists() else {}
     if prior and prior["pin"]["block_hash"] != src["block_hash"]:
-        path = evidence_dir / f"verify-{src['block_number']}-{src['block_hash'][2:10]}.json"
+        path = evidence_dir / f"{prefix}-{src['block_number']}-{src['block_hash'][2:10]}.json"
         prior = json.loads(path.read_text()) if path.exists() else {}
     runs = prior.get("runs", [])
     runs.append({
@@ -328,9 +367,11 @@ def record_verify(report, m: dict, evidence_dir: Path, endpoint: str) -> Path:
         "spec_version": src["spec_version"],
         "keys_lifted": m["load"]["keys_lifted"],
         "manifest_root": m["manifest_root"],
-        "accounting": fork["accounting"],
+        "accounting": fork.get("accounting"),
         "overrides": [{"name": o["name"], "reason": o["reason"]} for o in m["overrides"]],
-        "reproduce": "forklift verify --sample <draws> --seed <seed> against a fork of this pin",
+        "executor": fork.get("executor", "portaldot_dev (splice)"),
+        "reproduce": ("forklift up --target v3 --at <block>; " if fork.get("chain") == "v3" else "")
+        + "forklift verify --sample <draws> --seed <seed> against a fork of this pin",
         "runs": runs,
     }
     _write_evidence(path, ev)
@@ -397,6 +438,8 @@ def verify_cmd(sample: int, seed: int | None, name: str, manifest_path: Path | N
     source = source or (m.get("source") or {}).get("endpoint")
     if not source:
         raise click.UsageError("the manifest has no source endpoint; pass --from")
+    if (m.get("fork") or {}).get("chain") == "v3":
+        _verify_v3(m, endpoint, source, sample, seed, evidence_dir, as_json)
     node = m.get("node") or {}
     spec_path = (m.get("fork") or {}).get("chain_spec")
     dev_path = node.get("dev_spec")
@@ -431,6 +474,54 @@ def verify_cmd(sample: int, seed: int | None, name: str, manifest_path: Path | N
         click.echo(json.dumps(out, indent=2))
     else:
         click.echo(verify_plate(report, m))
+    sys.exit(report.exit_code)
+
+
+def _verify_v3(m: dict, endpoint: str, source: str, sample: int, seed: int | None, evidence_dir: Path | None,
+               as_json: bool) -> None:
+    from forklift.rpc import RpcError, RpcUnavailable
+    from forklift.verify import VerifyError, verify_v3
+
+    try:
+        lifted = json.loads((Path(m["lift_dir"]) / "state.json").read_text())["storage"]
+        with RpcClient(source) as src_c, RpcClient(endpoint) as fork_c:
+            report = verify_v3(m, src_c, fork_c, lifted, sample=sample, seed=seed)
+    except (VerifyError, RpcError, RpcUnavailable, OSError, ValueError, KeyError) as exc:
+        click.echo(json.dumps({"error": "verify_failed", "message": str(exc)}) if as_json
+                   else f"verify could not run: {exc}", err=not as_json)
+        sys.exit(1)
+    if evidence_dir is not None:
+        try:
+            record_verify(report, m, evidence_dir, endpoint, prefix="verify-v3")
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            click.echo(f"warning: verify finished (exit {report.exit_code}) but was NOT recorded in "
+                       f"{evidence_dir}: {exc}", err=True)
+    if as_json:
+        click.echo(json.dumps({"ok": report.ok, "exit_code": report.exit_code, "label": m["fork"]["label"],
+                               "pin": {"block_number": m["source"]["block_number"],
+                                       "block_hash": m["source"]["block_hash"]},
+                               "seed": report.seed, "draws": report.draws, "unique_keys": report.unique_keys,
+                               "classes": report.classes, "mismatches": report.mismatches,
+                               "checks": report.checks, "fork_head": report.fork_head}, indent=2))
+    else:
+        src, chk = m["source"], report.checks
+        lines = [
+            f"verify  {m['fork']['label']} ({m['fork']['executor']}) at #{src['block_number']:,} {src['block_hash']}",
+            f"        vs {src['endpoint']} (live chain at the pin) and Forklift's lift (root {m['manifest_root']})",
+            f"sample  {report.draws} draws on the live chain (seed {report.seed}) → {report.unique_keys} keys: "
+            + ", ".join(f"{k} {v}" for k, v in report.classes.items()),
+            f"keys    fork {chk['key_set']['fork']:,} = lift {chk['key_set']['lift']:,} "
+            f"(+{chk['key_set']['added']} / -{chk['key_set']['missing']}): {'ok' if chk['key_set']['ok'] else 'MISMATCH'}",
+            f"values  {chk['all_lifted_values']['identical']:,} of {chk['all_lifted_values']['compared']:,} lifted "
+            f"values identical on the fork: {'ok' if chk['all_lifted_values']['ok'] else 'MISMATCH'}",
+            f"        {chk['all_lifted_values']['child_root_not_served']} child-trie roots (Revive contract storage) "
+            "read null on the fork: Chopsticks does not serve them at the top trie (executor boundary)",
+            f"code    fork {chk['runtime']['fork_code_hash']}: {'ok (pinned V3 runtime)' if chk['runtime']['ok'] else 'MISMATCH'}",
+        ]
+        for mm in report.mismatches:
+            lines.append(f"MISMATCH {mm['item']}  {mm['key']}  ({mm['why']})")
+        lines.append(f"result  {'OK' if report.ok else 'MISMATCH'} (exit {report.exit_code})")
+        click.echo("\n".join(lines))
     sys.exit(report.exit_code)
 
 
