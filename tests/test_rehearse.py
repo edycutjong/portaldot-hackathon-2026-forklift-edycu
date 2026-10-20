@@ -69,25 +69,6 @@ def test_signer_file_must_be_private_and_its_secret_never_echoed(tmp_path):
     assert "not a key" not in str(exc.value)
 
 
-class _SI:
-    def __init__(self, best):
-        self.best = best
-
-    def get_chain_head(self):
-        return "0xhead"
-
-    def get_block_number(self, h):
-        return self.best
-
-    def get_block_hash(self, n):
-        return f"0x{n:064x}"
-
-    def query(self, *a, **kw):
-        class V:
-            value = 7
-        return V()
-
-
 def _fork(head, built):
     state = {"head": head}
 
