@@ -2,11 +2,11 @@
 
 # Forklift
 
-**Portaldot mainnet state on a local `portaldot_dev` node: lifted at a pinned block, checked against mainnet key by key, and acted on as real accounts.**
+**A local fork of the Portaldot V3 testnet (or of mainnet state), pinned at a block and checked against the live chain key by key: predict a transaction on the fork, then send the same bytes to V3 and compare.**
 
 ![status](https://img.shields.io/badge/status-check--in_slice-orange)
 ![python](https://img.shields.io/badge/python-3.11%2B-blue)
-![tests](https://img.shields.io/badge/tests-222_offline_%2B_4_live-brightgreen)
+![tests](https://img.shields.io/badge/tests-252_offline_%2B_6_live-brightgreen)
 ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
 Portaldot Hacker House 2026 · Track: Node Operations & Tooling
@@ -69,7 +69,7 @@ Forklift is five steps.
 - An endpoint write-guard: nothing is ever submitted to mainnet, and a fork client refuses any non-loopback
   endpoint or a chain whose genesis is mainnet's (or V3's, unless it answers Chopsticks' `dev_*` methods). The one
   path to a real chain is `rehearse --send`: a testnet client that sends only `author_submitExtrinsic`, only to V3.
-- `--json` output and documented exit codes ([`docs/EXIT-CODES.md`](docs/EXIT-CODES.md)); 222 offline tests plus 4 live
+- `--json` output and documented exit codes ([`docs/EXIT-CODES.md`](docs/EXIT-CODES.md)); 252 offline tests plus 6 live
   tests.
 
 **Planned (not built, not claimed):** the ink! 5 / Revive Receipt on V3, a mainnet → V3 state-classification report, an `exact` runtime profile (mainnet's wasm on the fork), `replay` of a mainnet
@@ -264,7 +264,7 @@ Per command, in [`docs/EXIT-CODES.md`](docs/EXIT-CODES.md).
 | `fund`, `as` (whale transfer), `as` (nominator `Staking.nominate`) | extrinsics `12-1`, `15-1`, `18-1`, all `Ok`; whale 200,000,000 → 199,999,000 POT with nonce unchanged; nominator targets 1 → 3 | `evidence/txs-2725953.json` |
 | Fork Receipt | instantiate `21-1`, rent top-up `24-1`, attest `27-1`; `ContractEmitted` payload = block hash ‖ manifest root ‖ 16,324 keys, equal to the manifest | `evidence/txs-2725953.json` |
 | All six transactions re-read by extrinsic id from a separate process | 6 of 6 identical | `evidence/refetch-2725953.json` |
-| Tests | 222 offline passed · 4 live tests (deselected offline; run with `pytest -m live`) | `pytest -q` |
+| Tests | 252 offline passed · 6 live tests (deselected offline; run with `pytest -m live`) | `pytest -q` |
 
 One benchmark run of the lift from a fresh process (a stub: one run per file; p50/p95 over several runs is planned): #2,725,953 in 19.85 s (keys 7.41 s, values 12.44 s), same `manifest_root` (`evidence/bench-lift-2026-10-14.json`).
 
