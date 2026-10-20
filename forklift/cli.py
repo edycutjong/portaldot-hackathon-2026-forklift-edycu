@@ -65,11 +65,12 @@ def record_evidence(m: dict, evidence_dir: Path) -> Path:
     import datetime as dt
 
     src, load = m["source"], m["load"]
-    path = evidence_dir / f"lift-{src['block_number']}.json"
+    stem = "lift-v3" if m["profile"].startswith("v3") else "lift"
+    path = evidence_dir / f"{stem}-{src['block_number']}.json"
     prior = json.loads(path.read_text()) if path.exists() else {}
     if prior and prior["pin"]["block_hash"] != src["block_hash"]:
         # Same number, different block (a reorg below finality should not happen, but never merge them).
-        path = evidence_dir / f"lift-{src['block_number']}-{src['block_hash'][2:10]}.json"
+        path = evidence_dir / f"{stem}-{src['block_number']}-{src['block_hash'][2:10]}.json"
         prior = json.loads(path.read_text()) if path.exists() else {}
     runs = prior.get("runs", [])
     runs.append({

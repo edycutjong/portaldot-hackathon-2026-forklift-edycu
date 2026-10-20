@@ -35,6 +35,103 @@ def _short(v) -> str:
     return f"`{json.dumps(v)}`"
 
 
+def _tpot(planck) -> str:
+    if planck is None:
+        return "n/a"
+    whole, frac = divmod(abs(int(planck)), 10 ** 14)
+    txt = f"{whole}.{frac:014d}".rstrip("0").rstrip(".")
+    return ("-" if int(planck) < 0 else "") + txt + " tPOT"
+
+
+def render_v3() -> list[str]:
+    """The V3 testnet rows: identity, lifts, Chopsticks forks, verify, and predicted-vs-actual transactions."""
+    sys.path.insert(0, str(ROOT))
+    from forklift.chains import V3
+
+    lifts = sorted(_load("lift-v3-*.json"), key=lambda d: d["pin"]["block_number"])
+    forks = sorted(_load("fork-v3-*.json"), key=lambda d: d["pin"]["block_number"])
+    verifies = sorted(_load("verify-v3-*.json"), key=lambda d: d["pin"]["block_number"])
+    rehearsals = [r for d in _load("rehearse-v3.json") for r in d["runs"]]
+    if not (lifts or forks or verifies or rehearsals):
+        return []
+    out = [
+        "## Portaldot V3 testnet (profile `v3`)",
+        "",
+        f"Chain identity pinned in `forklift/chains.py` and checked by every V3 command: genesis `{V3.genesis_hash}`,",
+        f"runtime `:code` hash `{V3.code_hash}`, `{V3.spec[0]}`/{V3.spec[1]}, {V3.symbol}, {V3.decimals} decimals,",
+        f"endpoint `{V3.endpoint}`. Lifts read the live chain at a fixed block hash. A V3 fork runs V3's own",
+        "runtime under Chopsticks (there is no public V3 node binary), labelled `fork-v3`. Transactions marked",
+        "**V3 testnet** were sent to the live chain; their fork rows are the predictions made first.",
+        "",
+    ]
+    if lifts:
+        out += ["### Lifts (V3)", "",
+                "| Pin block | Block hash | Keys lifted | Child-trie roots (not descended) | Seconds (keys / values / total) | Runs, same root | manifest_root | Evidence |",
+                "|---|---|---|---|---|---|---|---|"]
+        for d in lifts:
+            s = d["runs"][-1]["seconds"]
+            child = sum(v for k, v in d["per_item"].items() if k.startswith(":child_storage:"))
+            out.append(f"| #{d['pin']['block_number']:,} | `{d['pin']['block_hash']}` | {d['keys_lifted']:,} | {child} | "
+                       f"{s['keys_s']} / {s['values_s']} / {s['total_s']} | {len(d['runs'])}, "
+                       f"{'yes' if d['roots_identical_across_runs'] else '**NO**'} | `{d['manifest_root']}` | `{d['_file']}` |")
+        out.append("")
+    if forks:
+        out += ["### Forks (`forklift up --target v3`)", "",
+                "| Pin block | Executor | Fork genesis | Fork `:code` | Starts at the pin | Ready (s) | Evidence |",
+                "|---|---|---|---|---|---|---|"]
+        for d in forks:
+            f = d["fork"]
+            out.append(f"| #{d['pin']['block_number']:,} | `{f['executor']}` (allow-unresolved-imports; without it: "
+                       f"`{f['unresolved_import_without_flag']}`) | `{f['genesis_hash']}` | `{f['code_hash']}` | "
+                       f"{'yes' if f['fork_block']['hash'] == d['pin']['block_hash'] else '**NO**'} | "
+                       f"{d['timings']['ready_s']} | `{d['_file']}` |")
+        out.append("")
+    if verifies:
+        out += ["### Verify (V3 fork vs the live chain and the lift)", "",
+                "| Pin block | Runs | Sampled draws (seed) | Key set fork = lift | Lifted values identical | Child roots read null | Runtime | Exit | Evidence |",
+                "|---|---|---|---|---|---|---|---|---|"]
+        for d in verifies:
+            r = d["runs"][-1]
+            c = r["checks"]
+            av = c["all_lifted_values"]
+            out.append(f"| #{d['pin']['block_number']:,} | {len(d['runs'])} | {r['draws']} → {', '.join(f'{k} {v}' for k, v in r['classes'].items())} (seed {r['seed']}) | "
+                       f"{c['key_set']['fork']:,} = {c['key_set']['lift']:,}: {'yes' if c['key_set']['ok'] else '**NO**'} | "
+                       f"{av['identical']:,} of {av['compared']:,} | {av.get('child_root_not_served', 0)} | "
+                       f"{'pinned' if c['runtime']['ok'] else '**differs**'} | {r['exit_code']} | `{d['_file']}` |")
+        out.append("")
+    sent = [r for r in rehearsals if r.get("actual")]
+    if sent:
+        out += ["### Transactions: predicted on the fork, then sent to the V3 testnet", "",
+                "Each row is one extrinsic, signed once: the same bytes (same tx hash) were applied on the V3 fork",
+                "first, then sent to the live V3 testnet. `compare` lists every field that differs.", "",
+                "| Call | Signer | Tx hash | V3 testnet block (extrinsic) | Block hash | Finalized | Fee predicted / actual | Events match | Compare | Explorer |",
+                "|---|---|---|---|---|---|---|---|---|---|"]
+        for r in sent:
+            p, a, c = r["predicted"], r["actual"], r["compare"]
+            ev = next(x for x in c["rows"] if x["field"] == "event_sequence")
+            out.append(f"| `{r['call']}` | `{r['signer'][:8]}…{r['signer'][-4:]}` | `{a['tx_hash']}` | "
+                       f"#{a['block_number']:,} ({a['extrinsic_id']}) | `{a['block_hash']}` | {'yes' if a['finalized'] else 'no'} | "
+                       f"{_tpot(p['fee'])} / {_tpot(a['fee'])} | {'yes' if ev['match'] else '**no**'} | "
+                       f"{c['fields'] - len(c['differs'])}/{c['fields']}"
+                       + ("" if c["match"] else " · differs: " + ", ".join(c["differs"])) + f" | [node-console]({a['explorer']}) |")
+        out += ["", "Balance deltas (predicted / actual, planck):", ""]
+        for r in sent:
+            for acct, d in r["predicted"]["deltas"].items():
+                out.append(f"- `{r['call']}` `{acct[:8]}…{acct[-4:]}`: {d:,} / {r['actual']['deltas'].get(acct):,}")
+        out.append("")
+    unsent = [r for r in rehearsals if not r.get("actual")]
+    if unsent:
+        out += ["### Predictions not sent", "", "| Call | Signer | Fork outcome | Why not sent |", "|---|---|---|---|"]
+        for r in unsent:
+            p = r["predicted"]
+            outcome = (f"pool rejected: `{json.dumps(p['pool_rejected'])}`" if "pool_rejected" in p
+                       else f"{p['extrinsic_id']} {'ok' if p['success'] else 'failed'}, fee {_tpot(p['fee'])}")
+            why = "predicted failure" if not p["success"] else "run without --send"
+            out.append(f"| `{r['call']}` | `{r['signer'][:8]}…{r['signer'][-4:]}` | {outcome} | {why} |")
+        out.append("")
+    return out
+
+
 def render() -> str:
     lifts = sorted(_load("lift-[0-9]*.json"), key=lambda d: d["pin"]["block_number"])
     complete = {d["pin"]["block_number"]: d for d in _load("lift-completeness-*.json")}
@@ -44,12 +141,19 @@ def render() -> str:
         "",
         "Generated by `scripts/proof.py` from `evidence/*.json`. Do not edit by hand.",
         "",
-        "Lift rows are measured runs against the public Portaldot mainnet node",
+        "Mainnet-path lift rows are measured runs against the public Portaldot mainnet node",
         "(`wss://mainnet.portaldot.io`, runtime spec 1002), read-only, at a fixed block hash:",
         "profile `mainnet-read (spec 1002)`. Fork rows are local forks of that state on the `portaldot_dev`",
         "2.0.0 (the `portaldot-testnet-*` tarballs in the community repo `portaldotVolunteer/Portaldot-node`, not a GitHub Release; sha256 pinned in",
         "`forklift/node.py`), labelled `fork-1002-fast` (dev runtime wasm). A local fork is not the",
         "Portaldot V3 testnet.",
+        "",
+    ]
+    out += render_v3()
+    out += [
+        "## Mainnet (spec 1002) path",
+        "",
+        "Everything below is the mainnet-state path (1002 lift → `fork-1002-fast`), kept as the control.",
         "",
         "## Lifts",
         "",
