@@ -180,3 +180,90 @@ def up_plate(m: dict) -> str:
         f"rpc     {node['endpoint']}  (PID {node['pid']}; stop with: forklift down --name {node['name']})",
         f"wrote   {m['_paths']['manifest']}",
     ])
+
+
+def run_up_v3(at, *, name: str = "fork", ws_port: int, relift: bool = False, out_root: Path | None = None,
+              chain=None) -> dict:
+    """Lift the V3 testnet at a pinned block, fork it there with Chopsticks, check what the fork serves.
+
+    The fork must serve the pinned chain's genesis, the pinned runtime ``:code`` hash, and start at
+    exactly the lifted block; otherwise it is stopped and nothing is recorded as a V3 fork.
+    """
+    from forklift import chopsticks
+    from forklift.chains import V3
+
+    chain = chain or V3
+    cache = default_cache()
+    out_root = out_root or cache / "lifts" / chain.id
+    t0 = time.monotonic()
+    lift_m, _storage, reused = obtain_lift(chain.endpoint, at, out_root, relift=relift)
+    t_lift = time.monotonic()
+    src = lift_m["source"]
+    if src["code_hash"] != chain.code_hash or src["spec_name"] != chain.spec[0]:
+        raise nodes.NodeError(f"the lifted block runs {src['spec_name']}/{src['spec_version']} with :code "
+                              f"{src['code_hash']}, not the pinned {chain.label} runtime {chain.code_hash}")
+    fork_dir = cache / "forks" / name
+    rec = chopsticks.start(name, chain, src["block_hash"], ws_port, fork_dir)
+    try:
+        ready_s = chopsticks.wait_ready(rec)
+        with RpcClient(rec["endpoint"]) as c:
+            ident = chopsticks.fork_identity(c)
+        problems = []
+        if (ident["genesis_hash"] or "").lower() != chain.genesis_hash:
+            problems.append(f"genesis {ident['genesis_hash']}")
+        if ident["code_hash"] != chain.code_hash:
+            problems.append(f":code {ident['code_hash']}")
+        if ident["head_hash"] != src["block_hash"]:
+            problems.append(f"head {ident['head_number']} {ident['head_hash']} is not the lifted block")
+        if "dev_newBlock" not in ident["dev_methods"]:
+            problems.append("no dev_newBlock: not a Chopsticks fork")
+        if problems:
+            raise nodes.NodeError("the fork does not serve the lifted V3 block: " + "; ".join(problems))
+    except BaseException:
+        try:
+            chopsticks.stop(rec)
+        except Exception:  # noqa: BLE001  never mask the start failure with a cleanup failure
+            pass
+        raise
+    m = {k: v for k, v in lift_m.items() if k != "_paths"}
+    m["lift_dir"] = lift_m["_paths"]["dir"]
+    m["fork"] = {
+        "label": chopsticks.fork_label(chain),
+        "chain": chain.id,
+        "executor": chopsticks.PACKAGE,
+        "executor_flags": {"allow_unresolved_imports": True, "mock_signature_host": True,
+                           "build_block_mode": "Instant"},
+        "unresolved_import_without_flag": chopsticks.UNRESOLVED_IMPORT,
+        "genesis_hash": ident["genesis_hash"],
+        "code_hash": ident["code_hash"],
+        "spec": ident["spec"],
+        "fork_block": {"number": ident["head_number"], "hash": ident["head_hash"]},
+    }
+    m["node"] = {"name": name, "endpoint": rec["endpoint"], "pid": rec["pid"], "executor": "chopsticks",
+                 "db": rec["db"], "log": rec["log"]}
+    m["timings"] = {"lift_s": round(t_lift - t0, 2), "lift_reused": reused, "ready_s": ready_s,
+                    "total_s": round(time.monotonic() - t0, 2)}
+    manifest_path = fork_dir / "fork.manifest.json"
+    try:
+        _atomic_write(manifest_path, json.dumps(m, indent=2) + "\n")
+        nodes.update_pid_record(name, manifest=str(manifest_path), genesis_hash=ident["genesis_hash"])
+    except OSError as exc:
+        chopsticks.stop(rec)
+        raise nodes.NodeError(f"cannot write {manifest_path}: {exc}") from exc
+    m["_paths"] = {"manifest": str(manifest_path), "log": rec["log"], "lift": lift_m["_paths"]["dir"]}
+    return m
+
+
+def up_v3_plate(m: dict) -> str:
+    src, load, fork, node, t = m["source"], m["load"], m["fork"], m["node"], m["timings"]
+    lifted = "reused the cached lift" if t["lift_reused"] else f"lifted in {t['lift_s']} s"
+    return "\n".join([
+        f"lift    {m['profile']} · #{src['block_number']:,}  {src['block_hash']}",
+        f"        {load['keys_lifted']:,} keys · {lifted} · root {m['manifest_root']}",
+        f"fork    {fork['label']} · {fork['executor']} (allow-unresolved-imports: the V3 runtime imports "
+        f"{fork['unresolved_import_without_flag']})",
+        f"        genesis {fork['genesis_hash']} · :code {fork['code_hash'][:18]}… · {fork['spec'][0]}/{fork['spec'][1]}",
+        f"        starts at #{fork['fork_block']['number']:,} = the lifted block · ready in {t['ready_s']} s",
+        f"rpc     {node['endpoint']}  (PID {node['pid']}; stop with: forklift down --name {node['name']})",
+        f"wrote   {m['_paths']['manifest']}",
+    ])
