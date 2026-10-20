@@ -917,6 +917,111 @@ def receipt_cmd(address: str | None, no_top_up: bool, name: str, endpoint: str |
 EXIT_USAGE = 64  # click's default (2) is reserved for "verify found a mismatch"
 
 
+@main.command("rehearse")
+@click.argument("call")
+@click.option("--args", "args_json", default="{}", show_default=True, help="Call arguments as a JSON object.")
+@click.option("--signer", type=click.Path(path_type=Path), required=True,
+              help="Seed file (mnemonic, 0x seed or //URI; mode 600). Its secret is never printed.")
+@click.option("--name", default="v3", show_default=True, help="Running V3 fork (from `forklift up --target v3`).")
+@click.option("--send", is_flag=True, help="After the fork prediction, send the same bytes to the live V3 testnet.")
+@click.option("--evidence", "evidence_dir", type=click.Path(path_type=Path), default=None,
+              help="Also record this run in <DIR>/rehearse-v3.json.")
+@click.option("--json", "as_json", is_flag=True, help="Print the result as JSON.")
+def rehearse_cmd(call: str, args_json: str, signer: Path, name: str, send: bool, evidence_dir: Path | None,
+                 as_json: bool) -> None:
+    """Predict a transaction on a V3 fork; with --send, send the same signed bytes to V3 and compare.
+
+    Exit 0: predicted (and, with --send, the chain matched the prediction field by field).
+    Exit 5: the fork predicts the call fails; nothing is sent. Exit 7: sent, and the chain's
+    events, fee or balance deltas differ from the prediction (listed). Exit 1: could not run
+    (stale fork, refused write, unreachable endpoint, not included).
+    """
+    from forklift.rehearse import EXIT_PREDICTION_DIFFERS, RehearseError, load_signer, rehearse
+
+    if "." not in call:
+        raise click.UsageError("CALL is Pallet.call, e.g. Balances.transfer_keep_alive")
+    module, function = call.split(".", 1)
+    try:
+        params = json.loads(args_json)
+    except ValueError as exc:
+        raise click.UsageError(f"--args is not JSON: {exc}") from None
+    from forklift.node import NodeError, read_pid
+
+    try:
+        rec = read_pid(name)
+    except NodeError as exc:
+        raise click.UsageError(str(exc)) from None
+    if not rec or rec.get("executor") != "chopsticks":
+        raise click.UsageError(f"no V3 fork named {name!r}: start one with `forklift up --target v3 --name {name}`")
+    try:
+        keypair = load_signer(signer)
+        r = rehearse(rec["endpoint"], keypair, module, function, params, send=send)
+    except (RehearseError, *_act_errors()) as exc:
+        _could_not_run(exc, as_json, "rehearse")
+    except Exception as exc:  # noqa: BLE001  SDK compose/encode errors are usage errors here
+        if type(exc).__module__.startswith(("substrateinterface", "scalecodec")):
+            raise click.UsageError(f"{call}: {exc}") from None
+        raise
+    code = 0
+    if not r["predicted"]["success"]:
+        code = 5
+    elif r["compare"] is not None and not r["compare"]["match"]:
+        code = EXIT_PREDICTION_DIFFERS
+    r["exit_code"] = code
+    if evidence_dir is not None:
+        try:
+            r["_evidence"] = str(record_rehearse(r, evidence_dir))
+        except (OSError, ValueError, TypeError) as exc:
+            click.echo(f"warning: rehearse finished (exit {code}) but was NOT recorded in {evidence_dir}: {exc}",
+                       err=True)
+    click.echo(json.dumps(r, indent=2, default=str) if as_json else rehearse_plate(r))
+    sys.exit(code)
+
+
+def record_rehearse(r: dict, evidence_dir: Path) -> Path:
+    import datetime as dt
+
+    path = evidence_dir / f"rehearse-{r['chain']}.json"
+    prior = json.loads(path.read_text()) if path.exists() else {"runs": []}
+    row = {k: v for k, v in r.items() if not k.startswith("_") and k != "xt_hex"}
+    row["recorded_utc"] = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
+    prior["runs"].append(row)
+    prior["about"] = ("forklift rehearse: one extrinsic signed once, applied on a Chopsticks fork of the V3 testnet "
+                      "(predicted) and, with --send, the same bytes sent to the live V3 testnet (actual)")
+    _write_evidence(path, prior)
+    return path
+
+
+def rehearse_plate(r: dict) -> str:
+    from forklift.chains import V3, units
+
+    p, a, c = r["predicted"], r["actual"], r["compare"]
+    head = f"rehearse {r['call']} as {r['signer']} (nonce {r['nonce']}) · {r['label']}"
+    if "pool_rejected" in p:
+        return "\n".join([head, f"fork     the pool rejects it: {json.dumps(p['pool_rejected'])} → the chain's would too",
+                          "chain    not sent"])
+    lines = [
+        head,
+        f"fork     {p['extrinsic_id']} {'ok' if p['success'] else 'FAILED'} · fee {units(V3, p['fee'] or 0)} · "
+        + ", ".join(f"{e['pallet']}.{e['event']}" for e in p["events"]),
+        f"         tx {p['tx_hash']}",
+    ]
+    for acct, d in p["deltas"].items():
+        lines.append(f"         Δ {acct[:8]}… {units(V3, d)}")
+    if a is None:
+        lines.append("chain    not sent" + ("" if p["success"] else " (the fork predicts a failure)"))
+    else:
+        lines += [
+            f"chain    #{a['block_number']:,} {a['extrinsic_id']} {'ok' if a['success'] else 'FAILED'}"
+            f"{' · finalized' if a['finalized'] else ''} · fee {units(V3, a['fee'] or 0)} · tx {a['tx_hash']}",
+            f"         block {a['block_hash']}",
+            f"         {a['explorer']}",
+            f"compare  {c['fields'] - len(c['differs'])}/{c['fields']} fields match"
+            + ("" if c["match"] else " · DIFFERS: " + ", ".join(c["differs"])),
+        ]
+    return "\n".join(lines)
+
+
 def run() -> None:
     """Console entry point: like ``main()`` but with usage errors on exit code 64."""
     try:
