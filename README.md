@@ -6,7 +6,7 @@
 
 ![status](https://img.shields.io/badge/status-check--in_slice-orange)
 ![python](https://img.shields.io/badge/python-3.11%2B-blue)
-![tests](https://img.shields.io/badge/tests-252_offline_%2B_6_live-brightgreen)
+![tests](https://img.shields.io/badge/tests-257_offline_%2B_6_live-brightgreen)
 ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
 Portaldot Hacker House 2026 · Track: Node Operations & Tooling
@@ -49,7 +49,8 @@ Forklift is five steps.
    with Chopsticks (V3's own runtime wasm; there is no public V3 node binary), and `verify` checks that fork against
    the live chain and the lift. `forklift rehearse <Pallet.call>` signs one extrinsic once, applies those exact bytes on
    the fork (the prediction: events, fee, balance deltas), and with `--send` sends the same bytes to the V3 testnet and
-   compares the two outcomes field by field.
+   compares the two outcomes field by field. `forklift replay <block>-<index>` re-applies any V3 extrinsic's own bytes
+   on a fork of its parent block and checks the fork reproduces what the chain recorded.
 5. **Act (mainnet path).** `forklift fund` sets a balance, `forklift as <account> <Pallet.call> <args>` dispatches a call with a real
    mainnet account's origin (through `Sudo.sudo_as`), and `forklift receipt` deploys a small contract that emits the
    lift's block hash, `manifest_root` and key count as a `ContractEmitted` event on the fork, so a fork's origin is recorded on the fork itself.
@@ -65,11 +66,12 @@ Forklift is five steps.
 - The V3 target: chain profiles pinned by genesis and runtime `:code` hash (`forklift/chains.py`), V14 metadata names,
   `up --target v3` (Chopsticks fork that must serve V3's genesis, the pinned runtime and the lifted block), V3 `verify`
   (sampled keys drawn on the live chain, plus the whole key set and every lifted value against the fork), and
-  `rehearse` (predict on the fork, then `--send` the same bytes to V3; exit `7` when the chain differs).
+  `rehearse` (predict on the fork, then `--send` the same bytes to V3; exit `7` when the chain differs), and `replay`
+  (any V3 extrinsic on a fork of its parent block, compared field by field).
 - An endpoint write-guard: nothing is ever submitted to mainnet, and a fork client refuses any non-loopback
   endpoint or a chain whose genesis is mainnet's (or V3's, unless it answers Chopsticks' `dev_*` methods). The one
   path to a real chain is `rehearse --send`: a testnet client that sends only `author_submitExtrinsic`, only to V3.
-- `--json` output and documented exit codes ([`docs/EXIT-CODES.md`](docs/EXIT-CODES.md)); 252 offline tests plus 6 live
+- `--json` output and documented exit codes ([`docs/EXIT-CODES.md`](docs/EXIT-CODES.md)); 257 offline tests plus 6 live
   tests.
 
 **Planned (not built, not claimed):** the ink! 5 / Revive Receipt on V3, a mainnet → V3 state-classification report, an `exact` runtime profile (mainnet's wasm on the fork), `replay` of a mainnet
@@ -105,7 +107,8 @@ nobody mistakes it for a testnet or for V3.
   predicts inclusion in the next block. If the chain includes it later, the fee may differ and `rehearse` says so
   (exit `7`); it never adjusts a prediction after the fact.
 - **Top trie only.** Child tries are not lifted (the manifest reports a `child_trie_roots_not_lifted` count; it is not recorded in `evidence/`).
-- **Evidence is local.** The contract address and transaction hashes below live on a local fork, not on a public
+- **Mainnet-path evidence is local.** The V3 transactions in *Demo* are on the public V3 testnet (node-console links in
+  [`docs/PROOF.md`](docs/PROOF.md)). The contract address and the mainnet-path transaction hashes live on a local fork, not on a public
   explorer; `forklift tx <block-index>` re-reads any of them from the author's running fork (a fresh fork gives new
   hashes; the recorded rows are in `evidence/txs-2725953.json` and `evidence/refetch-2725953.json`).
 
@@ -220,6 +223,7 @@ forklift rehearse System.remark --args '{"remark": "0x666f726b6c696674"}' \
   --signer ~/.config/forklift/my-v3.seed --name v3   # predict on the fork only
 forklift rehearse System.remark --args '{"remark": "0x666f726b6c696674"}' \
   --signer ~/.config/forklift/my-v3.seed --name v3 --send --evidence evidence   # predict, send to V3, compare
+forklift replay 118621-1                            # re-run a V3 extrinsic on a fork of its parent block, compare
 forklift down --name v3
 ```
 
@@ -236,7 +240,8 @@ which records a run for [`docs/PROOF.md`](docs/PROOF.md) (`python scripts/proof.
 
 **Exit codes:** `0` success · `1` could not run · `2` mismatch (`verify`, `receipt`) · `3` node failed · `4` lift failed
 (last cursor printed, checkpoint kept) · `5` the carried call failed (`rehearse`: predicted to fail, not sent) · `6` Receipt not rent-safe ·
-`7` the V3 testnet differed from the fork's prediction · `64` usage error.
+`7` the V3 testnet differed from the fork's prediction (`rehearse`) or the replay differed from the chain (`replay`) ·
+`64` usage error.
 Per command, in [`docs/EXIT-CODES.md`](docs/EXIT-CODES.md).
 
 **Compile & deploy / launch frontend:** the contract is compiled with `wat2wasm` (command above; the compiled
@@ -264,7 +269,11 @@ Per command, in [`docs/EXIT-CODES.md`](docs/EXIT-CODES.md).
 | `fund`, `as` (whale transfer), `as` (nominator `Staking.nominate`) | extrinsics `12-1`, `15-1`, `18-1`, all `Ok`; whale 200,000,000 → 199,999,000 POT with nonce unchanged; nominator targets 1 → 3 | `evidence/txs-2725953.json` |
 | Fork Receipt | instantiate `21-1`, rent top-up `24-1`, attest `27-1`; `ContractEmitted` payload = block hash ‖ manifest root ‖ 16,324 keys, equal to the manifest | `evidence/txs-2725953.json` |
 | All six transactions re-read by extrinsic id from a separate process | 6 of 6 identical | `evidence/refetch-2725953.json` |
-| Tests | 252 offline passed · 6 live tests (deselected offline; run with `pytest -m live`) | `pytest -q` |
+| V3 testnet: lift, fork, verify at #118,061 | 5,508 keys, two fresh lifts with the same root · Chopsticks fork serves the pinned block, genesis and runtime · `verify --sample 200` exit 0: 200/200 identical, key set 5,508 = 5,508, 5,497 values identical + 11 child-trie roots read null | `evidence/lift-v3-118061.json`, `evidence/fork-v3-118061.json`, `evidence/verify-v3-118061.json` |
+| V3 testnet: three transactions from `5EnCf9…Cejvg`, each predicted on a fork first, then sent | `System.remark` 118555-1, `Balances.transfer_keep_alive` (0.2 tPOT) 118621-1, `Utility.batch` (remark + 0.1 tPOT) 118669-1, all finalized · same tx hash, success and event sequence as predicted, recipient deltas exact · fees differ by 3,660–8,269 planck because each landed 3–9 blocks after the predicted height | `evidence/rehearse-v3.json`, [`docs/PROOF.md`](docs/PROOF.md) (block hashes + node-console links) |
+| V3 testnet: the same three replayed on forks of their parent blocks | 10/10, 14/14 and 16/16 fields equal to the chain, fees equal to the planck | `evidence/replay-v3.json` |
+| An unfunded signer | the fork's pool rejects it (`Invalid: Payment`), exit `5`, nothing sent | `evidence/rehearse-v3.json` |
+| Tests | 257 offline passed · 6 live tests (deselected offline; run with `pytest -m live`) | `pytest -q` |
 
 One benchmark run of the lift from a fresh process (a stub: one run per file; p50/p95 over several runs is planned): #2,725,953 in 19.85 s (keys 7.41 s, values 12.44 s), same `manifest_root` (`evidence/bench-lift-2026-10-14.json`).
 
