@@ -52,7 +52,8 @@ def render_v3() -> list[str]:
     forks = sorted(_load("fork-v3-*.json"), key=lambda d: d["pin"]["block_number"])
     verifies = sorted(_load("verify-v3-*.json"), key=lambda d: d["pin"]["block_number"])
     rehearsals = [r for d in _load("rehearse-v3.json") for r in d["runs"]]
-    if not (lifts or forks or verifies or rehearsals):
+    replays = [r for d in _load("replay-v3.json") for r in d["runs"]]
+    if not (lifts or forks or verifies or rehearsals or replays):
         return []
     out = [
         "## Portaldot V3 testnet (profile `v3`)",
@@ -104,13 +105,14 @@ def render_v3() -> list[str]:
         out += ["### Transactions: predicted on the fork, then sent to the V3 testnet", "",
                 "Each row is one extrinsic, signed once: the same bytes (same tx hash) were applied on the V3 fork",
                 "first, then sent to the live V3 testnet. `compare` lists every field that differs.", "",
-                "| Call | Signer | Tx hash | V3 testnet block (extrinsic) | Block hash | Finalized | Fee predicted / actual | Events match | Compare | Explorer |",
-                "|---|---|---|---|---|---|---|---|---|---|"]
+                "| Call | Signer | Tx hash | V3 testnet block (extrinsic) | Block hash | Finalized | Inclusion predicted / actual | Fee predicted / actual | Events match | Compare | Explorer |",
+                "|---|---|---|---|---|---|---|---|---|---|---|"]
         for r in sent:
             p, a, c = r["predicted"], r["actual"], r["compare"]
             ev = next(x for x in c["rows"] if x["field"] == "event_sequence")
             out.append(f"| `{r['call']}` | `{r['signer'][:8]}…{r['signer'][-4:]}` | `{a['tx_hash']}` | "
                        f"#{a['block_number']:,} ({a['extrinsic_id']}) | `{a['block_hash']}` | {'yes' if a['finalized'] else 'no'} | "
+                       f"#{p['block_number']:,} / #{a['block_number']:,} | "
                        f"{_tpot(p['fee'])} / {_tpot(a['fee'])} | {'yes' if ev['match'] else '**no**'} | "
                        f"{c['fields'] - len(c['differs'])}/{c['fields']}"
                        + ("" if c["match"] else " · differs: " + ", ".join(c["differs"])) + f" | [node-console]({a['explorer']}) |")
@@ -118,6 +120,19 @@ def render_v3() -> list[str]:
         for r in sent:
             for acct, d in r["predicted"]["deltas"].items():
                 out.append(f"- `{r['call']}` `{acct[:8]}…{acct[-4:]}`: {d:,} / {r['actual']['deltas'].get(acct):,}")
+        out.append("")
+    if replays:
+        out += ["### Replays: the same extrinsic on a fork of its parent block (`forklift replay`)", "",
+                "The chain's own extrinsic bytes, re-applied on a Chopsticks fork started at the parent of the block that",
+                "included them, compared with what the V3 testnet recorded. Nothing is sent.", "",
+                "| Extrinsic | Tx hash | Fork parent block | Fee chain / replay | Compare | Exit | Explorer |",
+                "|---|---|---|---|---|---|---|"]
+        for r in replays:
+            a, p, c = r["actual"], r["replay"], r["compare"]
+            out.append(f"| {r['extrinsic_id']} | `{a['tx_hash']}` | #{r['fork_parent']['number']:,} `{r['fork_parent']['hash']}` | "
+                       f"{_tpot(a['fee'])} / {_tpot(p['fee'])} | {c['fields'] - len(c['differs'])}/{c['fields']}"
+                       + ("" if c["match"] else " · differs: " + ", ".join(c["differs"]))
+                       + f" | {r['exit_code']} | [node-console]({a['explorer']}) |")
         out.append("")
     unsent = [r for r in rehearsals if not r.get("actual")]
     if unsent:
