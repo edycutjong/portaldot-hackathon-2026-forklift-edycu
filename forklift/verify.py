@@ -33,6 +33,8 @@ from forklift.metadata import StorageIndex, decode_hex
 from forklift.rpc import RpcClient
 from forklift.splice import CODE, TOTAL_ISSUANCE, genesis_key_set_hash, rule_of
 
+CHILD_PREFIX = b":child_storage:"
+
 EXIT_MISMATCH = 2
 
 
@@ -265,3 +267,84 @@ def _short(value: str | None) -> str | None:
     if value is None or len(value) <= 74:
         return value
     return f"{value[:34]}…{value[-8:]} ({len(value) // 2 - 1} B)"
+
+
+def verify_v3(manifest: dict, source: RpcClient, fork: RpcClient, lifted: dict[str, str], *, sample: int = 200,
+              seed: int | None = None, index: StorageIndex | None = None) -> Report:
+    """A Chopsticks fork of the V3 testnet against the live chain at the pin and against Forklift's own lift.
+
+    - the fork's whole key set at its fork block equals the lifted key set (count and set hash);
+    - every lifted value equals the fork's value at its fork block (all keys, not a sample);
+    - ``sample`` keys drawn **on the live chain** (as on the mainnet path) are identical on the fork;
+    - genesis and runtime ``:code`` hash equal the V3 profile's.
+
+    There is no splice on this path, so there is no dev-kept, override or reset class. One executor
+    boundary is named instead of hidden: Chopsticks 1.5.2 answers ``null`` for the top-trie value of a
+    child-trie root (``:child_storage:default:…``, Revive contract storage on V3) that the live node
+    serves. Those keys are counted as ``child-root-not-served`` and listed; anything else that differs
+    is a mismatch (exit 2), named by storage item.
+    """
+    from forklift.chains import V3
+
+    src, fk = manifest["source"], manifest["fork"]
+    pin = src["block_hash"]
+    fork_block = fk["fork_block"]["hash"]
+    genesis = fork.call("chain_getBlockHash", [0])
+    if str(genesis).lower() != V3.genesis_hash or genesis != fk["genesis_hash"]:
+        raise VerifyError(f"{fork.endpoint} serves genesis {genesis}, not the V3 fork in this manifest")
+    if fork_block != pin:
+        raise VerifyError(f"the manifest's fork block {fork_block} is not its pin {pin}")
+    if seed is None:
+        seed = int.from_bytes(os.urandom(8), "little")
+    rng = random.Random(seed)
+    if index is None:
+        index = StorageIndex(decode_hex(source.call("state_getMetadata", [pin])))
+    per_item = {k: v for k, v in manifest["load"]["per_item"].items() if "unknown:" not in k and not k.startswith(":child_storage:")}  # no prefix to draw in (child-trie roots are named by their raw key); still in the full compare
+    prefixes = item_prefixes(index, per_item)
+    draws = draw_sample(source, pin, prefixes, per_item, sample, rng)
+    keys = sorted({k for _, k in draws})
+    on_source = read_values(source, keys, pin)
+    on_fork = read_values(fork, keys, fork_block)
+    classes: Counter[str] = Counter()
+    mismatches: list[dict] = []
+    rows = []
+    for name, key in draws:
+        same = on_source[key] == on_fork[key]
+        classes["identical" if same else "mismatch"] += 1
+        rows.append({"item": name, "key": key, "class": "identical" if same else "mismatch"})
+        if not same and not any(m["key"] == key for m in mismatches):
+            mismatches.append({"item": name, "key": key, "source": _short(on_source[key]),
+                               "fork": _short(on_fork[key]), "why": "sampled key differs from the live chain"})
+
+    fork_set = fork_keys(fork, fork_block)
+    lift_set = sorted(lifted)
+    added = sorted(set(fork_set) - set(lift_set))
+    missing = sorted(set(lift_set) - set(fork_set))
+    for key in added[:20] + missing[:20]:
+        mismatches.append({"item": index.item_of(_b(key)), "key": key, "source": None, "fork": None,
+                           "why": "on the fork, not in the lift" if key in added else "in the lift, not on the fork"})
+    all_fork = read_values(fork, lift_set, fork_block)
+    differs = [k for k in lift_set if all_fork.get(k) != lifted[k]]
+    child_roots = [k for k in differs if _b(k).startswith(CHILD_PREFIX) and all_fork.get(k) is None]
+    differs = [k for k in differs if k not in child_roots]
+    for key in differs[:20]:
+        mismatches.append({"item": index.item_of(_b(key)), "key": key, "source": _short(lifted[key]),
+                           "fork": _short(all_fork.get(key)), "why": "lifted value differs from the fork's"})
+    code = fork.call("state_getStorage", [_h(CODE), fork_block])
+    code_hash = _h(blake2_256(_b(code))) if code else None
+    checks = {
+        "key_set": {"fork": len(fork_set), "lift": len(lift_set), "added": len(added), "missing": len(missing),
+                    "fork_set_hash": genesis_key_set_hash(fork_set), "lift_set_hash": genesis_key_set_hash(lift_set),
+                    "ok": not added and not missing},
+        "all_lifted_values": {"compared": len(lift_set),
+                              "identical": len(lift_set) - len(differs) - len(child_roots),
+                              "child_root_not_served": len(child_roots), "child_root_keys": child_roots,
+                              "ok": not differs},
+        "runtime": {"fork_code_hash": code_hash, "pinned": V3.code_hash, "ok": code_hash == V3.code_hash},
+        "genesis": {"fork": genesis, "pinned": V3.genesis_hash, "ok": True},
+    }
+    ok = not mismatches and all(c["ok"] for c in checks.values())
+    head = fork.call("chain_getHeader")
+    return Report(ok=ok, seed=seed, draws=len(draws), unique_keys=len(keys), classes=dict(classes),
+                  mismatches=mismatches, checks=checks, sample=rows,
+                  fork_head={"number": int(head["number"], 16), "fork_block": fork_block})
