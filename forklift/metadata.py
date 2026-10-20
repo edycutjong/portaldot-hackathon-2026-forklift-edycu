@@ -1,4 +1,4 @@
-"""Storage names from runtime metadata V13 (Portaldot mainnet, spec 1002).
+"""Storage names from runtime metadata: V13 (Portaldot mainnet, spec 1002) and V14 (V3 testnet, spec 3002).
 
 Only the storage section is kept: it maps each 32-byte storage item prefix
 ``twox128(pallet prefix) ‖ twox128(item)`` to a readable ``Pallet.Item`` name.
@@ -138,8 +138,33 @@ def decode_v13(raw: bytes) -> list[Pallet]:
     return pallets
 
 
+def decode_v14(raw: bytes) -> list[Pallet]:
+    """Storage section of a V14 blob. V14 is self-describing (a type registry), so the SDK's
+    scalecodec decodes it; only names, kinds and hashers are kept, as for V13."""
+    from scalecodec.base import RuntimeConfiguration, ScaleBytes
+    from scalecodec.type_registry import load_type_registry_preset
+
+    rc = RuntimeConfiguration()
+    rc.update_type_registry(load_type_registry_preset("core"))
+    obj = rc.create_scale_object("MetadataVersioned", data=ScaleBytes(raw))
+    obj.decode()
+    pallets = []
+    for p in obj.value[1]["V14"]["pallets"]:
+        storage = p.get("storage")
+        items = []
+        for e in (storage or {}).get("entries", []):
+            kind, shape = next(iter(e["type"].items()))
+            hashers = shape.get("hashers", []) if isinstance(shape, dict) else []
+            items.append(StorageItem(p["name"], e["name"], kind, list(hashers)))
+        pallets.append(Pallet(p["name"], p["index"], storage["prefix"] if storage else None, items))
+    return pallets
+
+
 def decode_hex(metadata_hex: str) -> list[Pallet]:
-    return decode_v13(bytes.fromhex(metadata_hex.removeprefix("0x")))
+    raw = bytes.fromhex(metadata_hex.removeprefix("0x"))
+    if raw[:4] == b"meta" and len(raw) > 4 and raw[4] == 14:
+        return decode_v14(raw)
+    return decode_v13(raw)
 
 
 # Every FRAME pallet of this era stores its version under twox128(pallet name).

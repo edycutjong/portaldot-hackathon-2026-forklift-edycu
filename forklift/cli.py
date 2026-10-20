@@ -110,7 +110,7 @@ def data_plate(m: dict) -> str:
         f"lift    {m['profile']} · {src['endpoint']}",
         f"pin     #{src['block_number']:,}  {src['block_hash']}",
         f"keys    {load['keys_lifted']:,} keys · {load['value_bytes']:,} B values · {load['key_pages']} pages"
-        f"  (MerkleMountainRange skipped: ~{sk.get('keys_in_range_derived', 0):,} keys, derived)",
+        + (f"  (MerkleMountainRange skipped: ~{sk.get('keys_in_range_derived', 0):,} keys, derived)" if sk else ""),
         f"time    keys {secs['keys_s']} s · values {secs['values_s']} s · total {secs['total_s']} s",
         f"code    {src['code_hash']}  ({src['code_bytes']:,} B)",
         f"root    {m['manifest_root']}",

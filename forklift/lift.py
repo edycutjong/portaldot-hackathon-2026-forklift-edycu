@@ -328,7 +328,7 @@ def mmr_nodes_for_leaves(leaves: int) -> int:
     return 2 * leaves - bin(leaves).count("1")
 
 
-def mmr_summary(client: RpcClient, block_hash: str) -> dict:
+def mmr_summary(client: RpcClient, block_hash: str) -> dict | None:
     """What the skipped range holds, from its two plain values (two reads, no paging).
 
     The node count is derived; the one-time completeness listing checks it.
@@ -340,6 +340,8 @@ def mmr_summary(client: RpcClient, block_hash: str) -> dict:
     root_key = "0x" + (pallet + twox128("RootHash")).hex()
     leaves = _u64(client.call("state_getStorage", [leaves_key, block_hash]))
     root = client.call("state_getStorage", [root_key, block_hash])
+    if leaves is None and root is None:
+        return None  # no MerkleMountainRange pallet at this block (V3 names its MMR pallet `Mmr`, small, lifted)
     nodes = mmr_nodes_for_leaves(leaves) if leaves is not None else 0
     plain = (leaves is not None) + (root is not None)
     return {

@@ -107,3 +107,21 @@ def test_pallet_prefix_starting_with_colon_is_not_taken_for_a_well_known_key(pal
     idx.pallets[b":" + b"\x00" * 15] = "Colon"
     assert idx.pallet_of(b":" + b"\x00" * 15 + b"\x01" * 16) == "Colon"
     assert idx.pallet_of(b":code") == ":well-known"
+
+
+def test_v14_metadata_of_v3_names_its_storage():
+    import gzip
+
+    from forklift.metadata import decode_hex
+
+    raw = gzip.decompress((FIX / "metadata-3002.scale.gz").read_bytes())
+    pallets = decode_hex("0x" + raw.hex())  # dispatches on the version byte (14)
+    names = {p.name for p in pallets}
+    assert {"System", "Balances", "Staking", "Revive", "Contracts", "Sudo", "Mmr"} <= names
+    assert "MerkleMountainRange" not in names
+    index = StorageIndex(pallets)
+    from forklift.splice import account_key
+
+    assert index.item_of(account_key(b"\x00" * 32)) == "System.Account"
+    acct = next(i for p in pallets if p.name == "System" for i in p.items if i.name == "Account")
+    assert acct.kind == "Map" and acct.hashers == ["Blake2_128Concat"]

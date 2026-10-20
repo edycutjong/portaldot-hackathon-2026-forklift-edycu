@@ -13,6 +13,7 @@ from typing import Iterable
 from forklift import __version__
 from forklift.hashing import blake2_256, manifest_root
 from forklift.lift import CODE_KEY, LiftResult
+from forklift.chains import for_spec
 from forklift.metadata import StorageIndex
 
 
@@ -38,8 +39,10 @@ def root_of(values: dict[str, str]) -> str:
     return "0x" + manifest_root((_b(k), _b(v)) for k, v in values.items()).hex()
 
 
-def profile_label(spec_version: int) -> str:
-    return f"mainnet-read (spec {spec_version})"
+def profile_label(spec_version: int, spec_name: str = "portaldot") -> str:
+    chain = for_spec(spec_name)
+    prefix = "v3-read" if chain is not None and chain.id == "v3" else "mainnet-read"
+    return f"{prefix} (spec {spec_version})"
 
 
 def build_manifest(result: LiftResult, index: StorageIndex, *, endpoint: str, mmr: dict | None) -> dict:
@@ -47,7 +50,7 @@ def build_manifest(result: LiftResult, index: StorageIndex, *, endpoint: str, mm
     per_pallet, per_item = per_prefix_counts(result.keys, index)
     return {
         "forklift_version": __version__,
-        "profile": profile_label(result.spec_version),
+        "profile": profile_label(result.spec_version, result.spec_name),
         "source": {
             "endpoint": endpoint,
             "block_number": result.pin.number,
