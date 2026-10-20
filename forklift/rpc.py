@@ -12,7 +12,12 @@ read-only client (the default, used for mainnet) or as a fork client.
 - A fork client can only be created for a loopback endpoint that is not a
   known mainnet host, and before its first non-read call it checks that the
   node's genesis hash is not Portaldot mainnet's (a loopback port can still be
-  a tunnel to mainnet).
+  a tunnel to mainnet). A Chopsticks fork of the V3 testnet serves V3's own
+  genesis hash, so a V3 genesis is accepted only if the node also answers the
+  Chopsticks ``dev_*`` methods; the live V3 chain does not.
+- A testnet client is the one path to a real chain: it may send only
+  ``author_submitExtrinsic``, and only after the node's genesis is a chain
+  pinned as writable (the V3 testnet), never mainnet.
 """
 
 from __future__ import annotations
@@ -24,6 +29,8 @@ import re
 import time
 from typing import Any, Callable, Protocol
 from urllib.parse import urlparse
+
+from forklift.chains import BY_GENESIS, V3
 
 DEFAULT_MAINNET = "wss://mainnet.portaldot.io"
 
@@ -40,6 +47,9 @@ READ_METHODS = frozenset({
     "system_chain", "system_name", "system_version", "system_properties", "system_health",
     "system_chainType", "system_accountNextIndex", "rpc_methods", "payment_queryInfo",
 })
+
+# The only write a testnet client may send.
+TESTNET_WRITES = frozenset({"author_submitExtrinsic"})
 
 
 class RpcError(Exception):
@@ -114,6 +124,7 @@ class RpcClient:
         endpoint: str = DEFAULT_MAINNET,
         *,
         fork: bool = False,
+        testnet: bool = False,
         timeout: float = 60.0,
         retries: int = 5,
         backoff: float = 0.5,
@@ -126,6 +137,9 @@ class RpcClient:
                 f"refusing to treat {endpoint} as a fork: fork endpoints must be loopback "
                 "and never a mainnet host"
             )
+        if testnet and (fork or host in MAINNET_HOSTS):
+            raise WriteGuardError(f"refusing {endpoint} as a testnet endpoint: never mainnet, never also a fork")
+        self.testnet = testnet
         self.endpoint = endpoint
         self.fork = fork
         self.timeout = timeout
@@ -188,20 +202,49 @@ class RpcClient:
 
     def call(self, method: str, params: list[Any] | None = None) -> Any:
         if is_write_method(method):
-            if not self.fork:
-                raise WriteGuardError(f"{method} refused: {self.endpoint} is not a local fork (I3)")
-            self._check_fork_genesis()
+            self._guard_write(method)
         return self._call(method, params)
+
+    def _guard_write(self, method: str) -> None:
+        if self.testnet:
+            if method not in TESTNET_WRITES:
+                raise WriteGuardError(f"{method} refused: a testnet client sends only {sorted(TESTNET_WRITES)}")
+            self._check_testnet_genesis()
+        elif not self.fork:
+            raise WriteGuardError(f"{method} refused: {self.endpoint} is not a local fork (I3)")
+        else:
+            self._check_fork_genesis()
+
+    def _genesis(self) -> str:
+        genesis = self._call("chain_getBlockHash", [0])
+        if not isinstance(genesis, str) or not re.fullmatch(r"0x[0-9a-fA-F]{64}", genesis):
+            raise WriteGuardError(f"{self.endpoint}: cannot read a genesis hash ({genesis!r}): refusing writes (I3)")
+        return genesis.lower()
+
+    def _check_testnet_genesis(self) -> None:
+        if self._fork_checked:
+            return
+        genesis = self._genesis()
+        chain = BY_GENESIS.get(genesis)
+        if genesis == MAINNET_GENESIS or chain is None or not chain.writable:
+            raise WriteGuardError(f"{self.endpoint} serves genesis {genesis}, not a testnet Forklift may write to")
+        self._fork_checked = True
 
     def _check_fork_genesis(self) -> None:
         if self._fork_checked:
             return
-        genesis = self._call("chain_getBlockHash", [0])
-        if not isinstance(genesis, str) or not re.fullmatch(r"0x[0-9a-fA-F]{64}", genesis):
-            raise WriteGuardError(f"{self.endpoint}: cannot read a genesis hash ({genesis!r}): refusing writes (I3)")
-        if genesis.lower() == MAINNET_GENESIS:
+        genesis = self._genesis()
+        if genesis == MAINNET_GENESIS:
             raise WriteGuardError(f"{self.endpoint} serves Portaldot mainnet's genesis: refusing writes (I3)")
+        if genesis == V3.genesis_hash and not self._is_chopsticks():
+            raise WriteGuardError(f"{self.endpoint} serves the live {V3.label}, not a fork of it: refusing fork "
+                                  "writes (a real V3 transaction goes through `forklift rehearse --send`)")
         self._fork_checked = True
+
+    def _is_chopsticks(self) -> bool:
+        methods = self._call("rpc_methods", [])
+        names = methods.get("methods", []) if isinstance(methods, dict) else []
+        return "dev_newBlock" in names and "dev_setStorage" in names
 
     def _call(self, method: str, params: list[Any] | None) -> Any:
         params = list(params or [])
@@ -212,8 +255,8 @@ class RpcClient:
             if attempt:
                 self._sleep(self.backoff * 2 ** (attempt - 1))
                 self.reconnects += 1
-            if attempt and self.fork and is_write_method(method):
-                self._check_fork_genesis()  # a write re-sent on a new connection is guarded again (I3)
+            if attempt and (self.fork or self.testnet) and is_write_method(method):
+                self._guard_write(method)  # a write re-sent on a new connection is guarded again (I3)
                 if reached_socket:
                     self.resent_writes += 1
             try:

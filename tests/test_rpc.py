@@ -172,3 +172,65 @@ def test_fork_genesis_must_be_hex():
                endpoint="ws://127.0.0.1:59944", fork=True)
     with pytest.raises(WriteGuardError):
         c.call("author_submitExtrinsic", ["0x00"])
+
+
+def _chain(genesis, methods=()):
+    sent = []
+
+    def handler(method, params):
+        sent.append(method)
+        if method == "chain_getBlockHash":
+            return genesis
+        if method == "rpc_methods":
+            return {"methods": list(methods)}
+        return "0x" + "77" * 32
+
+    return handler, sent
+
+
+def test_loopback_tunnel_to_the_live_v3_testnet_is_not_a_fork():
+    from forklift.chains import V3
+
+    handler, sent = _chain(V3.genesis_hash, ["chain_getHeader", "author_submitExtrinsic"])
+    c = client(handler, endpoint="ws://127.0.0.1:59944", fork=True)
+    with pytest.raises(WriteGuardError, match="not a fork"):
+        c.call("author_submitExtrinsic", ["0x00"])
+    assert "author_submitExtrinsic" not in sent
+
+
+def test_chopsticks_fork_of_v3_accepts_fork_writes():
+    from forklift.chains import V3
+
+    handler, sent = _chain(V3.genesis_hash, ["dev_newBlock", "dev_setStorage", "author_submitExtrinsic"])
+    c = client(handler, endpoint="ws://127.0.0.1:59944", fork=True)
+    c.call("dev_setStorage", [{}])
+    assert sent[-1] == "dev_setStorage"
+
+
+def test_testnet_client_sends_only_submit_extrinsic_and_only_to_a_writable_chain():
+    from forklift.chains import V3
+
+    handler, sent = _chain(V3.genesis_hash)
+    c = client(handler, endpoint=V3.endpoint, testnet=True)
+    assert c.call("author_submitExtrinsic", ["0x00"]).startswith("0x77")
+    for method in ("author_insertKey", "dev_setStorage", "author_submitAndWatchExtrinsic", "system_addReservedPeer"):
+        with pytest.raises(WriteGuardError):
+            c.call(method, ["0x00"])
+    assert sent.count("author_submitExtrinsic") == 1 and "author_insertKey" not in sent
+
+
+@pytest.mark.parametrize("genesis", ["0x83b5212c69f85f3996f8696bb35bf913af51b176a5f53d0a74fd3a83dc0b8a54",
+                                     "0x" + "12" * 32])
+def test_testnet_client_refuses_mainnet_or_an_unpinned_chain(genesis):
+    handler, sent = _chain(genesis)
+    c = client(handler, endpoint="wss://some-gateway.example", testnet=True)
+    with pytest.raises(WriteGuardError):
+        c.call("author_submitExtrinsic", ["0x00"])
+    assert "author_submitExtrinsic" not in sent
+
+
+@pytest.mark.parametrize("kw", [{"endpoint": "wss://mainnet.portaldot.io"},
+                                {"endpoint": "ws://127.0.0.1:59944", "fork": True}])
+def test_testnet_flag_refused_for_mainnet_or_together_with_fork(kw):
+    with pytest.raises(WriteGuardError):
+        RpcClient(kw.pop("endpoint"), testnet=True, **kw)
