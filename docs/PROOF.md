@@ -28,12 +28,45 @@ runtime under Chopsticks (there is no public V3 node binary), labelled `fork-v3`
 | Pin block | Executor | Fork genesis | Fork `:code` | Starts at the pin | Ready (s) | Evidence |
 |---|---|---|---|---|---|---|
 | #118,061 | `@acala-network/chopsticks@1.5.2` (allow-unresolved-imports; without it: `ext_statement_store_submit_statement_version_1`) | `0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd` | `0xedc03c9dc81d39fea5c02893cc34cf2ec898d55d7ee8f8e89eb27597a724c7c2` | yes | 9.22 | `evidence/fork-v3-118061.json` |
+| #118,495 | `@acala-network/chopsticks@1.5.2` (allow-unresolved-imports; without it: `ext_statement_store_submit_statement_version_1`) | `0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd` | `0xedc03c9dc81d39fea5c02893cc34cf2ec898d55d7ee8f8e89eb27597a724c7c2` | yes | 11.83 | `evidence/fork-v3-118495.json` |
+| #118,571 | `@acala-network/chopsticks@1.5.2` (allow-unresolved-imports; without it: `ext_statement_store_submit_statement_version_1`) | `0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd` | `0xedc03c9dc81d39fea5c02893cc34cf2ec898d55d7ee8f8e89eb27597a724c7c2` | yes | 13.93 | `evidence/fork-v3-118571.json` |
+| #118,627 | `@acala-network/chopsticks@1.5.2` (allow-unresolved-imports; without it: `ext_statement_store_submit_statement_version_1`) | `0xd4f9acbcf7f52388d8b095abe3c198d19fc510e0343e643e87cfbccb155283bd` | `0xedc03c9dc81d39fea5c02893cc34cf2ec898d55d7ee8f8e89eb27597a724c7c2` | yes | 9.67 | `evidence/fork-v3-118627.json` |
 
 ### Verify (V3 fork vs the live chain and the lift)
 
 | Pin block | Runs | Sampled draws (seed) | Key set fork = lift | Lifted values identical | Child roots read null | Runtime | Exit | Evidence |
 |---|---|---|---|---|---|---|---|---|
 | #118,061 | 1 | 200 → identical 200 (seed 3145772797887710471) | 5,508 = 5,508: yes | 5,497 of 5,508 | 11 | pinned | 0 | `evidence/verify-v3-118061.json` |
+
+### Transactions: predicted on the fork, then sent to the V3 testnet
+
+Each row is one extrinsic, signed once: the same bytes (same tx hash) were applied on the V3 fork
+first, then sent to the live V3 testnet. `compare` lists every field that differs.
+
+| Call | Signer | Tx hash | V3 testnet block (extrinsic) | Block hash | Finalized | Inclusion predicted / actual | Fee predicted / actual | Events match | Compare | Explorer |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `System.remark` | `5EnCf9Pa…ejvg` | `0x5b4b4d4804f941cf83426fce8b10f23b2cf1030a1f825992a16bd72b1a65777d` | #118,555 (118555-1) | `0x17eca420df66958b442d068061505cbecb51e33f3020e84ea4579ca99c3efe1b` | yes | #118,546 / #118,555 | 0.01450475660567 tPOT / 0.01450475652298 tPOT | yes | 4/10 · differs: event[0] Balances.Withdraw, event[1] Balances.Deposit, event[2] TransactionPayment.TransactionFeePaid, inclusion_height, fee, delta 5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg | [node-console](https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x17eca420df66958b442d068061505cbecb51e33f3020e84ea4579ca99c3efe1b) |
+| `Balances.transfer_keep_alive` | `5EnCf9Pa…ejvg` | `0x2247c66b758511ac0f1dcae218343c769e1f7d7d311f84a22ee71d9673fdc36f` | #118,621 (118621-1) | `0x0ae8b2b94d34dc27fd931b8095654675510dc53533582ad0cad19712591db8a9` | yes | #118,618 / #118,621 | 0.01480596076462 tPOT / 0.01480596072802 tPOT | yes | 8/14 · differs: event[0] Balances.Withdraw, event[4] Balances.Deposit, event[5] TransactionPayment.TransactionFeePaid, inclusion_height, fee, delta 5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg | [node-console](https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x0ae8b2b94d34dc27fd931b8095654675510dc53533582ad0cad19712591db8a9) |
+| `Utility.batch` | `5EnCf9Pa…ejvg` | `0xd371c50aa2b41cef899f3542351e23fce01dc4c74f5e0544b9f67a53a3a3ef6a` | #118,669 (118669-1) | `0x05ee11c4b3835f6b535a3f8fac442fc9a4c95c4b24353c89ed1a8eac1d12eca7` | yes | #118,665 / #118,669 | 0.01710647157141 tPOT / 0.01710647151751 tPOT | yes | 10/16 · differs: event[0] Balances.Withdraw, event[6] Balances.Deposit, event[7] TransactionPayment.TransactionFeePaid, inclusion_height, fee, delta 5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg | [node-console](https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x05ee11c4b3835f6b535a3f8fac442fc9a4c95c4b24353c89ed1a8eac1d12eca7) |
+
+Balance deltas (predicted / actual, planck):
+
+- `System.remark` `5EnCf9Pa…ejvg`: -1,450,475,660,567 / -1,450,475,652,298
+- `Balances.transfer_keep_alive` `5EnCf9Pa…ejvg`: -21,480,596,076,462 / -21,480,596,072,802
+- `Balances.transfer_keep_alive` `5F2BvZkM…Bjus`: 20,000,000,000,000 / 20,000,000,000,000
+- `Utility.batch` `5EnCf9Pa…ejvg`: -11,710,647,157,141 / -11,710,647,151,751
+- `Utility.batch` `5F2BvZkM…Bjus`: 10,000,000,000,000 / 10,000,000,000,000
+
+### Replays: the same extrinsic on a fork of its parent block (`forklift replay`)
+
+The chain's own extrinsic bytes, re-applied on a Chopsticks fork started at the parent of the block that
+included them, compared with what the V3 testnet recorded. Nothing is sent.
+
+| Extrinsic | Tx hash | Fork parent block | Fee chain / replay | Compare | Exit | Explorer |
+|---|---|---|---|---|---|---|
+| 118555-1 | `0x5b4b4d4804f941cf83426fce8b10f23b2cf1030a1f825992a16bd72b1a65777d` | #118,554 `0xa9356496dadc0c3dc46355e237d886e368616d9b2eb58e3760669f76cfc048a5` | 0.01450475652298 tPOT / 0.01450475652298 tPOT | 10/10 | 0 | [node-console](https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x17eca420df66958b442d068061505cbecb51e33f3020e84ea4579ca99c3efe1b) |
+| 118621-1 | `0x2247c66b758511ac0f1dcae218343c769e1f7d7d311f84a22ee71d9673fdc36f` | #118,620 `0xe7e5645c45500f61cb8a5f6c5dad696dc73614e12dffbcb19f0f5931a6c77754` | 0.01480596072802 tPOT / 0.01480596072802 tPOT | 14/14 | 0 | [node-console](https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x0ae8b2b94d34dc27fd931b8095654675510dc53533582ad0cad19712591db8a9) |
+| 118669-1 | `0xd371c50aa2b41cef899f3542351e23fce01dc4c74f5e0544b9f67a53a3a3ef6a` | #118,668 `0xbdd10d379d427ff812c995d07d973841e317c833daeb3ccc5b4c68893c2ae175` | 0.01710647151751 tPOT / 0.01710647151751 tPOT | 16/16 | 0 | [node-console](https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x05ee11c4b3835f6b535a3f8fac442fc9a4c95c4b24353c89ed1a8eac1d12eca7) |
 
 ### Predictions not sent
 
