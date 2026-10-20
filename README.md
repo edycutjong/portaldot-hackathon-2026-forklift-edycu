@@ -19,9 +19,10 @@ Portaldot Hacker House 2026 · Track: Node Operations & Tooling
 that starts from **mainnet's real state** instead of an empty dev chain.
 
 > **Status: check-in slice.** Everything described as shipped below is in this repository and was measured on
-> 2026-10-14 (measured numbers come from [`docs/PROOF.md`](docs/PROOF.md), generated from [`evidence/`](evidence); test counts from `pytest -q`; the contract size from `wc -c forklift/contracts/receipt.wasm`). Everything
-> else is marked **planned**. The fork is a **local fork of Portaldot mainnet state (spec 1002)** that runs the
-> `portaldot_dev` dev runtime, labelled `fork-1002-fast`. **It is not the Portaldot V3 testnet** (see *V3 status*).
+> 2026-10-14 (mainnet path) and 2026-10-20 (V3 path) (measured numbers come from [`docs/PROOF.md`](docs/PROOF.md), generated from [`evidence/`](evidence); test counts from `pytest -q`; the contract size from `wc -c forklift/contracts/receipt.wasm`). Everything
+> else is marked **planned**. Forklift has two targets, always labelled: **`fork-v3`**, a fork of the live
+> **Portaldot V3 testnet** run by Chopsticks with V3's own runtime, and **`fork-1002-fast`**, a local fork of
+> Portaldot mainnet state (spec 1002) on the `portaldot_dev` dev runtime, which is not V3 (see *V3 status*).
 
 ## Project Overview
 
@@ -33,7 +34,7 @@ actually on has no simple way to get that state onto a local node, and no way to
 
 ### Solution
 
-Forklift is four steps.
+Forklift is five steps.
 
 1. **Lift.** `forklift lift` reads every top-level storage key of Portaldot mainnet at one pinned block hash (the
    Merkle Mountain Range storage is skipped, not paged through) and records what it read in a manifest with a
@@ -44,7 +45,12 @@ Forklift is four steps.
 3. **Verify.** `forklift verify` draws keys **from mainnet** (inside storage maps, weighted by how many keys each map
    holds), reads each on mainnet at the pin and on the fork at genesis, and exits `0` only when every key is identical
    or explained (dev-kept, override, reset) and the whole-fork checks pass (key set, issuance, overrides, runtime code hashes). It is a sample, not a proof of every key.
-4. **Act.** `forklift fund` sets a balance, `forklift as <account> <Pallet.call> <args>` dispatches a call with a real
+4. **Rehearse on V3.** `forklift up --target v3` lifts the live V3 testnet at a pinned block and forks it there
+   with Chopsticks (V3's own runtime wasm; there is no public V3 node binary), and `verify` checks that fork against
+   the live chain and the lift. `forklift rehearse <Pallet.call>` signs one extrinsic once, applies those exact bytes on
+   the fork (the prediction: events, fee, balance deltas), and with `--send` sends the same bytes to the V3 testnet and
+   compares the two outcomes field by field.
+5. **Act (mainnet path).** `forklift fund` sets a balance, `forklift as <account> <Pallet.call> <args>` dispatches a call with a real
    mainnet account's origin (through `Sudo.sudo_as`), and `forklift receipt` deploys a small contract that emits the
    lift's block hash, `manifest_root` and key count as a `ContractEmitted` event on the fork, so a fork's origin is recorded on the fork itself.
 
@@ -56,17 +62,24 @@ Forklift is four steps.
 - The splice, node runner (tarball sha256-checked on download, binary sha256 recorded in the manifest, PID guard, no peers), `up` / `down`.
 - `verify` with exit codes `0` / `2` and a reproducible seed.
 - `fund`, `as`, `tx` (re-read any extrinsic by id), and the **Fork Receipt** contract with a rent check.
+- The V3 target: chain profiles pinned by genesis and runtime `:code` hash (`forklift/chains.py`), V14 metadata names,
+  `up --target v3` (Chopsticks fork that must serve V3's genesis, the pinned runtime and the lifted block), V3 `verify`
+  (sampled keys drawn on the live chain, plus the whole key set and every lifted value against the fork), and
+  `rehearse` (predict on the fork, then `--send` the same bytes to V3; exit `7` when the chain differs).
 - An endpoint write-guard: nothing is ever submitted to mainnet, and a fork client refuses any non-loopback
-  endpoint or a chain whose genesis is mainnet's.
+  endpoint or a chain whose genesis is mainnet's (or V3's, unless it answers Chopsticks' `dev_*` methods). The one
+  path to a real chain is `rehearse --send`: a testnet client that sends only `author_submitExtrinsic`, only to V3.
 - `--json` output and documented exit codes ([`docs/EXIT-CODES.md`](docs/EXIT-CODES.md)); 222 offline tests plus 4 live
   tests.
 
-**Planned (not built, not claimed):** an `exact` runtime profile (mainnet's wasm on the fork), `replay` of a mainnet
+**Planned (not built, not claimed):** the ink! 5 / Revive Receipt on V3, a mainnet → V3 state-classification report, an `exact` runtime profile (mainnet's wasm on the fork), `replay` of a mainnet
 extrinsic on a fork of its parent block, a hosted fork, a PyPI package and a CI action.
 
 ### Blockchain Relevance
 
-Forklift is node-operations and developer tooling for Portaldot. It reads real chain state through the public node
+Forklift is node-operations and developer tooling for Portaldot. On V3 it reads the live testnet
+(`wss://test-node-v3.portaldot.dev`, `portaldot-v3`/3002), forks it locally, and sends real transactions to it only after
+predicting them on the fork. On the mainnet path it reads real chain state through the public node
 (`wss://mainnet.portaldot.io`), runs it on the `portaldot_dev` 2.0.0 node, uses Portaldot's historical-state
 RPC (`state_getKeysPaged`, `state_queryStorageAt` at a block hash), the Sudo pallet to act as accounts on the fork, and
 the Contracts pallet for the receipt. Every fork is labelled with the spec of the state it carries and its runtime mode (`fast` = the dev runtime wasm), so
@@ -82,6 +95,13 @@ nobody mistakes it for a testnet or for V3.
 - **A local fork is not V3, and not mainnet's runtime.** `fork-1002-fast` runs the dev runtime wasm (the manifest records
   both code hashes), with dev consensus keys, 6-second blocks and staking era changes disabled (`Staking.ForceEra`
   override). It is a dev tool, not an audit tool.
+- **A V3 fork is Chopsticks, not a V3 node.** It runs V3's runtime wasm, but with `allow-unresolved-imports`: without
+  it, Chopsticks 1.5.2 fails every state call on V3 (`Unresolved function env:ext_statement_store_submit_statement_version_1`,
+  an import of V3's Statement pallet). It reads untouched state lazily from the live endpoint, and it reads the 11
+  top-trie child-trie roots (Revive contract storage) as null; `verify` counts and lists them.
+- **Fees move every block on V3.** `TransactionPayment.NextFeeMultiplier` changes block by block on the testnet, so
+  `rehearse` first builds empty fork blocks up to the chain's best block and predicts inclusion in the next one; if the
+  chain includes it later, the fee may differ and `rehearse` says so (exit `7`), it never adjusts the prediction.
 - **Top trie only.** Child tries are not lifted (the manifest reports a `child_trie_roots_not_lifted` count; it is not recorded in `evidence/`).
 - **Evidence is local.** The contract address and transaction hashes below live on a local fork, not on a public
   explorer; `forklift tx <block-index>` re-reads any of them from the author's running fork (a fresh fork gives new
@@ -119,15 +139,17 @@ The full module-level diagram, the splice rules and the invariants the code enfo
 
 | Layer | Choice |
 |---|---|
-| Blockchain platform | **Portaldot V3** is the hackathon's target platform. Forklift's chain today is a local fork of **Portaldot mainnet state (spec 1002)** on the `portaldot_dev` 2.0.0 node with its dev runtime, labelled `fork-1002-fast`. It is not V3. |
+| Blockchain platform | **Portaldot V3 testnet** (`portaldot-v3`/3002, tPOT): lifted read-only, forked with Chopsticks (`fork-v3`), and written to only by `rehearse --send`. Control path: a local fork of **Portaldot mainnet state (spec 1002)** on the `portaldot_dev` 2.0.0 node with its dev runtime, labelled `fork-1002-fast`, which is not V3. |
 | Contract language | WAT (WebAssembly text), hand-written for the rent-era Contracts pallet of the dev runtime the fork runs (`seal0` host functions only, plus the `env` memory import), compiled with `wat2wasm` |
 | Frontend | None. Forklift is a command-line tool. |
-| Other components | Python 3.11+, `click` (CLI), `websockets` (raw JSON-RPC), `xxhash` (storage key hashing), `substrate-interface` (sr25519 keys and the SCALE type registry), `hashlib` blake2b. Tests use `pytest`. |
+| Other components | Chopsticks 1.5.2 via `npx` (V3 fork executor; Node.js 18+), Python 3.11+, `click` (CLI), `websockets` (raw JSON-RPC), `xxhash` (storage key hashing), `substrate-interface` (sr25519 keys and the SCALE type registry), `hashlib` blake2b. Tests use `pytest`. |
 
-**V3 status.** Checked 2026-10-14 (`dig +short testnetv3-node.feso-apps.xyz @1.1.1.1` returned nothing): the V3 testnet RPC
-listed in the V3 guide did not resolve in DNS. Per the organisers' Discord messages (not archived here), no V3 node
-binary or chain spec is public, and an older devnet configuration should not be assumed compatible with the V3 testnet.
-Forklift therefore makes **no V3 claim**; nothing in this repository has run against V3.
+**V3 status.** On 2026-10-14 the V3 testnet RPC listed in the V3 guide (`testnetv3-node.feso-apps.xyz`) did not
+resolve, so the check-in slice was built on the mainnet path. The V3 testnet launched on new endpoints
+(`wss://test-node-v3.portaldot.dev`, explorer [node-console.portaldot.dev](https://node-console.portaldot.dev/)); on
+2026-10-20 Forklift pinned it (genesis `0xd4f9…83bd`, `:code` `0xedc0…c7c2`, spec `portaldot-v3`/3002, tPOT, 14 decimals)
+and its V3 rows in [`docs/PROOF.md`](docs/PROOF.md) were measured there. No public V3 node binary or chain
+spec exists (organisers' Discord, not archived here), so a V3 fork runs on Chopsticks, not on a node binary.
 
 ## Smart Contracts
 
@@ -186,6 +208,23 @@ forklift receipt                            # deploy the Fork Receipt, keep it r
 forklift down                               # stop the fork (only the PID it recorded)
 ```
 
+**V3 testnet** (also needs Node.js 18+: `npx` fetches Chopsticks 1.5.2 on first use). A signer file holds a mnemonic,
+`0x` seed or `//URI`, must be mode 600, and is never printed:
+
+```bash
+forklift up --target v3 --at head --name v3         # lift V3 at its finalized head, Chopsticks fork on ws://127.0.0.1:9944
+forklift verify --name v3 --sample 200              # exit 0 = fork = live chain at the pin = the lift
+forklift rehearse System.remark --args '{"remark": "0x666f726b6c696674"}' \
+  --signer ~/.config/forklift/my-v3.seed --name v3   # predict on the fork only
+forklift rehearse System.remark --args '{"remark": "0x666f726b6c696674"}' \
+  --signer ~/.config/forklift/my-v3.seed --name v3 --send --evidence evidence   # predict, send to V3, compare
+forklift down --name v3
+```
+
+`rehearse` refuses a fork whose copy of the signer's (or any named account's) `System.Account` differs from the chain's
+finalized head: re-run `up --target v3 --at head`. An unfunded signer is predicted to fail (the fork's pool rejects it,
+exit `5`) and nothing is sent.
+
 Pinning block 2,725,953 reproduces `manifest_root`
 `0xa430d6a9f16d631da45fd0d0cb5ae600db1854612218e21aabeb7f26d7ba002b` while the public node keeps serving that block.
 `--at head` pins the latest finalized block instead. Every command except `down` takes `--json`; `lift`, `up`, `verify`, `fund`, `as` and `receipt` take `--evidence DIR`,
@@ -194,7 +233,8 @@ which records a run for [`docs/PROOF.md`](docs/PROOF.md) (`python scripts/proof.
 `FORKLIFT_RPC_PORT` / `FORKLIFT_P2P_PORT`. Other commands find the fork with `--name` (default `fork`) or `--endpoint`. `forklift as` also takes any other `Pallet.call` composed from the runtime metadata with a JSON argument list (only the two calls above are recorded in `evidence/`). If no `portaldot_dev` is found via `--node-bin` / `FORKLIFT_NODE_BIN`, `~/.cache/forklift/bin` or PATH, `up` downloads and sha256-checks the tarball; a binary found that way is only hashed and recorded.
 
 **Exit codes:** `0` success · `1` could not run · `2` mismatch (`verify`, `receipt`) · `3` node failed · `4` lift failed
-(last cursor printed, checkpoint kept) · `5` the carried call failed · `6` Receipt not rent-safe · `64` usage error.
+(last cursor printed, checkpoint kept) · `5` the carried call failed (`rehearse`: predicted to fail, not sent) · `6` Receipt not rent-safe ·
+`7` the V3 testnet differed from the fork's prediction · `64` usage error.
 Per command, in [`docs/EXIT-CODES.md`](docs/EXIT-CODES.md).
 
 **Compile & deploy / launch frontend:** the contract is compiled with `wat2wasm` (command above; the compiled
@@ -236,6 +276,7 @@ One benchmark run of the lift from a fresh process (a stub: one run per file; p5
 - [x] Splice, `portaldot_dev` node runner and `forklift up` / `down` (authors and finalizes, 0 peers)
 - [x] `forklift verify` (keys drawn from mainnet, whole-fork checks, exit codes)
 - [x] `forklift fund`, `as`, `tx`, and the Fork Receipt contract with its rent check
+- [x] V3 target (2026-10-20): pinned chain profile, `up --target v3` on Chopsticks, V3 `verify`, `rehearse` with `--send`
 - [x] Generated evidence ([`docs/PROOF.md`](docs/PROOF.md)), [`ARCHITECTURE.md`](ARCHITECTURE.md),
       [`docs/DX-REPORT.md`](docs/DX-REPORT.md), [`docs/EXIT-CODES.md`](docs/EXIT-CODES.md)
 
@@ -246,7 +287,8 @@ One benchmark run of the lift from a fresh process (a stub: one run per file; p5
 - [ ] `forklift replay <block>:<index>`: a mainnet extrinsic re-run on a fork of its parent block
 - [ ] Benchmarks with p50/p95 over several runs
 - [ ] A hosted fork, a PyPI package and a CI action
-- [ ] A V3 target once a V3 node or chain spec is public
+- [ ] The Fork Receipt as an ink! 5 or Revive contract on the V3 testnet
+- [ ] A mainnet (1002) → V3 report: which lifted keys carry over, which need re-encoding, which have no home on V3
 
 ## Team
 
