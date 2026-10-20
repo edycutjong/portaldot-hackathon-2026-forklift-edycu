@@ -35,6 +35,12 @@ runtime under Chopsticks (there is no public V3 node binary), labelled `fork-v3`
 |---|---|---|---|---|---|---|---|---|
 | #118,061 | 1 | 200 → identical 200 (seed 3145772797887710471) | 5,508 = 5,508: yes | 5,497 of 5,508 | 11 | pinned | 0 | `evidence/verify-v3-118061.json` |
 
+### Predictions not sent
+
+| Call | Signer | Fork outcome | Why not sent |
+|---|---|---|---|
+| `System.remark` | `5EnCf9Pa…ejvg` | pool rejected: `{"code": 1010, "message": "{\"invalid\":{\"payment\":null}}"}` | predicted failure |
+
 ## Mainnet (spec 1002) path
 
 Everything below is the mainnet-state path (1002 lift → `fork-1002-fast`), kept as the control.

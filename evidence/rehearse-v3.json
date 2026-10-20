@@ -1,0 +1,47 @@
+{
+  "runs": [
+    {
+      "chain": "v3",
+      "label": "Portaldot V3 testnet",
+      "call": "System.remark",
+      "params": {
+        "remark": "0x666f726b6c696674"
+      },
+      "signer": "5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg",
+      "nonce": 0,
+      "accounts": [
+        "5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg"
+      ],
+      "extrinsic_bytes": 117,
+      "staleness_check": {
+        "fork_head": "0xebeb106d3a0c09abfa2277a4f69072d6b9d77ccbebce41af3426bb071785e7b9",
+        "chain_finalized_head": "0xc6713496792f529a6db6ae52eb6ebf14cb476b1a4b383bd6a121b6e00f834ab8",
+        "fresh": true,
+        "diffs": []
+      },
+      "advance": {
+        "chain_best": 118214,
+        "built_empty_blocks": 6,
+        "fork_head": 118214,
+        "fee_multiplier": {
+          "fork_after_empty_blocks": "744135770179154495",
+          "chain": "744135770179154495",
+          "equal": true,
+          "synced_from_chain": false
+        }
+      },
+      "predicted": {
+        "success": false,
+        "pool_rejected": {
+          "code": 1010,
+          "message": "{\"invalid\":{\"payment\":null}}"
+        }
+      },
+      "actual": null,
+      "compare": null,
+      "exit_code": 5,
+      "recorded_utc": "2026-10-20T14:03:21+00:00"
+    }
+  ],
+  "about": "forklift rehearse: one extrinsic signed once, applied on a Chopsticks fork of the V3 testnet (predicted) and, with --send, the same bytes sent to the live V3 testnet (actual)"
+}
