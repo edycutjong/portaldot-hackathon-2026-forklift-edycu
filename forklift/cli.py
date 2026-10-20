@@ -982,6 +982,57 @@ def rehearse_cmd(call: str, args_json: str, signer: Path, name: str, send: bool,
     sys.exit(code)
 
 
+@main.command("replay")
+@click.argument("extrinsic_id")
+@click.option("--name", default="replay", show_default=True, help="Name of the temporary replay fork.")
+@click.option("--ws-port", type=int, default=None, help="Port of the temporary fork [env FORKLIFT_WS_PORT, default 9944].")
+@click.option("--evidence", "evidence_dir", type=click.Path(path_type=Path), default=None,
+              help="Also record this run in <DIR>/replay-v3.json.")
+@click.option("--json", "as_json", is_flag=True, help="Print the result as JSON.")
+def replay_cmd(extrinsic_id: str, name: str, ws_port: int | None, evidence_dir: Path | None, as_json: bool) -> None:
+    """Re-run V3 testnet extrinsic <block>-<index> on a fork of its parent block and compare with the chain.
+
+    Exit 0: the fork reproduced the chain's outcome field by field. Exit 7: a field differs
+    (listed). Exit 1: could not run. Nothing is sent to the chain; the temporary fork is stopped.
+    """
+    from forklift.node import NodeError, resolve_ports
+    from forklift.rehearse import EXIT_PREDICTION_DIFFERS, RehearseError
+    from forklift.replay import replay
+
+    try:
+        port = resolve_ports(ws_port, None, None)["ws"]
+        r = replay(extrinsic_id, ws_port=port, name=name)
+    except (RehearseError, NodeError, *_act_errors()) as exc:
+        _could_not_run(exc, as_json, "replay")
+    code = 0 if r["compare"]["match"] else EXIT_PREDICTION_DIFFERS
+    r["exit_code"] = code
+    if evidence_dir is not None:
+        try:
+            path = evidence_dir / "replay-v3.json"
+            prior = json.loads(path.read_text()) if path.exists() else {"runs": []}
+            prior["about"] = ("forklift replay: a V3 testnet extrinsic's own bytes re-applied on a Chopsticks fork of "
+                              "its parent block, compared field by field with what the chain recorded")
+            prior["runs"] = [x for x in prior["runs"] if x.get("extrinsic_id") != extrinsic_id] + [r]
+            _write_evidence(path, prior)
+        except (OSError, ValueError, TypeError) as exc:
+            click.echo(f"warning: replay finished (exit {code}) but was NOT recorded: {exc}", err=True)
+    if as_json:
+        click.echo(json.dumps(r, indent=2, default=str))
+    else:
+        from forklift.chains import V3, units
+
+        a, p, c = r["actual"], r["replay"], r["compare"]
+        click.echo("\n".join([
+            f"replay   {extrinsic_id} on {r['label']} · signer {r['signer']}",
+            f"fork     {r['executor']} at the parent block #{r['fork_parent']['number']:,} {r['fork_parent']['hash']}",
+            f"chain    {a['extrinsic_id']} {'ok' if a['success'] else 'FAILED'} · fee {units(V3, a['fee'] or 0)} · tx {a['tx_hash']}",
+            f"replay   {p['extrinsic_id']} {'ok' if p['success'] else 'FAILED'} · fee {units(V3, p['fee'] or 0)} · tx {p['tx_hash']}",
+            f"compare  {c['fields'] - len(c['differs'])}/{c['fields']} fields match"
+            + ("" if c["match"] else " · DIFFERS: " + ", ".join(c["differs"])),
+        ]))
+    sys.exit(code)
+
+
 def record_rehearse(r: dict, evidence_dir: Path) -> Path:
     import datetime as dt
 

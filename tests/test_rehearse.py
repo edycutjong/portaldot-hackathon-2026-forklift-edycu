@@ -154,3 +154,17 @@ def test_advance_resyncs_a_drifted_fee_multiplier_from_the_chain_and_records_bot
     fm = out["fee_multiplier"]
     assert fm == {"fork_after_empty_blocks": "7", "chain": "9", "equal": False, "synced_from_chain": True}
     assert len(sets) == 1
+
+
+@pytest.mark.parametrize("xid", ["118555", "abc-1", "1-2-3", ""])
+def test_replay_refuses_a_malformed_extrinsic_id_before_connecting(xid):
+    from forklift.replay import replay
+
+    with pytest.raises(RehearseError, match="<block>-<index>"):
+        replay(xid, ws_port=59945)
+
+
+def test_replay_compare_on_identical_outcomes_has_matching_inclusion_height():
+    c = compare(_o(where="replay"), _o(where="chain"))
+    row = next(r for r in c["rows"] if r["field"] == "inclusion_height")
+    assert row["match"] and c["match"]
