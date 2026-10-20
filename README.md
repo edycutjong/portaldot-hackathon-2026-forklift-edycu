@@ -99,9 +99,11 @@ nobody mistakes it for a testnet or for V3.
   it, Chopsticks 1.5.2 fails every state call on V3 (`Unresolved function env:ext_statement_store_submit_statement_version_1`,
   an import of V3's Statement pallet). It reads untouched state lazily from the live endpoint, and it reads the 11
   top-trie child-trie roots (Revive contract storage) as null; `verify` counts and lists them.
-- **Fees move every block on V3.** `TransactionPayment.NextFeeMultiplier` changes block by block on the testnet, so
-  `rehearse` first builds empty fork blocks up to the chain's best block and predicts inclusion in the next one; if the
-  chain includes it later, the fee may differ and `rehearse` says so (exit `7`), it never adjusts the prediction.
+- **Fees move every block on V3.** `TransactionPayment.NextFeeMultiplier` changed between every pair of 20 consecutive
+  blocks (`evidence/v3-fee-multiplier-118206-118225.json`), so `rehearse` first builds empty fork blocks up to the
+  chain's best block, sets the chain's multiplier at that height on the fork if the two differ (both recorded), and
+  predicts inclusion in the next block. If the chain includes it later, the fee may differ and `rehearse` says so
+  (exit `7`); it never adjusts a prediction after the fact.
 - **Top trie only.** Child tries are not lifted (the manifest reports a `child_trie_roots_not_lifted` count; it is not recorded in `evidence/`).
 - **Evidence is local.** The contract address and transaction hashes below live on a local fork, not on a public
   explorer; `forklift tx <block-index>` re-reads any of them from the author's running fork (a fresh fork gives new

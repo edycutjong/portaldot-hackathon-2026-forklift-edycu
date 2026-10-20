@@ -11,13 +11,12 @@ and every named account's ``System.Account`` are read on the fork head and the
 chain's finalized head; if any differ, the fork is stale and nothing is signed
 (re-run ``forklift up --target v3 --at head``). The fee multiplier is not part of
 that check because it moves every block: on the idle V3 testnet
-``TransactionPayment.NextFeeMultiplier`` decays block by block (measured
-2026-10-20: 744924947890250248 at #117,790, 744712674530492395 at #117,904), so
+``TransactionPayment.NextFeeMultiplier`` changes block by block
+(``evidence/v3-fee-multiplier-*.json``, ``scripts/fee_multiplier.py``), so
 a fork a few blocks behind predicts a slightly different fee. Instead the fork
-is advanced with empty blocks (``dev_newBlock``) to the chain's best block; the
-multiplier those blocks leave differs slightly from the chain's, so it is
-re-read from the chain at that height and set on the fork (both values are
-recorded). The transaction is applied on top: the prediction is for inclusion in
+is advanced with empty blocks (``dev_newBlock``) to the chain's best block; if
+the multiplier those blocks leave differs from the chain's at that height, the
+chain's value is set on the fork (both values are recorded). The transaction is applied on top: the prediction is for inclusion in
 the next block, and the predicted and actual inclusion heights are both recorded.
 
 Writes go through Forklift's own client and write-guard: the fork through a
@@ -260,9 +259,9 @@ def advance(fc: RpcClient, chain_endpoint: str, *, chunk: int = CHUNK, best_of=N
         chain_m = fee_multiplier(c, head)
     synced = False
     if chain_m is not None and fork_m != chain_m:
-        # Chopsticks' empty blocks do not weigh what the chain's blocks weigh, so the multiplier drifts
-        # (measured 2026-10-20 after 28 blocks: fork 744172953513967894, chain 744172977897848619). The one
-        # volatile item the fee depends on is re-read from the chain at the same height; both values are kept.
+        # The fork's empty blocks do not carry what the chain's blocks carried over the same range, so the
+        # multiplier can end up different at the same height (seen on 2026-10-20 runs; each run records both
+        # values). The one volatile item the fee depends on is re-read from the chain at that height.
         fc.call("dev_setStorage", [[[FEE_MULTIPLIER_KEY, "0x" + chain_m.to_bytes(16, "little").hex()]]])
         synced = fee_multiplier(fc, head) == chain_m
     return {"chain_best": best, "built_empty_blocks": built, "fork_head": head,
