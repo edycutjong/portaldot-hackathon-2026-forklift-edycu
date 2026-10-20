@@ -959,8 +959,11 @@ def rehearse_cmd(call: str, args_json: str, signer: Path, name: str, send: bool,
         r = rehearse(rec["endpoint"], keypair, module, function, params, send=send)
     except (RehearseError, *_act_errors()) as exc:
         _could_not_run(exc, as_json, "rehearse")
-    except Exception as exc:  # noqa: BLE001  SDK compose/encode errors are usage errors here
-        if type(exc).__module__.startswith(("substrateinterface", "scalecodec")):
+    except Exception as exc:  # noqa: BLE001  SDK errors: a dropped socket cannot run, a bad call is a usage error
+        mod = type(exc).__module__
+        if mod.startswith("websocket") or isinstance(exc, ConnectionError):
+            _could_not_run(RehearseError(f"connection lost: {exc}"), as_json, "rehearse")
+        if mod.startswith(("substrateinterface", "scalecodec")):
             raise click.UsageError(f"{call}: {exc}") from None
         raise
     code = 0

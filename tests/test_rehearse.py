@@ -99,6 +99,10 @@ def _fork(head, built):
             return {"methods": ["dev_newBlock", "dev_setStorage"]}
         if method == "chain_getHeader":
             return {"number": hex(state["head"])}
+        if method == "chain_getBlockHash":
+            return "0x" + "ab" * 32
+        if method == "state_getStorage":
+            return "0x" + (7).to_bytes(16, "little").hex()
         if method == "dev_newBlock":
             built.append(params[0]["count"])
             state["head"] += params[0]["count"]
@@ -114,7 +118,7 @@ def test_advance_builds_empty_blocks_in_chunks_up_to_the_chain_best(monkeypatch)
     monkeypatch.setattr("forklift.rehearse.RpcClient",
                         lambda ep, **kw: RpcClient(ep, connect=fake_connect(handler), sleep=lambda s: None, **kw))
     fc = RpcClient("ws://127.0.0.1:59944", fork=True, connect=fake_connect(handler), sleep=lambda s: None)
-    out = advance(fc, _SI(None), _SI(112))
+    out = advance(fc, 'ws://127.0.0.1:59944', best_of=lambda: 112)
     assert built == [5, 5, 2] and out["fork_head"] == 112 and out["built_empty_blocks"] == 12
     assert out["fee_multiplier"]["equal"]
 
@@ -125,5 +129,47 @@ def test_advance_refuses_a_fork_ahead_of_or_far_behind_the_chain(fork_head, best
     fc = RpcClient("ws://127.0.0.1:59944", fork=True, connect=fake_connect(_fork(fork_head, built)),
                    sleep=lambda s: None)
     with pytest.raises(RehearseError, match=msg):
-        advance(fc, _SI(None), _SI(best))
+        advance(fc, 'wss://chain', best_of=lambda: best)
     assert built == []
+
+
+def test_advance_resyncs_a_drifted_fee_multiplier_from_the_chain_and_records_both(monkeypatch):
+    from forklift.rehearse import FEE_MULTIPLIER_KEY
+
+    fork_state = {"head": 50, "mult": 7}
+    sets = []
+
+    def fork(method, params):
+        if method == "chain_getBlockHash" and params == [0]:
+            from forklift.chains import V3
+            return V3.genesis_hash
+        if method == "rpc_methods":
+            return {"methods": ["dev_newBlock", "dev_setStorage"]}
+        if method == "chain_getHeader":
+            return {"number": hex(fork_state["head"])}
+        if method == "chain_getBlockHash":
+            return "0x" + "ab" * 32
+        if method == "state_getStorage":
+            return "0x" + fork_state["mult"].to_bytes(16, "little").hex()
+        if method == "dev_setStorage":
+            (key, value), = params[0]
+            assert key == FEE_MULTIPLIER_KEY
+            sets.append(value)
+            fork_state["mult"] = int.from_bytes(bytes.fromhex(value[2:]), "little")
+            return "0x"
+        raise AssertionError(method)
+
+    def chain(method, params):
+        if method == "chain_getBlockHash":
+            return "0x" + "cd" * 32
+        if method == "state_getStorage":
+            return "0x" + (9).to_bytes(16, "little").hex()
+        raise AssertionError(method)
+
+    monkeypatch.setattr("forklift.rehearse.RpcClient",
+                        lambda ep, **kw: RpcClient(ep, connect=fake_connect(chain), sleep=lambda s: None, **kw))
+    fc = RpcClient("ws://127.0.0.1:59944", fork=True, connect=fake_connect(fork), sleep=lambda s: None)
+    out = advance(fc, "wss://chain", best_of=lambda: 50)
+    fm = out["fee_multiplier"]
+    assert fm == {"fork_after_empty_blocks": "7", "chain": "9", "equal": False, "synced_from_chain": True}
+    assert len(sets) == 1

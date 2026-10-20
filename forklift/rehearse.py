@@ -14,9 +14,11 @@ that check because it moves every block: on the idle V3 testnet
 ``TransactionPayment.NextFeeMultiplier`` decays block by block (measured
 2026-10-20: 744924947890250248 at #117,790, 744712674530492395 at #117,904), so
 a fork a few blocks behind predicts a slightly different fee. Instead the fork
-is advanced with empty blocks (``dev_newBlock``) to the chain's best block, and
-the transaction is applied on top: the prediction is for inclusion in the next
-block, and the predicted and actual inclusion heights are both recorded.
+is advanced with empty blocks (``dev_newBlock``) to the chain's best block; the
+multiplier those blocks leave differs slightly from the chain's, so it is
+re-read from the chain at that height and set on the fork (both values are
+recorded). The transaction is applied on top: the prediction is for inclusion in
+the next block, and the predicted and actual inclusion heights are both recorded.
 
 Writes go through Forklift's own client and write-guard: the fork through a
 fork client (loopback, must answer Chopsticks ``dev_*``), the chain through a
@@ -32,7 +34,7 @@ from pathlib import Path
 from typing import Any
 
 from forklift.chains import V3, Chain
-from forklift.hashing import blake2_256
+from forklift.hashing import blake2_256, twox128
 from forklift.rpc import RpcClient, RpcError
 
 EXIT_PREDICTION_DIFFERS = 7
@@ -91,8 +93,14 @@ def _account(si, address: str, block_hash: str) -> dict:
             "frozen": v["data"]["frozen"]}
 
 
-def _fee_multiplier(si, block_hash: str) -> int:
-    return int(si.query("TransactionPayment", "NextFeeMultiplier", block_hash=block_hash).value)
+FEE_MULTIPLIER_KEY = "0x" + (twox128("TransactionPayment") + twox128("NextFeeMultiplier")).hex()
+
+
+def fee_multiplier(client: RpcClient, number: int) -> int | None:
+    """``TransactionPayment.NextFeeMultiplier`` (FixedU128, u128 LE) at block ``number``, by raw key."""
+    bh = client.call("chain_getBlockHash", [number])
+    raw = client.call("state_getStorage", [FEE_MULTIPLIER_KEY, bh]) if bh else None
+    return int.from_bytes(bytes.fromhex(raw[2:]), "little") if raw else None
 
 
 def _event(e) -> dict:
@@ -217,13 +225,20 @@ MAX_ADVANCE = 100  # empty blocks to catch up (~2 min of Chopsticks at ~1.2 s a 
 CHUNK = 5
 
 
-def advance(fc: RpcClient, fork_si, chain_si, *, chunk: int = CHUNK) -> dict:
+def chain_best(endpoint: str) -> int:
+    """The chain's best block number, through Forklift's own read-only client (it retries and reconnects)."""
+    with RpcClient(endpoint) as c:
+        return int(c.call("chain_getHeader")["number"], 16)
+
+
+def advance(fc: RpcClient, chain_endpoint: str, *, chunk: int = CHUNK, best_of=None) -> dict:
     """Build empty fork blocks until the fork head number equals the chain's best block number.
 
     ``dev_newBlock`` answers only once every block is built, so it is sent in chunks on a client with a
     long timeout and no retries (a retried write would build the chunk twice).
     """
-    best = chain_si.get_block_number(chain_si.get_chain_head())
+    best_of = best_of or (lambda: chain_best(chain_endpoint))
+    best = best_of()
     have = int(fc.call("chain_getHeader")["number"], 16)
     if have > best:
         raise RehearseError(f"the fork (#{have}) is ahead of the chain (#{best}): re-run `forklift up --target v3 --at head`")
@@ -238,12 +253,21 @@ def advance(fc: RpcClient, fork_si, chain_si, *, chunk: int = CHUNK) -> dict:
             slow.call("dev_newBlock", [{"count": min(k, chunk)}])
             built += min(k, chunk)
             have = int(slow.call("chain_getHeader")["number"], 16)
-            best = chain_si.get_block_number(chain_si.get_chain_head())
+            best = best_of()
     head = have
-    fork_m = _fee_multiplier(fork_si, fork_si.get_block_hash(head))
-    chain_m = _fee_multiplier(chain_si, chain_si.get_block_hash(head))
+    fork_m = fee_multiplier(fc, head)
+    with RpcClient(chain_endpoint) as c:
+        chain_m = fee_multiplier(c, head)
+    synced = False
+    if chain_m is not None and fork_m != chain_m:
+        # Chopsticks' empty blocks do not weigh what the chain's blocks weigh, so the multiplier drifts
+        # (measured 2026-10-20 after 28 blocks: fork 744172953513967894, chain 744172977897848619). The one
+        # volatile item the fee depends on is re-read from the chain at the same height; both values are kept.
+        fc.call("dev_setStorage", [[[FEE_MULTIPLIER_KEY, "0x" + chain_m.to_bytes(16, "little").hex()]]])
+        synced = fee_multiplier(fc, head) == chain_m
     return {"chain_best": best, "built_empty_blocks": built, "fork_head": head,
-            "fee_multiplier": {"fork": str(fork_m), "chain": str(chain_m), "equal": fork_m == chain_m}}
+            "fee_multiplier": {"fork_after_empty_blocks": str(fork_m), "chain": str(chain_m),
+                               "equal": fork_m == chain_m, "synced_from_chain": synced}}
 
 
 def sign(chain_si, keypair, module: str, function: str, params: dict, nonce: int):
@@ -261,11 +285,13 @@ def rehearse(fork_endpoint: str, keypair, module: str, function: str, params: di
     from substrateinterface import SubstrateInterface
 
     accounts = [keypair.ss58_address] + [a for a in accounts_in(params) if a != keypair.ss58_address]
+    with RpcClient(fork_endpoint, fork=True) as fc:
+        if fc.call("chain_getBlockHash", [0]) != chain.genesis_hash:
+            raise RehearseError(f"{fork_endpoint} is not a fork of {chain.label}")
+        caught_up = advance(fc, chain.endpoint)  # minutes at most; SDK sockets are opened after it, never left idle
     fork_si = SubstrateInterface(url=fork_endpoint, ss58_format=chain.ss58)
     chain_si = SubstrateInterface(url=chain.endpoint, ss58_format=chain.ss58)
     try:
-        if fork_si.get_block_hash(0) != chain.genesis_hash:
-            raise RehearseError(f"{fork_endpoint} is not a fork of {chain.label}")
         fresh = staleness(fork_si, chain_si, accounts)
         if not fresh["fresh"]:
             raise RehearseError("the fork is stale for this transaction (" + "; ".join(
@@ -274,7 +300,6 @@ def rehearse(fork_endpoint: str, keypair, module: str, function: str, params: di
         nonce = _account(chain_si, keypair.ss58_address, fresh["chain_finalized_head"])["nonce"]
         xt_hex = sign(chain_si, keypair, module, function, params, nonce)
         with RpcClient(fork_endpoint, fork=True) as fc:
-            caught_up = advance(fc, fork_si, chain_si)
             try:
                 pred = apply(fc, fork_si, xt_hex, accounts, where="fork", timeout=60)
             except RpcError as exc:
