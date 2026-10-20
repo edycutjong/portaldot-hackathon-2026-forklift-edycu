@@ -1,0 +1,130 @@
+{
+  "recorded_utc": "2026-10-20T14:05:05+00:00",
+  "profile": "v3",
+  "endpoint": "wss://test-node-v3.portaldot.dev",
+  "item": "TransactionPayment.NextFeeMultiplier (FixedU128, 10^18 = 1.0)",
+  "blocks": 20,
+  "changed_between_consecutive_blocks": 19,
+  "rows": [
+    {
+      "block": 118206,
+      "block_hash": "0x637a00ac82f9f6e953a746567cc8d1f9fd98b5821daae5c952291d7daf1b1414",
+      "extrinsics": 1,
+      "next_fee_multiplier": "744150653043386205"
+    },
+    {
+      "block": 118207,
+      "block_hash": "0x5a956656930fb31a60c1f5a53d5549190a3865986ea0053dc43aa14ef211155c",
+      "extrinsics": 1,
+      "next_fee_multiplier": "744148792669079068"
+    },
+    {
+      "block": 118208,
+      "block_hash": "0x171b303d25ac6fd3044b79419fddc5e6a3f48a5e6a9db0e6fd8bf302441cfd14",
+      "extrinsics": 1,
+      "next_fee_multiplier": "744146932299422861"
+    },
+    {
+      "block": 118209,
+      "block_hash": "0xb209ffe68cb8699867d87d9b61acbee8e7cc8114a37f35a8ef60d19ff8f3da3f",
+      "extrinsics": 1,
+      "next_fee_multiplier": "744145071934417572"
+    },
+    {
+      "block": 118210,
+      "block_hash": "0x35280e4de6e381f4ff51b69563a449523bca85f2ab90c930040814bf066a00ce",
+      "extrinsics": 1,
+      "next_fee_multiplier": "744143211574063190"
+    },
+    {
+      "block": 118211,
+      "block_hash": "0x7344e7b29004552b85cc22107c6ab2ba4a3a34f4584c027e279cab809d18041e",
+      "extrinsics": 1,
+      "next_fee_multiplier": "744141351218359703"
+    },
+    {
+      "block": 118212,
+      "block_hash": "0xc6713496792f529a6db6ae52eb6ebf14cb476b1a4b383bd6a121b6e00f834ab8",
+      "extrinsics": 1,
+      "next_fee_multiplier": "744139490867307099"
+    },
+    {
+      "block": 118213,
+      "block_hash": "0x601a75f460f1a954fc84a5e73417b0dd177223d1e8541e821b4aa6a8f9f41117",
+      "extrinsics": 1,
+      "next_fee_multiplier": "744137630520905367"
+    },
+    {
+      "block": 118214,
+      "block_hash": "0x1addfd6aec2b3342b9e8142f83bdc073b7c89c07f0caf0f3c0e841269b29da50",
+      "extrinsics": 1,
+      "next_fee_multiplier": "744135770179154495"
+    },
+    {
+      "block": 118215,
+      "block_hash": "0xab76007144cf8e3da46088f1680d21da5a3109acc391b95768772a04f39787b7",
+      "extrinsics": 1,
+      "next_fee_multiplier": "744133909842054472"
+    },
+    {
+      "block": 118216,
+      "block_hash": "0x4ee6435e4b5939012ec36324bce96520dbb1d6b5c04ba343f57f06cbe4f3c9cf",
+      "extrinsics": 1,
+      "next_fee_multiplier": "744132049509605286"
+    },
+    {
+      "block": 118217,
+      "block_hash": "0xb42a932428cdaf6dd9d0f65b883345c085ef12ce17c052f5488ee088da5c7eb9",
+      "extrinsics": 1,
+      "next_fee_multiplier": "744130189181806925"
+    },
+    {
+      "block": 118218,
+      "block_hash": "0xd47d145237dd5a75c629c3a904f4f96fd64f1cdf4c586188c7cd61942a1a4475",
+      "extrinsics": 1,
+      "next_fee_multiplier": "744128328858659378"
+    },
+    {
+      "block": 118219,
+      "block_hash": "0xac933405a6c5f44adb5f4b817206b9e8f05d899c7b1270723eeaa7cb02fab461",
+      "extrinsics": 1,
+      "next_fee_multiplier": "744126468540162633"
+    },
+    {
+      "block": 118220,
+      "block_hash": "0x4bb2d3b4d0a550ab7bba150070849f11118eeaa68069c5b1549d3828f71863c8",
+      "extrinsics": 1,
+      "next_fee_multiplier": "744124608226316678"
+    },
+    {
+      "block": 118221,
+      "block_hash": "0x340e52c75db7f02f2728138beb4b33f9857880c9b76128debefc28b223c8e487",
+      "extrinsics": 1,
+      "next_fee_multiplier": "744122747917121502"
+    },
+    {
+      "block": 118222,
+      "block_hash": "0x3eee9b99a0920ff128ff2f27dd403f61c87841224ea461ab5da0274fe1831dba",
+      "extrinsics": 1,
+      "next_fee_multiplier": "744120887612577093"
+    },
+    {
+      "block": 118223,
+      "block_hash": "0x25391fa3af2e1ab472716f9dcfab73d814648a09d6f6dec1225108970ba9a857",
+      "extrinsics": 1,
+      "next_fee_multiplier": "744119027312683440"
+    },
+    {
+      "block": 118224,
+      "block_hash": "0x45a67e4f537e7a4ccda736ab1b8129a6657f289a7ddc2741bce403699ed006f5",
+      "extrinsics": 1,
+      "next_fee_multiplier": "744117167017440531"
+    },
+    {
+      "block": 118225,
+      "block_hash": "0x3e8e78cd9d6c4df2237a09dd49a08b40fa39b77b45175d12fda9c5d37ee9e491",
+      "extrinsics": 1,
+      "next_fee_multiplier": "744115306726848354"
+    }
+  ]
+}
