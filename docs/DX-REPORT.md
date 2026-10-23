@@ -1,9 +1,9 @@
 # Developer-experience report (v0)
 
-Friction hit while building Forklift on 2026-10-14 (first day of the build window), on one machine: macOS 26 on
+Friction hit while building Forklift on 2026-10-14 (first day of the build window) and, for rows 10 to 12, on the Portaldot V3 testnet (`wss://test-node-v3.portaldot.dev`) on 2026-10-20, on one machine: macOS 26 on
 Apple silicon (arm64), Python 3.11.1, `portaldot_dev` 2.0.0 from the
 `portaldot-testnet-*.tar.gz` tarballs in the community repository `portaldotVolunteer/Portaldot-node`, and the public mainnet node `wss://mainnet.portaldot.io` (runtime spec 1002). Things
-measured in this repository are listed; rows say in-row where something is not evidenced. Each row says how to see it again. This is v0: one host, one day, no
+measured in this repository are listed; rows say in-row where something is not evidenced. Each row says how to see it again. This is v0: one host, two days, no
 Linux run.
 
 | # | Friction | What we measured | How to see it | What Forklift does about it |
@@ -26,5 +26,6 @@ Linux run.
 - Whether the **Linux** `portaldot_dev` binary behaves the same: it was not run in this window.
 - Whether the node's **log is block-buffered** off a TTY: not re-measured here. Forklift reads readiness over RPC
   (`chain_getHeader`, `chain_getFinalizedHead`) and never from the log either way.
-- Anything about the **V3 testnet**: its RPC did not resolve in DNS on 2026-10-14, and no V3 node binary or chain spec is
-  known to the author (organisers' Discord messages, not archived here).
+- Anything about the **V3 testnet** beyond rows 10 to 12: its first RPC host did not resolve in DNS on 2026-10-14 (rows 10 to 12
+  were measured on its new endpoint on 2026-10-20), and no V3 node binary or chain spec is known to the author (organisers'
+  Discord messages, not archived here).
