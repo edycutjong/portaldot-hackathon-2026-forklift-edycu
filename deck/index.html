@@ -112,6 +112,7 @@ p code, li code, td code, .what code { font-size: .84em; }
 .s3 .verb { font: 400 40px/1 var(--font-display); text-transform: uppercase; margin: 12px 0 16px; }
 .s3 .cmd { font: 700 16px/1.45 var(--font-data); background: var(--ink); color: var(--plate); padding: 10px 12px; border-radius: 4px; white-space: nowrap; }
 .s3 .what { font: 400 22px/1.38 var(--font-body); margin-top: 16px; }
+.s3 .out.ink { color: var(--ink); }
 .s3 .out { margin-top: auto; padding-top: 14px; border-top: 2px solid #C9C4B8; font: 700 19px/1.45 var(--font-data); color: var(--after); }
 .s3 .ctrl { position: absolute; left: 120px; top: 842px; width: 1680px; padding: 20px 28px; display: flex; gap: 22px; align-items: center; }
 .s3 .ctrl p { font: 400 23px/1.4 var(--font-body); }
@@ -137,9 +138,9 @@ p code, li code, td code, .what code { font-size: .84em; }
 .s4 .why { position: absolute; left: 120px; top: 852px; width: 1680px; font: 400 23px/1.4 var(--font-body); }
 
 /* 5 · fidelity */
-.s5 .v3 { position: absolute; left: 120px; top: 296px; width: 1040px; height: 560px; padding: 34px 40px; }
-.s5 .ctl { position: absolute; left: 1210px; top: 296px; width: 590px; height: 560px; padding: 30px 36px; }
-.s5 .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 22px; }
+.s5 .v3 { position: absolute; left: 120px; top: 296px; width: 1040px; height: 524px; padding: 34px 40px; }
+.s5 .ctl { position: absolute; left: 1210px; top: 296px; width: 590px; height: 524px; padding: 30px 36px; }
+.s5 .row { display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 16px; margin-top: 22px; }
 .s5 .cell { border-top: 4px solid var(--after); padding-top: 12px; }
 .s5 .cell .val { font-size: 40px; color: var(--after); margin-top: 0; }
 .s5 .cell p { font: 400 21px/1.35 var(--font-body); margin-top: 8px; }
@@ -162,7 +163,7 @@ p code, li code, td code, .what code { font-size: .84em; }
 .s7 table { border-collapse: separate; border-spacing: 0; }
 .s7 .tbl { position: absolute; left: 1080px; top: 300px; width: 720px; padding: 28px 30px; }
 .s7 .tbl table { position: static; width: 100%; }
-.s7 th { font: 700 17px/1.25 var(--font-body); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); text-align: left; padding: 0 10px 12px 0; vertical-align: bottom; }
+.s7 th { font: 700 17px/1.25 var(--font-body); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); text-align: left; padding: 0 20px 12px 0; vertical-align: bottom; }
 .s7 td { font: 400 22px/1.35 var(--font-body); padding: 26px 10px 26px 0; border-top: 2px solid #C9C4B8; vertical-align: top; }
 .s7 td:first-child { font-weight: 700; width: 170px; }
 .s7 tr.us td { font-weight: 700; border-top: 3px solid var(--ink); }
@@ -172,7 +173,7 @@ p code, li code, td code, .what code { font-size: .84em; }
 .s8 .c { padding: 32px 32px 28px; }
 .s8 h3 { font: 400 28px/1.12 var(--font-display); text-transform: uppercase; margin: 12px 0 18px; }
 .s8 p, .s8 li { font: 400 24px/1.42 var(--font-body); }
-.s8 .c { min-height: 600px; }
+.s8 .c { min-height: 560px; }
 .s8 ul { list-style: none; }
 .s8 li { padding: 9px 0 9px 26px; position: relative; border-top: 2px solid #C9C4B8; }
 .s8 li::before { content: ""; position: absolute; left: 0; top: 22px; width: 14px; height: 4px; background: var(--ink); }
@@ -333,7 +334,7 @@ body.presenter .slide.active .speaker-notes { display: block; position: absolute
     <div class="step plate"><span class="n">Bay 01</span><span class="verb">Lift</span>
       <div class="cmd">forklift up<br>--target v3 --at head</div>
       <p class="what">Reads every top-level storage key at one pinned block hash; <code>manifest_root</code> hashes every pair.</p>
-      <div class="out">5,508 keys in 4.83 s<br>2 runs, same root</div></div>
+      <div class="out ink">5,508 keys in 4.83 s<br>2 runs, same root</div></div>
     <div class="step plate"><span class="n">Bay 02</span><span class="verb">Fork</span>
       <div class="cmd">npx @acala-network/<br>chopsticks@1.5.2</div>
       <p class="what">Started by <code>up</code>: V3's own runtime wasm at the pinned block, on loopback, serving the pinned genesis and <code>:code</code>.</p>
@@ -372,7 +373,7 @@ body.presenter .slide.active .speaker-notes { display: block; position: absolute
       <div class="k">Matched the prediction</div>
       <ul class="m"><li>same tx hash, success</li><li>same event sequence</li></ul>
       <div class="k">Differed · 6 of 10 fields · exit 7</div>
-      <ul class="d"><li>fee 8,269 planck lower</li><li>in <span class="mono">#118,555</span>, predicted <span class="mono">#118,546</span></li></ul>
+      <ul class="d"><li>fee 8,269 planck lower: in the fee, its 3 fee events and the sender's delta</li><li>included in <span class="mono">#118,555</span>, predicted <span class="mono">#118,546</span></li></ul>
             <div class="rp"><span class="lab">Replay on parent #118,554</span><b>10/10</b><span class="fee">fee equal</span></div>
     </article>
     <article class="tag plate"><div class="hole"></div>
@@ -382,7 +383,7 @@ body.presenter .slide.active .speaker-notes { display: block; position: absolute
       <div class="k">Matched the prediction</div>
       <ul class="m"><li>same tx hash, success, event sequence</li><li>recipient +0.2 tPOT, exact</li></ul>
       <div class="k">Differed · 6 of 14 fields · exit 7</div>
-      <ul class="d"><li>fee 3,660 planck lower</li><li>in <span class="mono">#118,621</span>, predicted <span class="mono">#118,618</span></li></ul>
+      <ul class="d"><li>fee 3,660 planck lower: in the fee, its 3 fee events and the sender's delta</li><li>included in <span class="mono">#118,621</span>, predicted <span class="mono">#118,618</span></li></ul>
             <div class="rp"><span class="lab">Replay on parent #118,620</span><b>14/14</b><span class="fee">fee equal</span></div>
     </article>
     <article class="tag plate"><div class="hole"></div>
@@ -392,7 +393,7 @@ body.presenter .slide.active .speaker-notes { display: block; position: absolute
       <div class="k">Matched the prediction</div>
       <ul class="m"><li>same tx hash, success, event sequence</li><li>recipient +0.1 tPOT, exact</li></ul>
       <div class="k">Differed · 6 of 16 fields · exit 7</div>
-      <ul class="d"><li>fee 5,390 planck lower</li><li>in <span class="mono">#118,669</span>, predicted <span class="mono">#118,665</span></li></ul>
+      <ul class="d"><li>fee 5,390 planck lower: in the fee, its 3 fee events and the sender's delta</li><li>included in <span class="mono">#118,669</span>, predicted <span class="mono">#118,665</span></li></ul>
             <div class="rp"><span class="lab">Replay on parent #118,668</span><b>16/16</b><span class="fee">fee equal</span></div>
     </article>
   </div>
@@ -463,9 +464,9 @@ body.presenter .slide.active .speaker-notes { display: block; position: absolute
     <text x="520" y="124" font-size="17" fill="#E9E6DF">JSON-RPC</text>
     <text x="520" y="146" font-size="17" fill="#E9E6DF">and the</text>
     <text x="520" y="168" font-size="17" fill="#E9E6DF">write-guard</text>
-    <text x="520" y="440" font-size="16" fill="#E9E6DF">reads:</text>
-    <text x="520" y="460" font-size="16" fill="#E9E6DF">allowlisted</text>
-    <text x="520" y="480" font-size="16" fill="#E9E6DF">methods only</text>
+    <text x="520" y="440" font-size="16" fill="#E9E6DF">reads: an</text>
+    <text x="520" y="460" font-size="16" fill="#E9E6DF">allowlist</text>
+    <text x="520" y="480" font-size="16" fill="#E9E6DF">only</text>
     <g font-size="16" fill="#1E1F1C">
       <!-- column A: identity, lift, check -->
       <rect x="630" y="56" width="256" height="76" rx="4" fill="none" stroke="#1E1F1C" stroke-width="2.5"/>
@@ -477,9 +478,10 @@ body.presenter .slide.active .speaker-notes { display: block; position: absolute
       <rect x="630" y="236" width="256" height="76" rx="4" fill="none" stroke="#1E1F1C" stroke-width="2.5"/>
       <text x="646" y="266" font-family="Martian Mono" font-weight="700" font-size="16">verify.py</text>
       <text x="646" y="294">keys drawn on the chain</text>
-      <text x="646" y="366" font-size="17">257 offline + 6 live tests</text>
-      <text x="646" y="392" font-size="17">exit codes 0–7 and 64,</text>
-      <text x="646" y="418" font-size="17">in docs/EXIT-CODES.md</text>
+      <text x="646" y="344" font-size="17" font-weight="700">↑ these three serve both forks</text>
+      <text x="646" y="404" font-size="17">257 offline + 6 live tests</text>
+      <text x="646" y="430" font-size="17">exit codes 0–7 and 64,</text>
+      <text x="646" y="456" font-size="17">in docs/EXIT-CODES.md</text>
       <!-- column B: forks and what runs on them -->
       <rect x="898" y="56" width="236" height="76" rx="4" fill="none" stroke="#1E1F1C" stroke-width="2.5"/>
       <text x="914" y="86" font-family="Martian Mono" font-weight="700" font-size="16">chopsticks.py</text>
@@ -498,8 +500,8 @@ body.presenter .slide.active .speaker-notes { display: block; position: absolute
       <text x="914" y="486">fund · as · Receipt</text>
     </g>
     <!-- brackets: which modules work on which fork -->
-    <path d="M1140 60 h8 v248 h-8" fill="none" stroke="#1846D8" stroke-width="3"/>
-    <path d="M1140 342 h8 v158 h-8" fill="none" stroke="#1E1F1C" stroke-width="3"/>
+    <path d="M1152 60 h10 v248 h-10" fill="none" stroke="#1846D8" stroke-width="3"/>
+    <path d="M1152 342 h10 v158 h-10" fill="none" stroke="#1E1F1C" stroke-width="3"/>
 
     <!-- bench column: hazard edge where writable begins -->
     <text x="1250" y="22" font-size="17" font-weight="700" letter-spacing="2" fill="#4E4636">BENCH · LOCAL, WRITABLE, LOOPBACK</text>
@@ -522,8 +524,8 @@ body.presenter .slide.active .speaker-notes { display: block; position: absolute
     <text x="394" y="80" font-size="16" fill="#1E1F1C">read</text>
     <path d="M382 420 H 502" stroke="#1E1F1C" stroke-width="3" fill="none" marker-end="url(#a6)"/>
     <text x="394" y="408" font-size="16" fill="#1E1F1C">read</text>
-    <path d="M1148 184 H 1246" stroke="#1846D8" stroke-width="4" fill="none" marker-end="url(#a6b)"/>
-    <path d="M1148 421 H 1246" stroke="#1E1F1C" stroke-width="3" fill="none" marker-end="url(#a6)"/>
+    <path d="M1162 184 H 1246" stroke="#1846D8" stroke-width="4" fill="none" marker-end="url(#a6b)"/>
+    <path d="M1162 421 H 1246" stroke="#1E1F1C" stroke-width="3" fill="none" marker-end="url(#a6)"/>
     <!-- the one write path to a real chain: rehearse --send, out through rpc.py, to V3 only -->
     <path d="M504 184 H 386" stroke="#1E1F1C" stroke-width="4" stroke-dasharray="12 8" fill="none" marker-end="url(#a6)"/>
     <text x="394" y="214" font-family="Martian Mono" font-weight="700" font-size="16" fill="#1E1F1C">--send</text>
@@ -551,7 +553,7 @@ body.presenter .slide.active .speaker-notes { display: block; position: absolute
       <tr><th></th><th>V3's real state</th><th>Outcome known before sending</th><th>Checked against the chain</th></tr>
       <tr><td>A dev chain</td><td>no: Alice only</td><td>yes, on empty state</td><td>no</td></tr>
       <tr><td>Send to V3 directly</td><td>yes</td><td>no: the tx is final</td><td>after the fact</td></tr>
-      <tr class="us"><td>Forklift</td><td>#118,061, 5,508 keys</td><td>predicted, then sent: same tx hash</td><td>verify exit 0; replays exact</td></tr>
+      <tr class="us"><td>Forklift</td><td><code>#118,061</code>, <code>5,508</code> keys</td><td>predicted, then sent: same tx hash</td><td>verify exit 0; replays exact</td></tr>
     </table>
   </div>
   <aside class="speaker-notes">What is new is the loop: predict on a fork of V3's real state, send the same bytes, and compare. When the chain disagrees, the tool says so with an exit code instead of adjusting the prediction. And replay lets anyone check the fork's fidelity on any V3 extrinsic.</aside>
@@ -652,7 +654,7 @@ body.presenter .slide.active .speaker-notes { display: block; position: absolute
       <li><b>One V3 tx on node-console</b><a href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x0ae8b2b94d34dc27fd931b8095654675510dc53533582ad0cad19712591db8a9"><code>118621-1</code></a></li>
     </ul>
   </div>
-  <p class="ai"><b>AI assistance:</b> Claude Code drafted most of the code, tests, README and this deck under the author's direction. The architecture, protocol choices and on-chain design were decided by the author, who can explain every flow. Every figure here comes from <code>docs/PROOF.md</code>, <code>evidence/</code>, <code>README.md</code> or the git log at build <code>44b7edc</code>.</p>
+  <p class="ai"><b>AI assistance:</b> Claude Code drafted most of the code, tests, README and this deck under the author's direction. The architecture, protocol choices and on-chain design were decided by the author, who reviews the code and can explain how the lift, the splice, <code>verify</code> and the Receipt work. Every figure here comes from <code>docs/PROOF.md</code>, <code>evidence/</code>, <code>README.md</code> or the git log at build <code>44b7edc</code>.</p>
   <aside class="speaker-notes">Everything on these slides has a command and an evidence file behind it. Before the final: the Fork Receipt on V3, the exact-runtime mode, a mainnet-to-V3 report, and real benchmarks. The repository, the proof tables and a node-console link are here.</aside>
 </section>
 
