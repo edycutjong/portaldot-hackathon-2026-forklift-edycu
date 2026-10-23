@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forklift · pitch deck · Portaldot Hacker House 2026</title>
+<meta name="description" content="Forklift lifts a chain's real state at a pinned block onto a local fork, verifies the fork against the chain, and predicts a transaction there before the same bytes go to the Portaldot V3 testnet.">
+<!--
+  Forklift pitch deck: one file, 1920x1080 stage, 10 slides.
+  Keys: arrows / space / PageUp-PageDown move, 1-9 and 0 jump, Esc overview, P presenter notes, F fullscreen.
+  Print (Ctrl/Cmd+P, or headless Chromium) gives one slide per 20in x 11.25in page.
+  Every figure comes from docs/PROOF.md, evidence/*.json or README.md at build 44b7edc.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bungee&family=Martian+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #F5B300;  /* traffic-yellow chassis paint (RAL 1023 family): the ground of every surface; no sibling owns a yellow ground */
+  --plate:   #E9E6DF;  /* brushed-aluminium data plate: raised cards, tables, code blocks */
+  --ink:     #1E1F1C;  /* graphite stencil ink: warm, NOT the #0B0E14 blue-black; 8.9:1 on --bg, 13.3:1 on --plate */
+  --muted:   #4E4636;  /* worn-paint brown-grey for secondary labels; 5.0:1 on --bg, 7.5:1 on --plate */
+  --before:  #5C6166;  /* state: racked (mainnet @ block N: read-only steel outline in the rack) */
+  --after:   #1846D8;  /* state: lifted (writable fork on your bench): the forklift's blue floor-spot light; fires ONLY when a fork is live or a key verifies */
+  --hazard:  #1E1F1C;  /* chevron stripes (ink on --bg): the bench edge only, never decoration */
+  --rule:    #C98F00;  /* darker paint seam: hairlines and table rules on the yellow ground */
+  --font-display: "Bungee", "Arial Black", Impact, sans-serif;  /* built for vertical and horizontal urban signage, which is what warehouse aisle and bay signs are; heavy, square, legible at 64px */
+  --font-body:    "Atkinson Hyperlegible", "Helvetica Neue", Arial, sans-serif;  /* drawn for low-vision legibility, the ethos of safety signage */
+  --font-data:    "Martian Mono", ui-monospace, Menlo, monospace;  /* ONLY block numbers, block/tx hashes, SS58 addresses, key counts, CLI output */
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: var(--ink); overflow: hidden;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { font-family: var(--font-body); color: var(--ink); -webkit-font-smoothing: antialiased; }
+body.idle { cursor: none; }
+.viewport { position: fixed; inset: 0; }
+.stage { position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px; transform-origin: 50% 50%; }
+.slide { position: absolute; inset: 0; display: none; overflow: hidden; background: var(--bg); }
+.slide.active { display: block; }
+a { color: inherit; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+
+/* the warehouse floor line and the footer plate (filled by the script) */
+.floor { position: absolute; left: 0; right: 0; top: 994px; height: 6px; background: var(--ink); }
+.tb { position: absolute; left: 0; right: 0; top: 1000px; height: 80px; display: flex; align-items: center; gap: 36px;
+  padding: 0 120px; font: 700 18px/1 var(--font-body); text-transform: uppercase; letter-spacing: .1em; color: var(--ink); }
+.tb .name { font: 400 22px/1 var(--font-display); letter-spacing: .02em; }
+.tb .no { margin-left: auto; font: 700 20px/1 var(--font-data); letter-spacing: 0; }
+.tb code { font: 700 17px/1 var(--font-data); letter-spacing: 0; text-transform: none; }
+
+/* type */
+.eyebrow { font: 700 21px/1.2 var(--font-body); text-transform: uppercase; letter-spacing: .14em; color: var(--muted); }
+h1, h2 { font-family: var(--font-display); font-weight: 400; text-transform: uppercase; letter-spacing: .02em; line-height: 1.02; }
+h2 { font-size: 68px; margin-top: 14px; }
+code, .mono { font-family: var(--font-data); font-weight: 700; font-variant-numeric: tabular-nums; }
+p code, li code, td code, .what code { font-size: .84em; }
+.eyebrow code, .eyebrow .mono, h3 code { text-transform: none; letter-spacing: .02em; }
+.nw { white-space: nowrap; }
+.head { position: absolute; left: 120px; top: 92px; right: 120px; }
+.sub { font: 400 27px/1.4 var(--font-body); margin-top: 18px; max-width: 1500px; }
+
+/* brushed-aluminium data plate with riveted corners */
+.plate { position: relative; background:
+  radial-gradient(circle at 16px 16px, var(--before) 0 4px, transparent 4.6px),
+  radial-gradient(circle at calc(100% - 16px) 16px, var(--before) 0 4px, transparent 4.6px),
+  radial-gradient(circle at 16px calc(100% - 16px), var(--before) 0 4px, transparent 4.6px),
+  radial-gradient(circle at calc(100% - 16px) calc(100% - 16px), var(--before) 0 4px, transparent 4.6px),
+  var(--plate);
+  border-radius: 8px; }
+/* racked: the steel outline in the rack (the live chain, read-only) */
+.racked { border: 4px solid var(--before); border-radius: 8px; }
+.lab { display: block; font: 700 17px/1.2 var(--font-body); text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+.val { display: block; font: 700 46px/1.1 var(--font-data); font-variant-numeric: tabular-nums; margin-top: 8px; }
+.val.on { color: var(--after); }
+.hz { background: repeating-linear-gradient(-45deg, var(--hazard) 0 14px, var(--bg) 14px 28px); }
+.tag-lifted { display: inline-block; font: 700 16px/1 var(--font-body); text-transform: uppercase; letter-spacing: .12em;
+  background: var(--after); color: var(--plate); padding: 7px 12px 6px; border-radius: 4px; }
+.tag-racked { display: inline-block; font: 700 16px/1 var(--font-body); text-transform: uppercase; letter-spacing: .12em;
+  border: 3px solid var(--before); color: var(--ink); padding: 4px 10px 3px; border-radius: 4px; }
+
+/* 1 · cover */
+.s1 .eyebrow { position: absolute; left: 120px; top: 110px; }
+.s1 h1 { position: absolute; left: 112px; top: 150px; font-size: 150px; }
+.s1 .lede { position: absolute; left: 120px; top: 345px; width: 780px; font: 400 34px/1.35 var(--font-body); }
+.s1 .dps { position: absolute; left: 120px; top: 585px; display: flex; gap: 18px; }
+.s1 .dps .plate { padding: 26px 30px 24px; min-width: 248px; }
+.s1 .dps .val { font-size: 40px; }
+.s1 .txs { position: absolute; left: 120px; top: 770px; width: 820px; font: 400 25px/1.5 var(--font-body); }
+.s1 .txs code { font-size: 23px; white-space: nowrap; }
+.s1 .ver { position: absolute; left: 120px; top: 900px; font: 700 20px/1 var(--font-body); text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+.s1 .scene { position: absolute; left: 960px; top: 150px; width: 860px; height: 676px; }
+
+/* 2 · problem: rack on the left, bench on the right, nothing crosses */
+.s2 .rack { position: absolute; left: 120px; top: 360px; width: 760px; height: 470px; padding: 40px 44px; }
+.s2 .bench { position: absolute; left: 1040px; top: 360px; width: 760px; height: 470px; padding: 64px 44px 40px; }
+.s2 .bench .hz { position: absolute; left: 0; right: 0; top: 0; height: 22px; border-radius: 8px 8px 0 0; }
+.s2 h3 { font: 400 34px/1.1 var(--font-display); text-transform: uppercase; margin: 14px 0 22px; }
+.s2 ul { list-style: none; }
+.s2 li { position: relative; padding: 12px 0 12px 30px; border-top: 2px solid var(--rule); font: 400 25px/1.4 var(--font-body); }
+.s2 .bench li { border-top-color: #C9C4B8; }
+.s2 li::before { content: ""; position: absolute; left: 0; top: 26px; width: 16px; height: 4px; background: var(--ink); }
+.s2 .gap { position: absolute; left: 880px; top: 360px; width: 160px; height: 470px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center; }
+.s2 .gap .line { width: 0; height: 150px; border-left: 4px dashed var(--ink); }
+.s2 .gap p { font: 700 19px/1.25 var(--font-body); text-transform: uppercase; letter-spacing: .1em; margin: 16px 0; }
+.s2 .ask { position: absolute; left: 120px; top: 868px; width: 1680px; font: 400 27px/1.4 var(--font-body); }
+
+/* 3 · what it does */
+.s3 .steps { position: absolute; left: 120px; top: 296px; width: 1680px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; }
+.s3 .step { padding: 30px 26px 26px; height: 500px; display: flex; flex-direction: column; }
+.s3 .n { font: 700 20px/1 var(--font-data); color: var(--muted); }
+.s3 .verb { font: 400 40px/1 var(--font-display); text-transform: uppercase; margin: 12px 0 16px; }
+.s3 .cmd { font: 700 16px/1.45 var(--font-data); background: var(--ink); color: var(--plate); padding: 10px 12px; border-radius: 4px; white-space: nowrap; }
+.s3 .what { font: 400 22px/1.38 var(--font-body); margin-top: 16px; }
+.s3 .out { margin-top: auto; padding-top: 14px; border-top: 2px solid #C9C4B8; font: 700 19px/1.45 var(--font-data); color: var(--after); }
+.s3 .arrow { position: absolute; top: 520px; width: 20px; text-align: center; font: 700 26px/1 var(--font-body); }
+.s3 .ctrl { position: absolute; left: 120px; top: 842px; width: 1680px; padding: 20px 28px; display: flex; gap: 22px; align-items: center; }
+.s3 .ctrl p { font: 400 23px/1.4 var(--font-body); }
+
+/* 4 · the frozen slide: three load tags */
+.s4 .tags { position: absolute; left: 120px; top: 270px; width: 1680px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
+.s4 .tag { padding: 28px 32px 0; height: 590px; display: flex; flex-direction: column; overflow: hidden; }
+.s4 .tag .hole { position: absolute; right: 34px; top: 30px; width: 30px; height: 30px; border-radius: 50%; background: var(--bg); box-shadow: inset 0 0 0 4px var(--before); }
+.s4 .call { font: 700 21px/1.2 var(--font-data); min-height: 52px; }
+.s4 .call small { display: block; font: 400 19px/1.3 var(--font-body); color: var(--muted); margin-top: 4px; }
+.s4 .xid { display: block; font: 700 50px/1 var(--font-data); margin: 12px 0 8px; color: var(--ink); text-decoration-thickness: 3px; }
+.s4 .hash { font: 700 17px/1 var(--font-data); color: var(--muted); }
+.s4 .k { font: 700 16px/1 var(--font-body); text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin: 18px 0 6px; }
+.s4 li .mono { font-size: 19px; }
+.s4 ul { list-style: none; }
+.s4 li { font: 400 21px/1.32 var(--font-body); padding: 3px 0 3px 30px; position: relative; }
+.s4 .m li::before { content: ""; position: absolute; left: 2px; top: 8px; width: 9px; height: 15px; border: solid var(--after); border-width: 0 4px 4px 0; transform: rotate(40deg); }
+.s4 .d li::before { content: ""; position: absolute; left: 0; top: 14px; width: 16px; height: 4px; background: var(--ink); }
+.s4 .score { font: 700 17px/1 var(--font-data); margin-top: 12px; color: var(--muted); }
+.s4 .rp { margin: auto -32px 0; background: var(--after); color: var(--plate); padding: 18px 32px 18px; border-radius: 0 0 8px 8px; }
+.s4 .rp .lab { color: var(--plate); }
+.s4 .rp b { font: 700 40px/1 var(--font-data); display: inline-block; margin-top: 6px; }
+.s4 .rp span.fee { font: 700 20px/1 var(--font-body); margin-left: 14px; }
+.s4 .why { position: absolute; left: 120px; top: 884px; width: 1680px; font: 400 23px/1.4 var(--font-body); }
+
+/* 5 · fidelity */
+.s5 .v3 { position: absolute; left: 120px; top: 296px; width: 1040px; height: 560px; padding: 34px 40px; }
+.s5 .ctl { position: absolute; left: 1210px; top: 296px; width: 590px; height: 560px; padding: 30px 36px; }
+.s5 .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 22px; }
+.s5 .cell { border-top: 4px solid var(--after); padding-top: 12px; }
+.s5 .cell .val { font-size: 37px; color: var(--after); margin-top: 0; }
+.s5 .cell p { font: 400 21px/1.35 var(--font-body); margin-top: 8px; }
+.s5 .rp { margin-top: 30px; display: flex; align-items: baseline; gap: 26px; flex-wrap: wrap; }
+.s5 .rp .val { font-size: 40px; color: var(--after); margin: 0; }
+.s5 .note { font: 400 21px/1.4 var(--font-body); margin-top: 22px; color: var(--ink); }
+.s5 .ctl .val { font-size: 36px; }
+.s5 .ctl p { font: 400 20px/1.38 var(--font-body); margin-top: 6px; }
+.s5 .ctl .blk { border-top: 2px solid var(--rule); padding-top: 14px; margin-top: 16px; }
+
+/* 6 · architecture */
+.s6 .diagram { position: absolute; left: 120px; top: 262px; width: 1680px; height: 700px; }
+
+/* 7 · why it's new */
+.s7 .rows { position: absolute; left: 120px; top: 300px; width: 900px; }
+.s7 .r { padding: 18px 0 18px; border-top: 3px solid var(--ink); }
+.s7 .r h3 { font: 400 29px/1.1 var(--font-display); text-transform: uppercase; }
+.s7 .r p { font: 400 22px/1.4 var(--font-body); margin-top: 8px; }
+.s7 .r code { font-size: 19px; }
+.s7 table { position: absolute; left: 1090px; top: 300px; width: 710px; border-collapse: separate; border-spacing: 0; }
+.s7 .tbl { position: absolute; left: 1080px; top: 300px; width: 720px; padding: 28px 30px; }
+.s7 .tbl table { position: static; width: 100%; }
+.s7 th { font: 700 16px/1.25 var(--font-body); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); text-align: left; padding: 0 10px 12px 0; vertical-align: bottom; }
+.s7 td { font: 400 20px/1.32 var(--font-body); padding: 14px 10px 14px 0; border-top: 2px solid #C9C4B8; vertical-align: top; }
+.s7 td:first-child { font-weight: 700; width: 170px; }
+.s7 tr.us td { color: var(--after); font-weight: 700; }
+.s7 tr.us td:first-child { color: var(--ink); }
+
+/* 8 · ecosystem */
+.s8 .cols { position: absolute; left: 120px; top: 296px; width: 1680px; display: grid; grid-template-columns: 1fr 1.12fr 1fr; gap: 30px; }
+.s8 .c { padding: 32px 32px 28px; }
+.s8 h3 { font: 400 28px/1.12 var(--font-display); text-transform: uppercase; margin: 12px 0 18px; }
+.s8 p, .s8 li { font: 400 23px/1.4 var(--font-body); }
+.s8 ul { list-style: none; }
+.s8 li { padding: 9px 0 9px 26px; position: relative; border-top: 2px solid #C9C4B8; }
+.s8 li::before { content: ""; position: absolute; left: 0; top: 22px; width: 14px; height: 4px; background: var(--ink); }
+.s8 .big { font: 700 64px/1 var(--font-data); color: var(--ink); margin: 6px 0 4px; }
+.s8 code { font-size: 18px; }
+
+/* 9 · users and model */
+.s9 .users { position: absolute; left: 120px; top: 296px; width: 1680px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
+.s9 .u { padding: 30px 32px 32px; }
+.s9 .u h3 { font: 400 27px/1.12 var(--font-display); text-transform: uppercase; margin-bottom: 14px; }
+.s9 .u p { font: 400 24px/1.42 var(--font-body); }
+.s9 .path { position: absolute; left: 120px; top: 640px; width: 1680px; display: grid; grid-template-columns: 1fr 1fr 1.25fr; gap: 0; }
+.s9 .p { padding: 22px 30px 22px 0; border-top: 4px solid var(--ink); }
+.s9 .p + .p { padding-left: 30px; border-left: 3px dashed var(--ink); }
+.s9 .p p { font: 400 23px/1.4 var(--font-body); margin-top: 8px; }
+.s9 .p .lab { color: var(--ink); }
+.s9 .honest { position: absolute; left: 120px; top: 896px; width: 1680px; font: 700 23px/1.3 var(--font-body); }
+
+/* 10 · status and links */
+.s10 .done { position: absolute; left: 120px; top: 300px; width: 640px; }
+.s10 .left { position: absolute; left: 800px; top: 300px; width: 560px; }
+.s10 h3 { font: 400 26px/1.1 var(--font-display); text-transform: uppercase; margin-bottom: 10px; }
+.s10 ul { list-style: none; }
+.s10 li { padding: 11px 0 11px 30px; position: relative; border-top: 2px solid var(--rule); font: 400 22px/1.38 var(--font-body); }
+.s10 .done li::before { content: ""; position: absolute; left: 2px; top: 15px; width: 9px; height: 15px; border: solid var(--ink); border-width: 0 4px 4px 0; transform: rotate(40deg); }
+.s10 .left li::before { content: ""; position: absolute; left: 0; top: 25px; width: 16px; height: 0; border-top: 4px dashed var(--muted); }
+.s10 .links { position: absolute; left: 1410px; top: 300px; width: 390px; padding: 26px 28px; }
+.s10 .qr { width: 220px; height: 220px; background: var(--plate); }
+.s10 .qr svg { width: 100%; height: 100%; display: block; }
+.s10 .links li { border-top-color: #C9C4B8; padding: 9px 0; font: 400 18px/1.35 var(--font-body); }
+.s10 .links li::before { display: none; }
+.s10 .links li b { display: block; font: 700 15px/1.2 var(--font-body); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+.s10 .links code { font-size: 15px; word-break: break-all; }
+.s10 .ai { position: absolute; left: 120px; top: 884px; width: 1240px; font: 400 19px/1.4 var(--font-body); }
+
+/* overview (Esc) */
+body.overview .slide { display: block; cursor: pointer; transform-origin: 0 0; }
+body.overview .slide .speaker-notes { display: none !important; }
+/* presenter notes (P) */
+.speaker-notes { display: none; }
+body.presenter .slide.active .speaker-notes { display: block; position: absolute; left: 0; right: 0; bottom: 0; height: 220px;
+  background: var(--ink); color: var(--plate); padding: 26px 120px; font: 400 26px/1.45 var(--font-body); z-index: 6; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .s1.active .load { animation: lift 1.1s cubic-bezier(.3,.7,.2,1) both; }
+  .s1.active .pool { animation: pool .5s ease-out 1s both; }
+  @keyframes lift { 0% { transform: translate(-150px, -20px); } 70% { transform: translate(0, -8px); } 85% { transform: translate(0, 3px); } 100% { transform: none; } }
+  @keyframes pool { from { opacity: 0; } to { opacity: 1; } }
+}
+
+/* print: one slide per page, final state, no chrome */
+@page { size: 20in 11.25in; margin: 0; }
+@media print {
+  html, body { height: auto; overflow: visible; background: var(--bg); }
+  .viewport { position: static; overflow: visible; }
+  .stage { position: static; transform: none !important; width: 1920px; height: auto; }
+  .slide { position: relative; display: block !important; width: 1920px; height: 1080px; break-after: page; page-break-after: always;
+    break-inside: avoid; page-break-inside: avoid; transform: none !important; }
+  .speaker-notes { display: none !important; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="viewport">
+<div class="stage">
+
+<!-- 1 · COVER: the frozen moment of design.md §2, re-aimed at the V3 pin -->
+<section class="slide s1" data-title="Cover">
+  <div class="eyebrow">Portaldot Hacker House 2026 · Node Operations &amp; Tooling</div>
+  <h1>Forklift</h1>
+  <p class="lede">Lift a chain's real state onto your bench. Predict the transaction there first. Then send the same bytes to the Portaldot V3 testnet.</p>
+  <div class="dps">
+    <div class="plate"><span class="lab">V3 pin block</span><span class="val">#118,061</span></div>
+    <div class="plate"><span class="lab">Keys lifted</span><span class="val">5,508</span></div>
+    <div class="plate"><span class="lab">Verify, sampled</span><span class="val on">200/200</span></div>
+  </div>
+  <p class="txs">Three real V3 transactions, each predicted on a fork first:<br><code>118555-1</code> · <code>118621-1</code> · <code>118669-1</code></p>
+  <div class="ver">v0.1.0 · MIT · Python 3.11+</div>
+  <svg class="scene" viewBox="0 0 700 550" role="img" aria-label="A forklift lifts pallet #118,061 off the steel V3 testnet rack onto the bench, where it is filled blue: 5,508 keys lifted, verify 200 of 200 identical">
+    <defs>
+      <pattern id="hz1" width="20" height="20" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="10" height="20" fill="#1E1F1C"/></pattern>
+      <marker id="ah1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#1846D8"/></marker>
+    </defs>
+    <rect x="0" y="470" width="700" height="4" fill="#1E1F1C"/>
+    <!-- rack: the live V3 testnet, read-only (steel) -->
+    <g fill="#5C6166"><rect x="16" y="40" width="10" height="432"/><rect x="226" y="40" width="10" height="432"/>
+      <rect x="16" y="190" width="220" height="9"/><rect x="16" y="330" width="220" height="9"/></g>
+    <g fill="#5C6166"><rect x="38" y="216" width="42" height="112"/><rect x="86" y="216" width="42" height="112"/><rect x="134" y="216" width="42" height="112"/><rect x="182" y="216" width="36" height="112"/>
+      <rect x="38" y="356" width="42" height="112"/><rect x="86" y="356" width="42" height="112"/><rect x="134" y="356" width="42" height="112"/><rect x="182" y="356" width="36" height="112"/></g>
+    <g fill="none" stroke="#5C6166" stroke-width="3" stroke-dasharray="9 6"><rect x="46" y="80" width="160" height="80"/><rect x="40" y="160" width="172" height="26"/></g>
+    <text x="126" y="126" text-anchor="middle" font-family="Martian Mono" font-weight="700" font-size="15" fill="#4E4636">#118,061</text>
+    <text x="16" y="26" font-family="Atkinson Hyperlegible" font-weight="700" font-size="15" letter-spacing="1.5" fill="#1E1F1C">V3 TESTNET · LIVE · READ-ONLY</text>
+    <path d="M212 110 C 300 20, 380 40, 410 150" fill="none" stroke="#1E1F1C" stroke-width="2.5" stroke-dasharray="3 8" stroke-linecap="round"/>
+    <path d="M402 140 l9 13 l6 -15" fill="none" stroke="#1E1F1C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- bench: the writable fork; chevrons mark its edge -->
+    <rect x="380" y="372" width="310" height="18" fill="url(#hz1)"/>
+    <rect x="380" y="390" width="310" height="14" fill="#1E1F1C"/>
+    <rect x="394" y="404" width="16" height="68" fill="#1E1F1C"/><rect x="660" y="404" width="16" height="68" fill="#1E1F1C"/>
+    <ellipse class="pool" cx="535" cy="474" rx="150" ry="9" fill="#1846D8"/>
+    <g class="load">
+      <path d="M338 150 a6 6 0 0 1 6 -6 h16 a6 6 0 0 1 6 6 V472 h-28 Z" fill="#1E1F1C"/>
+      <path d="M366 340 H670 l14 5 v7 H366 Z" fill="#1E1F1C"/>
+      <path d="M400 324 H660 V372 H400 Z M426 336 V360 H506 V336 Z M554 336 V360 H634 V336 Z" fill="#1E1F1C" fill-rule="evenodd"/>
+      <rect x="426" y="340" width="80" height="12" fill="#1E1F1C"/><rect x="554" y="340" width="80" height="12" fill="#1E1F1C"/>
+      <rect x="408" y="160" width="244" height="164" rx="10" fill="#1846D8"/>
+      <rect x="428" y="178" width="178" height="40" rx="4" fill="#E9E6DF"/>
+      <text x="517" y="205" text-anchor="middle" font-family="Martian Mono" font-weight="700" font-size="18" fill="#1E1F1C">#118,061</text>
+      <text x="430" y="252" font-family="Martian Mono" font-weight="700" font-size="14" fill="#E9E6DF">5,508 KEYS LIFTED</text>
+      <text x="430" y="276" font-family="Martian Mono" font-weight="700" font-size="14" fill="#E9E6DF">portaldot-v3 / 3002</text>
+      <text x="430" y="300" font-family="Martian Mono" font-weight="700" font-size="14" fill="#E9E6DF">WRITABLE · LOOPBACK</text>
+    </g>
+    <!-- verify reads back against the live chain -->
+    <path d="M520 488 C 430 504, 300 504, 244 480" fill="none" stroke="#1846D8" stroke-width="3.5" marker-end="url(#ah1)"/>
+    <text x="252" y="536" font-family="Martian Mono" font-weight="700" font-size="16" fill="#1E1F1C">verify → 200/200 identical, exit 0</text>
+  </svg>
+  <aside class="speaker-notes">Forklift picks one block of a Portaldot chain, block 118,061 of the V3 testnet here, lifts its state onto a fork on your machine, and checks that fork against the live chain. Then it predicts a transaction on the fork before the same signed bytes go to V3. Three real V3 transactions were sent this way.</aside>
+</section>
+
+<!-- 2 · PROBLEM -->
+<section class="slide s2" data-title="Problem">
+  <div class="head">
+    <div class="eyebrow">The problem</div>
+    <h2>The dev chain is empty.<br>The testnet is final.</h2>
+  </div>
+  <div class="rack racked">
+    <span class="tag-racked">Rack · the live chain</span>
+    <h3>Portaldot V3 testnet</h3>
+    <ul>
+      <li>Real state: accounts, balances, staking, contracts.</li>
+      <li>Every transaction is final and pays its fee in tPOT.</li>
+      <li>The fee multiplier changed between every pair of 20 consecutive blocks (<code>#118,206</code>–<code>#118,225</code>).</li>
+      <li>No public V3 node binary or chain spec was found, so V3 cannot simply be run locally.</li>
+    </ul>
+  </div>
+  <div class="gap"><div class="line"></div><p>Nothing<br>crosses</p><div class="line"></div></div>
+  <div class="bench plate">
+    <div class="hz"></div>
+    <span class="tag-racked">Bench · your machine</span>
+    <h3><code>portaldot_dev --dev</code></h3>
+    <ul>
+      <li>One validator, named Alice.</li>
+      <li>None of the real chain's accounts, stakes or nominators.</li>
+      <li>Writable, and free to break, but not the state your users are on.</li>
+    </ul>
+  </div>
+  <p class="ask">A builder who wants to test one staking call, or one contract, against the state their users are actually on has no simple way to get that state onto a local node, and no way to check that what they got is faithful.</p>
+  <aside class="speaker-notes">Two places to try a transaction, and neither is right. The local dev chain is writable but empty: one validator called Alice. The V3 testnet has real state, but every transaction is final and the fee moves every block. Forklift is the forklift between them.</aside>
+</section>
+
+<!-- 3 · WHAT IT DOES -->
+<section class="slide s3" data-title="What it does">
+  <div class="head">
+    <div class="eyebrow">What it does · the V3 path, measured at pin #118,061</div>
+    <h2>Lift. Fork. Verify. Rehearse. Replay.</h2>
+  </div>
+  <div class="steps">
+    <div class="step plate"><span class="n">01</span><span class="verb">Lift</span>
+      <div class="cmd">forklift up<br>--target v3 --at head</div>
+      <p class="what">Reads every top-level storage key at one pinned block hash; <code>manifest_root</code> hashes every pair.</p>
+      <div class="out">5,508 keys in 4.83 s<br>2 runs, same root</div></div>
+    <div class="step plate"><span class="n">02</span><span class="verb">Fork</span>
+      <div class="cmd">npx @acala-network/<br>chopsticks@1.5.2</div>
+      <p class="what">Started by <code>up</code>: V3's own runtime wasm at the pinned block, on loopback, serving the pinned genesis and <code>:code</code>.</p>
+      <div class="out">ready in 9.22 s<br>serves the pin: yes</div></div>
+    <div class="step plate"><span class="n">03</span><span class="verb">Verify</span>
+      <div class="cmd">forklift verify<br>--sample 200</div>
+      <p class="what">Draws keys on the live chain and reads them on both; checks the whole key set and every lifted value.</p>
+      <div class="out">exit 0 · 200/200<br>5,508 = 5,508</div></div>
+    <div class="step plate"><span class="n">04</span><span class="verb">Rehearse</span>
+      <div class="cmd">forklift rehearse<br>&lt;Pallet.call&gt; --send</div>
+      <p class="what">Signs once, applies the bytes on the fork (the prediction), sends the same bytes to V3, compares field by field.</p>
+      <div class="out">3 V3 txs finalized<br>same tx hash</div></div>
+    <div class="step plate"><span class="n">05</span><span class="verb">Replay</span>
+      <div class="cmd">forklift replay<br>118621-1</div>
+      <p class="what">Re-applies a V3 extrinsic's own bytes on a fork of its parent block and compares with the chain.</p>
+      <div class="out">10/10 · 14/14<br>16/16, fees equal</div></div>
+  </div>
+  <div class="ctrl racked">
+    <span class="tag-racked">Control path</span>
+    <p>Mainnet state (spec 1002, read-only) spliced into the official <code>portaldot_dev</code> 2.0.0 node, labelled <code>fork-1002-fast</code>, not V3: fund an account, act as a real whale and nominator, and a 169-byte Fork Receipt contract.</p>
+  </div>
+  <aside class="speaker-notes">Five commands. Lift reads the chain at one block hash. Fork runs V3's own runtime on that state. Verify compares the fork with the live chain. Rehearse predicts a transaction on the fork, then sends the same bytes. Replay re-runs any V3 extrinsic on its parent block. The mainnet path is the control, always labelled.</aside>
+</section>
+
+<!-- 4 · LIVE V3 PROOF (the frozen slide) -->
+<section class="slide s4" data-title="Live V3 proof">
+  <div class="head">
+    <div class="eyebrow">Live V3 proof · signer <span class="mono">5EnCf9Pa…ejvg</span> · 2026-10-20 · all finalized</div>
+    <h2>Predicted here. Then sent.</h2>
+  </div>
+  <div class="tags">
+    <article class="tag plate"><div class="hole"></div>
+      <div class="call">System.remark<small>a remark, no recipient</small></div>
+      <a class="xid" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x17eca420df66958b442d068061505cbecb51e33f3020e84ea4579ca99c3efe1b">118555-1</a>
+      <div class="hash">tx 0x5b4b4d48…1a65777d</div>
+      <div class="k">Matched the prediction</div>
+      <ul class="m"><li>same tx hash, success</li><li>same events, same order</li></ul>
+      <div class="k">Differed</div>
+      <ul class="d"><li>fee 8,269 planck lower</li><li>in <span class="mono">#118,555</span>, predicted <span class="mono">#118,546</span></li></ul>
+      <div class="score">rehearse 4/10 fields equal · exit 7</div>
+      <div class="rp"><span class="lab">Replay on parent #118,554</span><b>10/10</b><span class="fee">fee equal</span></div>
+    </article>
+    <article class="tag plate"><div class="hole"></div>
+      <div class="call">Balances.transfer_keep_alive<small>0.2 tPOT to a new account</small></div>
+      <a class="xid" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x0ae8b2b94d34dc27fd931b8095654675510dc53533582ad0cad19712591db8a9">118621-1</a>
+      <div class="hash">tx 0x2247c66b…73fdc36f</div>
+      <div class="k">Matched the prediction</div>
+      <ul class="m"><li>same tx hash, success, events</li><li>recipient +0.2 tPOT, exact</li></ul>
+      <div class="k">Differed</div>
+      <ul class="d"><li>fee 3,660 planck lower</li><li>in <span class="mono">#118,621</span>, predicted <span class="mono">#118,618</span></li></ul>
+      <div class="score">rehearse 8/14 fields equal · exit 7</div>
+      <div class="rp"><span class="lab">Replay on parent #118,620</span><b>14/14</b><span class="fee">fee equal</span></div>
+    </article>
+    <article class="tag plate"><div class="hole"></div>
+      <div class="call">Utility.batch<small>remark + 0.1 tPOT transfer</small></div>
+      <a class="xid" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x05ee11c4b3835f6b535a3f8fac442fc9a4c95c4b24353c89ed1a8eac1d12eca7">118669-1</a>
+      <div class="hash">tx 0xd371c50a…a3a3ef6a</div>
+      <div class="k">Matched the prediction</div>
+      <ul class="m"><li>same tx hash, success, events</li><li>recipient +0.1 tPOT, exact</li></ul>
+      <div class="k">Differed</div>
+      <ul class="d"><li>fee 5,390 planck lower</li><li>in <span class="mono">#118,669</span>, predicted <span class="mono">#118,665</span></li></ul>
+      <div class="score">rehearse 10/16 fields equal · exit 7</div>
+      <div class="rp"><span class="lab">Replay on parent #118,668</span><b>16/16</b><span class="fee">fee equal</span></div>
+    </article>
+  </div>
+  <p class="why">Signed once: the bytes ran on the V3 fork first, then went to the live testnet. Fees drifted because each landed 3 to 9 blocks after the predicted height and V3's fee multiplier moves every block; <code>rehearse</code> reports it (exit 7) and never adjusts a prediction afterwards. Replayed on its parent block, each matches the chain field for field.</p>
+  <aside class="speaker-notes">These are real V3 testnet transactions; the ids link to node-console. Same tx hash, same success, same events in the same order, and the recipient got exactly what was predicted. The fee was off by a few thousand planck because each one landed a few blocks later than predicted. Forklift reports that instead of hiding it, and replaying each on its parent block reproduces the chain exactly.</aside>
+</section>
+
+<!-- 5 · FIDELITY -->
+<section class="slide s5" data-title="Fidelity">
+  <div class="head">
+    <div class="eyebrow">Is the fork faithful? Checked against the chain, not assumed</div>
+    <h2>The fork answers to the chain.</h2>
+  </div>
+  <div class="v3 plate">
+    <span class="tag-lifted">V3 testnet · verify at #118,061 · exit 0</span>
+    <div class="row">
+      <div class="cell"><span class="val">200/200</span><p>sampled keys drawn on the live chain, identical on the fork (seed <code>3145772797887710471</code>)</p></div>
+      <div class="cell"><span class="val">5,508=5,508</span><p>key set on the fork equals the lift</p></div>
+      <div class="cell"><span class="val">5,497+11</span><p>lifted values identical, plus 11 child-trie roots the fork reads as null: counted and listed, not hidden</p></div>
+    </div>
+    <div class="rp"><span class="lab">Replays on parent blocks</span><span class="val">10/10 · 14/14 · 16/16</span><span class="lab">fees equal to the planck</span></div>
+    <p class="note">The lift was run twice from fresh processes: same <code>manifest_root</code> <code>0xfe4962de…48c430a4</code>. A sample is not a proof of every key, so V3 verify also compares every lifted value.</p>
+  </div>
+  <div class="ctl racked">
+    <span class="tag-racked">Control · fork-1002-fast · not V3</span>
+    <div class="blk" style="border-top:0;margin-top:10px;padding-top:6px"><span class="lab">Mainnet state, spec 1002, pin #2,725,953</span>
+      <span class="val">16,324=16,324</span><p>keys lifted = keys in an independent full listing of the same block, outside the MMR range</p></div>
+    <div class="blk"><span class="val">0 missing · 0 extra</span><p>full listing: 5,468,224 keys, 5,470 pages, 645.6 s</p></div>
+    <div class="blk"><span class="val">exit 0</span><p><code>verify --sample 200</code>: 120 identical, 80 dev-kept (consensus keys the fork needs to author)</p></div>
+  </div>
+  <aside class="speaker-notes">A fork is only useful if it is faithful. On V3, two hundred keys drawn on the live chain are identical on the fork, the key set matches, and every lifted value is compared. The eleven child-trie roots Chopsticks reads as null are counted, not hidden. On the mainnet control, the lift equals an independent full listing: nothing missing, nothing extra.</aside>
+</section>
+
+<!-- 6 · ARCHITECTURE (redrawn: rack → tool → bench) -->
+<section class="slide s6" data-title="Architecture">
+  <div class="head">
+    <div class="eyebrow">Architecture · <code>forklift/*.py</code> at build <code>44b7edc</code></div>
+    <h2>Rack → forklift → bench</h2>
+  </div>
+  <svg class="diagram" viewBox="0 0 1680 700" font-family="Atkinson Hyperlegible, Arial, sans-serif" role="img" aria-label="Architecture: the V3 testnet and Portaldot mainnet on the left are read at a pinned block; forklift's modules in the middle lift, fork, verify, rehearse and replay; the forks on the right are local and writable; the only write to a real chain is rehearse --send to V3">
+    <defs>
+      <marker id="a6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#1E1F1C"/></marker>
+      <marker id="a6b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#1846D8"/></marker>
+      <pattern id="hz6" width="20" height="20" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="10" height="20" fill="#1E1F1C"/></pattern>
+    </defs>
+    <!-- rack column -->
+    <text x="0" y="22" font-size="17" font-weight="700" letter-spacing="2" fill="#4E4636">RACK · READ AT A PINNED BLOCK HASH</text>
+    <rect x="2" y="40" width="396" height="220" rx="8" fill="none" stroke="#5C6166" stroke-width="4"/>
+    <text x="26" y="84" font-family="Bungee" font-size="25" fill="#1E1F1C">V3 TESTNET</text>
+    <text x="26" y="118" font-family="Martian Mono" font-weight="700" font-size="16" fill="#1E1F1C">portaldot-v3 / 3002 · tPOT</text>
+    <text x="26" y="146" font-family="Martian Mono" font-weight="700" font-size="14" fill="#1E1F1C">test-node-v3.portaldot.dev</text>
+    <text x="26" y="180" font-size="18" fill="#1E1F1C">pinned: genesis 0xd4f9…83bd,</text>
+    <text x="26" y="204" font-size="18" fill="#1E1F1C">runtime :code 0xedc0…c7c2</text>
+    <text x="26" y="236" font-size="18" fill="#1E1F1C">(chains.py refuses a new :code)</text>
+    <rect x="2" y="330" width="396" height="190" rx="8" fill="none" stroke="#5C6166" stroke-width="4"/>
+    <text x="26" y="374" font-family="Bungee" font-size="25" fill="#1E1F1C">MAINNET</text>
+    <text x="26" y="408" font-family="Martian Mono" font-weight="700" font-size="16" fill="#1E1F1C">spec 1002 · read-only</text>
+    <text x="26" y="436" font-family="Martian Mono" font-weight="700" font-size="14" fill="#1E1F1C">mainnet.portaldot.io</text>
+    <text x="26" y="472" font-size="18" fill="#1E1F1C">never written: the write-guard</text>
+    <text x="26" y="496" font-size="18" fill="#1E1F1C">refuses mainnet's genesis</text>
+
+    <!-- tool column -->
+    <text x="490" y="22" font-size="17" font-weight="700" letter-spacing="2" fill="#4E4636">FORKLIFT · PYTHON 3.11 CLI</text>
+    <rect x="490" y="40" width="660" height="480" rx="8" fill="#E9E6DF"/>
+    <g font-size="17" fill="#1E1F1C">
+      <rect x="512" y="60" width="300" height="84" rx="4" fill="#1E1F1C"/>
+      <text x="530" y="94" font-family="Martian Mono" font-weight="700" font-size="17" fill="#E9E6DF">rpc.py</text>
+      <text x="530" y="124" fill="#E9E6DF">JSON-RPC + the write-guard</text>
+      <rect x="828" y="60" width="300" height="84" rx="4" fill="none" stroke="#1E1F1C" stroke-width="2.5"/>
+      <text x="846" y="94" font-family="Martian Mono" font-weight="700" font-size="17">lift.py · manifest.py</text>
+      <text x="846" y="124">pinned paging → manifest_root</text>
+      <rect x="512" y="160" width="300" height="84" rx="4" fill="none" stroke="#1E1F1C" stroke-width="2.5"/>
+      <text x="530" y="194" font-family="Martian Mono" font-weight="700" font-size="17">chopsticks.py</text>
+      <text x="530" y="224">V3 fork at the pin</text>
+      <rect x="828" y="160" width="300" height="84" rx="4" fill="none" stroke="#1E1F1C" stroke-width="2.5"/>
+      <text x="846" y="194" font-family="Martian Mono" font-weight="700" font-size="17">splice.py · node.py</text>
+      <text x="846" y="224">lift → portaldot_dev genesis</text>
+      <rect x="512" y="260" width="300" height="84" rx="4" fill="none" stroke="#1E1F1C" stroke-width="2.5"/>
+      <text x="530" y="294" font-family="Martian Mono" font-weight="700" font-size="17">verify.py</text>
+      <text x="530" y="324">keys drawn on the chain</text>
+      <rect x="828" y="260" width="300" height="84" rx="4" fill="none" stroke="#1E1F1C" stroke-width="2.5"/>
+      <text x="846" y="294" font-family="Martian Mono" font-weight="700" font-size="15" textLength="262" lengthAdjust="spacingAndGlyphs">tx.py · act.py · receipt.py</text>
+      <text x="846" y="324">fund · as · Receipt (1002)</text>
+      <rect x="512" y="360" width="300" height="84" rx="4" fill="none" stroke="#1846D8" stroke-width="3"/>
+      <text x="530" y="394" font-family="Martian Mono" font-weight="700" font-size="17" fill="#1846D8">rehearse.py</text>
+      <text x="530" y="424">sign once · predict · send</text>
+      <rect x="828" y="360" width="300" height="84" rx="4" fill="none" stroke="#1846D8" stroke-width="3"/>
+      <text x="846" y="394" font-family="Martian Mono" font-weight="700" font-size="17" fill="#1846D8">replay.py</text>
+      <text x="846" y="424">same bytes, parent block</text>
+      <text x="828" y="478" font-size="18">257 offline + 6 live tests</text>
+      <text x="828" y="502" font-size="18">exit codes 0 / 2 / 4 / 5 / 7</text>
+    </g>
+
+    <!-- bench column: hazard edge where writable begins -->
+    <text x="1250" y="22" font-size="17" font-weight="700" letter-spacing="2" fill="#4E4636">BENCH · LOCAL, WRITABLE, LOOPBACK</text>
+    <rect x="1250" y="40" width="18" height="480" fill="url(#hz6)"/>
+    <rect x="1280" y="40" width="400" height="220" rx="8" fill="#1846D8"/>
+    <text x="1304" y="84" font-family="Bungee" font-size="25" fill="#E9E6DF">FORK-V3</text>
+    <text x="1304" y="120" font-size="18" fill="#E9E6DF">Chopsticks 1.5.2, V3's own</text>
+    <text x="1304" y="144" font-size="18" fill="#E9E6DF">runtime wasm, starts at the pin</text>
+    <text x="1304" y="180" font-size="18" fill="#E9E6DF">allow-unresolved-imports (V3's</text>
+    <text x="1304" y="204" font-size="18" fill="#E9E6DF">Statement pallet import)</text>
+    <rect x="1280" y="330" width="400" height="190" rx="8" fill="#E9E6DF"/>
+    <text x="1304" y="374" font-family="Bungee" font-size="23" fill="#1E1F1C">FORK-1002-FAST</text>
+    <text x="1304" y="410" font-size="18" fill="#1E1F1C">portaldot_dev 2.0.0, dev runtime,</text>
+    <text x="1304" y="434" font-size="18" fill="#1E1F1C">0 peers, boot nodes empty</text>
+    <text x="1304" y="470" font-size="18" font-weight="700" fill="#1E1F1C">a control: not V3</text>
+
+    <!-- flows -->
+    <path d="M398 120 H 488" stroke="#1E1F1C" stroke-width="3" fill="none" marker-end="url(#a6)"/>
+    <path d="M398 410 H 488" stroke="#1E1F1C" stroke-width="3" fill="none" marker-end="url(#a6)"/>
+    <path d="M1150 200 H 1248" stroke="#1846D8" stroke-width="4" fill="none" marker-end="url(#a6b)"/>
+    <path d="M1150 400 H 1248" stroke="#1E1F1C" stroke-width="3" fill="none" marker-end="url(#a6)"/>
+    <text x="408" y="108" font-size="16" fill="#1E1F1C">read</text>
+    <text x="408" y="398" font-size="16" fill="#1E1F1C">read</text>
+    <!-- the one write path to a real chain -->
+    <path d="M662 444 V 572 H 466 V 236 H 402" stroke="#1E1F1C" stroke-width="4" stroke-dasharray="12 8" fill="none" marker-end="url(#a6)"/>
+    <text x="700" y="566" font-family="Martian Mono" font-weight="700" font-size="18" fill="#1E1F1C">rehearse --send: author_submitExtrinsic only, V3 only</text>
+    <text x="700" y="596" font-size="19" font-weight="700" fill="#1E1F1C">The one write path to a real chain. Everything else writes only to a loopback fork.</text>
+    <text x="0" y="672" font-size="19" fill="#1E1F1C">Every run writes <tspan font-family="Martian Mono" font-weight="700" font-size="17">evidence/*.json</tspan>; <tspan font-family="Martian Mono" font-weight="700" font-size="17">scripts/proof.py</tspan> generates <tspan font-family="Martian Mono" font-weight="700" font-size="17">docs/PROOF.md</tspan> from it.</text>
+  </svg>
+  <aside class="speaker-notes">Left is the rack: the live chains, read at a pinned block hash. The middle is Forklift's Python modules. Right is the bench: local forks on loopback. The V3 fork runs on Chopsticks with V3's own runtime; the mainnet fork runs on the official portaldot_dev node. The one write to a real chain is rehearse --send, and only to V3.</aside>
+</section>
+
+<!-- 7 · WHY IT'S NEW -->
+<section class="slide s7" data-title="Why it's new">
+  <div class="head">
+    <div class="eyebrow">Why it's new</div>
+    <h2>Predict. Send. Compare.</h2>
+  </div>
+  <div class="rows">
+    <div class="r"><h3>One signature, both sides</h3><p>The extrinsic is signed once, so the tx hash on the fork is the tx hash on V3. The prediction and the chain's record are about the same bytes.</p></div>
+    <div class="r"><h3>Wrong is an exit code</h3><p>When the chain differs, <code>rehearse</code> exits 7 and lists each field. A predicted failure exits 5 and sends nothing (an unfunded signer: the fork's pool rejected it).</p></div>
+    <div class="r"><h3>Fidelity you can re-run</h3><p><code>forklift replay &lt;block&gt;-&lt;index&gt;</code> re-applies any V3 extrinsic on a fork of its parent block and compares it with the chain.</p></div>
+    <div class="r"><h3>Pinned by what the chain serves</h3><p>Genesis plus runtime <code>:code</code> hash, not a URL. Before predicting, the fork is caught up to the chain's best block and the fee multiplier re-synced.</p></div>
+  </div>
+  <div class="tbl plate">
+    <table>
+      <tr><th></th><th>V3's real state</th><th>Outcome known before sending</th><th>Checked against the chain</th></tr>
+      <tr><td>A dev chain</td><td>no: Alice only</td><td>yes, on empty state</td><td>no</td></tr>
+      <tr><td>Send to V3 directly</td><td>yes</td><td>no: the tx is final</td><td>after the fact</td></tr>
+      <tr class="us"><td>Forklift</td><td>#118,061, 5,508 keys</td><td>predicted, then sent: same tx hash</td><td>verify exit 0; replays exact</td></tr>
+    </table>
+  </div>
+  <aside class="speaker-notes">What is new is the loop: predict on a fork of V3's real state, send the same bytes, and compare. When the chain disagrees, the tool says so with an exit code instead of adjusting the prediction. And replay lets anyone check the fork's fidelity on any V3 extrinsic.</aside>
+</section>
+
+<!-- 8 · ECOSYSTEM FIT -->
+<section class="slide s8" data-title="Ecosystem fit">
+  <div class="head">
+    <div class="eyebrow">Ecosystem fit · Node Operations &amp; Tooling</div>
+    <h2>Built on Portaldot's own nodes.</h2>
+  </div>
+  <div class="cols">
+    <div class="c plate">
+      <span class="lab">Uses</span>
+      <h3>The node, not a mock</h3>
+      <ul>
+        <li>The historical-state RPC at a block hash: <code>state_getKeysPaged</code>, <code>state_queryStorageAt</code>.</li>
+        <li>The official <code>portaldot_dev</code> 2.0.0 node, booted with zero peers.</li>
+        <li>V3's own runtime wasm (spec 3002) on the fork.</li>
+        <li>Both chains: the V3 testnet and mainnet state (spec 1002).</li>
+      </ul>
+    </div>
+    <div class="c plate">
+      <span class="lab">Gives back · docs/DX-REPORT.md</span>
+      <div class="big">12</div>
+      <h3>Friction points, measured</h3>
+      <ul>
+        <li>The macOS <code>portaldot_dev</code> binary is x86_64 only (runs under Rosetta).</li>
+        <li><code>--ws-port</code> is the WebSocket port, <code>--rpc-port</code> the HTTP port.</li>
+        <li>Chopsticks 1.5.2 cannot fork V3 with default settings.</li>
+        <li>V3's fee multiplier moves every block.</li>
+      </ul>
+    </div>
+    <div class="c plate">
+      <span class="lab">Open source</span>
+      <h3>MIT, evidence-first</h3>
+      <ul>
+        <li>257 offline + 6 live tests.</li>
+        <li>83 commits, dated <span class="nw">2026-10-14</span> to <span class="nw">2026-10-20</span>.</li>
+        <li><code>docs/PROOF.md</code> is generated from <code>evidence/*.json</code>; every row names its evidence file.</li>
+        <li>Documented exit codes and <code>--json</code> output, so a CI job can gate on a fork.</li>
+      </ul>
+    </div>
+  </div>
+  <aside class="speaker-notes">Forklift is node tooling in the literal sense: it reads the node's historical-state RPC, boots the official node binary, and runs V3's own runtime. On the way it measured twelve friction points that every Portaldot builder will hit, and wrote down how to see each one again. Everything is MIT and every number is regenerated from evidence files.</aside>
+</section>
+
+<!-- 9 · USERS AND MODEL -->
+<section class="slide s9" data-title="Users and model">
+  <div class="head">
+    <div class="eyebrow">Business potential</div>
+    <h2>Who lifts, and how it pays.</h2>
+  </div>
+  <div class="users">
+    <div class="u plate"><h3>Builders</h3><p>Test one staking call or one contract against the state users are actually on, before spending tPOT on a transaction that is final.</p></div>
+    <div class="u plate"><h3>Node operators</h3><p>Rehearse an operational transaction on a fork of the chain they run, and see the events, fee and balance deltas before sending.</p></div>
+    <div class="u plate"><h3>Wallets &amp; exchanges</h3><p>Predict the outcome of a transaction on a pinned copy of the chain inside CI, and fail the job when the chain would differ.</p></div>
+  </div>
+  <div class="path">
+    <div class="p"><span class="lab">Today · built</span><p>A free MIT command-line tool, installed from the repository.</p></div>
+    <div class="p"><span class="lab">Next · roadmap</span><p>A PyPI package, a CI action and a hosted fork.</p></div>
+    <div class="p"><span class="lab">After the event · plan</span><p>Paid hosted per-team forks and CI fork-as-a-service for wallets and exchanges; a shared fork, re-pinned at each runtime upgrade, offered to the Portaldot Foundation to host.</p></div>
+  </div>
+  <p class="honest">Honest limit: no revenue and no external users yet. The business case is a funded public good plus CI minutes for integrators.</p>
+  <aside class="speaker-notes">Three users: builders who need real state, node operators who want to rehearse, and integrators who want a fork in CI. Today it is a free MIT tool. Next is a PyPI package, a CI action and a hosted fork. The paid tier is hosted forks and CI fork-as-a-service. No revenue yet, and we say so.</aside>
+</section>
+
+<!-- 10 · STATUS AND LINKS -->
+<section class="slide s10" data-title="Status and links">
+  <div class="head">
+    <div class="eyebrow">Status at the check-in · build <code>44b7edc</code></div>
+    <h2>What is done, what is left.</h2>
+  </div>
+  <div class="done">
+    <h3>Done and measured</h3>
+    <ul>
+      <li>V3 profile pinned; lift, fork and verify at <code>#118,061</code>, exit 0.</li>
+      <li><code>rehearse --send</code>: 3 V3 transactions, all finalized.</li>
+      <li><code>replay</code>: all 3 equal to the chain, fees to the planck.</li>
+      <li>Mainnet control: lift with 0 missing / 0 extra, fork, verify, fund, act as real accounts, Fork Receipt.</li>
+      <li>257 offline + 6 live tests · 83 commits.</li>
+    </ul>
+  </div>
+  <div class="left">
+    <h3>Before the final</h3>
+    <ul>
+      <li>The Fork Receipt on V3, as an ink! 5 / Revive contract.</li>
+      <li><code>--runtime exact</code>, a runtime-difference report, replay of a mainnet extrinsic.</li>
+      <li>A mainnet (1002) → V3 report: which keys carry over.</li>
+      <li>Benchmarks with p50/p95; a hosted fork, a PyPI package, a CI action.</li>
+    </ul>
+  </div>
+  <div class="links plate">
+    <div class="qr" aria-label="QR code: the GitHub repository"><svg viewBox="0 0 41 41" class="segno"><path fill="#e9e6df" d="M0 0h41v41h-41z"/><path class="qrline" stroke="#1e1f1c" d="M2 2.5h7m1 0h1m1 0h2m1 0h1m1 0h2m4 0h1m1 0h1m4 0h1m1 0h7m-37 1h1m5 0h1m1 0h1m3 0h2m3 0h2m3 0h5m3 0h1m5 0h1m-37 1h1m1 0h3m1 0h1m4 0h2m6 0h1m2 0h1m2 0h4m1 0h1m1 0h3m1 0h1m-37 1h1m1 0h3m1 0h1m1 0h1m2 0h2m2 0h3m2 0h1m1 0h2m1 0h3m2 0h1m1 0h3m1 0h1m-37 1h1m1 0h3m1 0h1m2 0h2m1 0h1m6 0h1m4 0h5m1 0h1m1 0h3m1 0h1m-37 1h1m5 0h1m2 0h2m4 0h5m1 0h2m1 0h1m3 0h1m1 0h1m5 0h1m-37 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-29 1h2m1 0h1m2 0h1m1 0h1m2 0h2m1 0h3m2 0h2m-29 1h1m1 0h2m1 0h3m1 0h2m2 0h1m1 0h1m2 0h2m1 0h1m2 0h1m1 0h2m2 0h1m2 0h1m1 0h2m-37 1h1m2 0h1m4 0h1m1 0h2m1 0h3m2 0h1m1 0h1m1 0h2m1 0h1m2 0h2m3 0h1m1 0h1m-33 1h5m1 0h1m6 0h2m1 0h3m1 0h1m1 0h1m2 0h1m4 0h1m-32 1h2m3 0h3m3 0h2m1 0h1m1 0h1m1 0h1m1 0h1m1 0h4m1 0h3m1 0h2m-34 1h2m3 0h1m8 0h1m1 0h1m1 0h2m1 0h1m2 0h2m2 0h2m1 0h1m1 0h3m-36 1h4m2 0h2m1 0h2m1 0h5m1 0h1m4 0h4m1 0h5m1 0h2m-36 1h4m1 0h1m2 0h2m2 0h2m1 0h1m2 0h2m3 0h3m1 0h1m3 0h1m1 0h2m-35 1h2m1 0h1m2 0h1m2 0h1m4 0h1m3 0h6m5 0h3m2 0h1m-33 1h2m1 0h1m2 0h3m3 0h1m1 0h1m1 0h1m3 0h1m1 0h1m3 0h1m1 0h1m1 0h4m-37 1h1m1 0h4m2 0h2m3 0h1m3 0h3m1 0h4m2 0h1m1 0h3m1 0h4m-37 1h1m2 0h1m2 0h3m2 0h1m8 0h1m1 0h1m3 0h2m3 0h1m1 0h1m1 0h2m-37 1h2m1 0h3m1 0h1m1 0h1m3 0h5m2 0h1m1 0h3m2 0h2m2 0h1m1 0h1m1 0h1m-35 1h2m3 0h1m2 0h1m1 0h2m1 0h6m1 0h1m6 0h2m1 0h2m3 0h1m-36 1h1m9 0h4m1 0h6m1 0h1m1 0h1m2 0h2m3 0h1m-32 1h1m3 0h1m1 0h1m1 0h1m3 0h1m1 0h1m1 0h1m1 0h1m2 0h2m1 0h1m1 0h2m1 0h1m-32 1h1m1 0h3m5 0h2m5 0h1m1 0h1m2 0h1m2 0h2m3 0h1m1 0h5m-35 1h1m2 0h3m2 0h4m2 0h1m4 0h1m1 0h5m2 0h1m1 0h1m1 0h1m1 0h1m-36 1h1m1 0h2m2 0h1m1 0h1m2 0h3m2 0h1m3 0h1m2 0h5m1 0h1m1 0h1m1 0h3m-36 1h1m3 0h2m2 0h3m6 0h1m2 0h1m2 0h1m1 0h1m2 0h1m1 0h2m1 0h2m-36 1h1m2 0h2m2 0h3m3 0h3m2 0h4m4 0h3m1 0h3m2 0h2m-32 1h3m1 0h3m1 0h2m3 0h2m1 0h2m1 0h2m1 0h6m1 0h1m-27 1h1m3 0h1m2 0h2m3 0h6m1 0h2m3 0h1m1 0h1m1 0h1m-37 1h7m1 0h2m1 0h2m1 0h2m2 0h1m1 0h1m1 0h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h3m-37 1h1m5 0h1m1 0h2m1 0h2m3 0h4m1 0h1m1 0h2m1 0h3m3 0h1m-33 1h1m1 0h3m1 0h1m3 0h2m1 0h1m2 0h1m3 0h1m5 0h1m1 0h6m-34 1h1m1 0h3m1 0h1m1 0h3m2 0h1m1 0h3m3 0h1m1 0h2m1 0h2m1 0h2m1 0h1m1 0h1m1 0h1m-37 1h1m1 0h3m1 0h1m1 0h1m1 0h4m1 0h1m2 0h1m2 0h3m4 0h3m1 0h3m-35 1h1m5 0h1m2 0h1m1 0h1m3 0h1m2 0h2m4 0h3m2 0h1m1 0h4m-35 1h7m1 0h1m2 0h1m4 0h2m6 0h4m4 0h5"/></svg></div>
+    <ul>
+      <li><b>Repository</b><a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu"><code>github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu</code></a></li>
+      <li><b>Proof tables</b><a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/PROOF.md"><code>docs/PROOF.md</code></a></li>
+      <li><b>One V3 tx on node-console</b><a href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x0ae8b2b94d34dc27fd931b8095654675510dc53533582ad0cad19712591db8a9"><code>118621-1</code></a></li>
+    </ul>
+  </div>
+  <p class="ai"><b>AI assistance:</b> Claude Code drafted most of the code, tests, README and this deck under the author's direction. The architecture, protocol choices and on-chain design were decided by the author, who can explain every flow. Every figure here comes from <code>docs/PROOF.md</code>, <code>evidence/</code> or <code>README.md</code> at build <code>44b7edc</code>.</p>
+  <aside class="speaker-notes">Everything on these slides has a command and an evidence file behind it. Before the final: the Fork Receipt on V3, the exact-runtime mode, a mainnet-to-V3 report, and real benchmarks. The repository, the proof tables and a node-console link are here.</aside>
+</section>
+
+</div>
+</div>
+<script>
+(() => {
+  const slides = [...document.querySelectorAll('.slide')];
+  const N = slides.length;
+  const stage = document.querySelector('.stage');
+  const pad = n => String(n).padStart(2, '0');
+  slides.forEach((s, i) => {
+    const fl = document.createElement('div');
+    fl.className = 'floor';
+    s.appendChild(fl);
+    const tb = document.createElement('footer');
+    tb.className = 'tb';
+    tb.innerHTML = '<span class="name">Forklift</span><span>' + s.dataset.title + '</span>' +
+      '<span>v0.1.0 · facts at build <code>44b7edc</code></span>' +
+      '<span>Portaldot Hacker House 2026</span>' +
+      '<span class="no">' + pad(i + 1) + ' / ' + pad(N) + '</span>';
+    s.appendChild(tb);
+  });
+  let cur = 0, overview = false;
+  const fit = () => {
+    const k = Math.min(innerWidth / 1920, innerHeight / 1080);
+    stage.style.transform = 'translate(-50%, -50%) scale(' + k + ')';
+  };
+  const show = i => {
+    cur = Math.max(0, Math.min(N - 1, i));
+    slides.forEach((s, j) => s.classList.toggle('active', j === cur));
+    if (location.hash !== '#' + (cur + 1)) history.replaceState(null, '', '#' + (cur + 1));
+  };
+  const setOverview = on => {
+    overview = on;
+    document.body.classList.toggle('overview', on);
+    slides.forEach((s, j) => {
+      if (on) {
+        const c = j % 4, r = Math.floor(j / 4);
+        s.style.transform = 'translate(' + (c * 480 + 4) + 'px,' + (r * 270 + 135) + 'px) scale(' + (472 / 1920) + ')';
+      } else s.style.transform = '';
+    });
+    fit();
+  };
+  const fromHash = () => { const h = parseInt(location.hash.slice(1), 10); return Number.isFinite(h) ? h - 1 : 0; };
+  addEventListener('resize', fit);
+  addEventListener('hashchange', () => show(fromHash()));
+  addEventListener('keydown', e => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const k = e.key;
+    if (k === 'Escape') { setOverview(!overview); return; }
+    if (overview) return;
+    if (k === 'ArrowRight' || k === 'PageDown' || k === ' ') { show(cur + 1); e.preventDefault(); }
+    else if (k === 'ArrowLeft' || k === 'PageUp') { show(cur - 1); e.preventDefault(); }
+    else if (k === 'Home') show(0);
+    else if (k === 'End') show(N - 1);
+    else if (/^[0-9]$/.test(k)) show(k === '0' ? 9 : Number(k) - 1);
+    else if (k === 'p' || k === 'P') document.body.classList.toggle('presenter');
+    else if (k === 'f' || k === 'F') {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+    }
+  });
+  document.addEventListener('click', e => {
+    if (e.target.closest('a')) return;
+    if (overview) {
+      const s = e.target.closest('.slide');
+      if (s) { setOverview(false); show(slides.indexOf(s)); }
+      return;
+    }
+    show(cur + (e.clientX > innerWidth / 2 ? 1 : -1));
+  });
+  let idle;
+  addEventListener('mousemove', () => {
+    document.body.classList.remove('idle');
+    clearTimeout(idle);
+    idle = setTimeout(() => document.body.classList.add('idle'), 2500);
+  });
+  fit();
+  show(fromHash());
+})();
+</script>
+</body>
+</html>
