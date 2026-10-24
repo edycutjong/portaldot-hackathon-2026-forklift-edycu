@@ -7,6 +7,7 @@
 ![status](https://img.shields.io/badge/status-check--in_slice-orange)
 ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![tests](https://img.shields.io/badge/tests-257_offline_%2B_6_live-brightgreen)
+[![CI](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/actions/workflows/ci.yml)
 ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
 Portaldot Hacker House 2026 · Track: Node Operations & Tooling
@@ -277,6 +278,14 @@ Per command, in [`docs/EXIT-CODES.md`](docs/EXIT-CODES.md).
 | Tests | 257 offline passed · 6 live tests (deselected offline; run with `pytest -m live`) | `pytest -q` |
 
 One benchmark run of the lift from a fresh process (a stub: one run per file; p50/p95 over several runs is planned): #2,725,953 in 19.85 s (keys 7.41 s, values 12.44 s), same `manifest_root` (`evidence/bench-lift-2026-10-14.json`).
+
+## Development
+
+```bash
+pip install -e '.[dev]' ruff
+ruff check .
+pytest -q        # offline; CI runs the same, see [CONTRIBUTING.md](CONTRIBUTING.md)
+```
 
 ## Roadmap
 
