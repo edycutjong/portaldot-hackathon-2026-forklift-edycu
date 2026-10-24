@@ -11,3 +11,12 @@ coverage/
 .pytest_cache/
 *.egg-info/
 build/
+
+# hardening
+*.seed
+*.key
+*.pem
+*.log
+.ruff_cache/
+.coverage
+htmlcov/
