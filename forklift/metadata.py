@@ -97,11 +97,15 @@ def _storage_entry(r: _Reader, pallet: str) -> StorageItem:
         item = StorageItem(pallet, name, "Plain")
     elif kind == 1:  # Map { hasher, key, value, unused }
         h = r.hasher()
-        r.str_(); r.str_(); r.u8()
+        r.str_()
+        r.str_()
+        r.u8()
         item = StorageItem(pallet, name, "Map", [h])
     elif kind == 2:  # DoubleMap { hasher, key1, key2, value, key2_hasher }
         h1 = r.hasher()
-        r.str_(); r.str_(); r.str_()
+        r.str_()
+        r.str_()
+        r.str_()
         item = StorageItem(pallet, name, "DoubleMap", [h1, r.hasher()])
     elif kind == 3:  # NMap { keys, hashers, value }
         r.vec(r.str_)
