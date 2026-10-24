@@ -115,6 +115,13 @@ nobody mistakes it for a testnet or for V3.
 
 ## Technical Architecture
 
+![Forklift architecture: V3 is lifted at a pinned block, forked with Chopsticks and verified key by key; a transaction is predicted on the fork, sent to V3 with the same bytes and compared](docs/architecture.png)
+
+Forklift only reads the live chains on the left, except `rehearse --send`, which submits to V3; every other write goes to a local fork on the right.
+
+<details>
+<summary>Diagram as text (Mermaid)</summary>
+
 ```mermaid
 flowchart LR
     M[("Portaldot mainnet\nspec 1002, read-only")]
@@ -137,6 +144,8 @@ flowchart LR
     REC --> F
     tool -.-> EV
 ```
+
+</details>
 
 The full module-level diagram, the splice rules and the invariants the code enforces are in
 [`ARCHITECTURE.md`](ARCHITECTURE.md).
