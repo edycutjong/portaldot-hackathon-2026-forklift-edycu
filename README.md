@@ -249,7 +249,7 @@ Per command, in [`docs/EXIT-CODES.md`](docs/EXIT-CODES.md).
 
 ## Demo
 
-- **Video:** coming at check-in (≤ 3 minutes: lift → boot → verify → fund / as → Receipt attest).
+- **Video:** demo: https://youtu.be/iVvEXQvfTYY
 - **Pitch deck:** [`docs/pitch-deck.pdf`](docs/pitch-deck.pdf) (10 slides, check-in; source [`deck/index.html`](deck/index.html)). Its figures are the rows of [`docs/PROOF.md`](docs/PROOF.md).
 - **Live demo:** none; Forklift is a CLI and its fork is local. The Installation steps reproduce the lift, fork, verify, fund / as and Receipt rows (extrinsic ids, hashes and timings differ per run); completeness, re-read and bench are `scripts/completeness.py`, `scripts/refetch.py` and `scripts/bench.py`.
 - **Test accounts / test data:** none to create. The whale `5DvRSg…Mndf` (200,000,000 POT at the pin; 1 POT = 10^14 planck, a convention because spec 1002's `system_properties` is empty) and the nominator
