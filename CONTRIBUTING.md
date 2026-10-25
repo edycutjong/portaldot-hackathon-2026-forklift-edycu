@@ -19,3 +19,14 @@ pytest -q          # offline tests; `pytest -m live` needs network access and, f
 
 CI runs the same two commands and never needs a seed or a live write. Never commit signer files, mnemonics,
 generated chain specs or raw lift dumps. Keep commits small.
+
+## Releases
+
+Versions are cut automatically from commit messages (Angular convention) by `.github/workflows/release.yml` on every push to `main`:
+
+| Prefix | Bump |
+|---|---|
+| `fix:` · `perf:` | patch |
+| `feat:` | minor |
+| `feat!:` or a `BREAKING CHANGE:` footer | major |
+| `docs:` `chore:` `test:` `refactor:` `style:` `ci:` | none |

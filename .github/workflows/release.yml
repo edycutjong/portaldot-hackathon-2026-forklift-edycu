@@ -1,0 +1,66 @@
+name: release
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write        # required to push the tag and create the Release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0        # full history — we read commits since the last tag
+
+      - name: Compute next version from Angular commits
+        id: ver
+        run: |
+          set -euo pipefail
+          LAST=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LAST" ]; then
+            RANGE=""; CUR="0.0.0"
+          else
+            RANGE="${LAST}..HEAD"; CUR="${LAST#v}"
+          fi
+          LOG=$(git log --format=%B $RANGE)
+          if [ -z "$(echo "$LOG" | tr -d '[:space:]')" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+
+          BUMP=none
+          echo "$LOG" | grep -qE '^(feat|fix|perf)(\(.+\))?!:|BREAKING CHANGE:' && BUMP=major
+          [ "$BUMP" = none ] && echo "$LOG" | grep -qE '^feat(\(.+\))?:'        && BUMP=minor
+          [ "$BUMP" = none ] && echo "$LOG" | grep -qE '^(fix|perf)(\(.+\))?:'  && BUMP=patch
+          if [ "$BUMP" = none ]; then
+            echo "No releasable commits since ${LAST:-the beginning}."
+            echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+
+          IFS=. read -r MA MI PA <<< "$CUR"
+          case "$BUMP" in
+            major) MA=$((MA+1)); MI=0; PA=0 ;;
+            minor) MI=$((MI+1)); PA=0 ;;
+            patch) PA=$((PA+1)) ;;
+          esac
+          NEXT="v${MA}.${MI}.${PA}"
+          echo "Bump: $BUMP  ${LAST:-none} -> $NEXT"
+          echo "next=$NEXT"  >> "$GITHUB_OUTPUT"
+          echo "bump=$BUMP"  >> "$GITHUB_OUTPUT"
+          echo "skip=false"  >> "$GITHUB_OUTPUT"
+
+      - name: Tag and publish the release
+        if: steps.ver.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.ver.outputs.next }}" -m "${{ steps.ver.outputs.next }}"
+          git push origin "${{ steps.ver.outputs.next }}"
+          gh release create "${{ steps.ver.outputs.next }}" \
+            --generate-notes --title "${{ steps.ver.outputs.next }}"
