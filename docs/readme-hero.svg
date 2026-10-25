@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320" role="img" aria-label="Forklift — lifts the Portaldot V3 testnet onto your bench, writable: Two fork tines slide under block #118,061, lift it off the V3 rack, and it lands on your bench, writable.">
+<!-- STORYBOARD (dur 8s — must equal this file's single master dur)
+  0-10%   steady state: yellow plate; FORKLIFT wordmark, tagline, metric, stack; the V3 rack holding block #118,061 (steel outline), MMR crates below, the empty hazard-edged bench — the poster
+  10-22%  trigger:      the tines slide into the pallet's fork pockets                                                        data-story="beat-2"
+  22-55%  mechanism:    Two fork tines slide under block #118,061, lift it off the V3 rack, and it lands on your bench, writable.   (the unit rides the lift arc from rack to bench; a steel ghost stays on the rack — V3 keeps its copy)   data-story="beat-3"
+  55-90%  resolution:   landed with a settle; the load fills lift-blue, the blue floor light pools, the plate reads "5,508 KEYS · WRITABLE"   data-story="beat-4"
+  90-100% breathe + seam fade: the unit fades off the bench and reappears on the rack (hidden jump), back to the poster
+-->
+<style>
+  .settle { transform-box: fill-box; transform-origin: center bottom; animation: settle 8s cubic-bezier(.2,1.4,.4,1) infinite; }
+  @keyframes settle { 0%, 49% { transform: translateY(0) } 51.5% { transform: translateY(5px) } 54%, 100% { transform: translateY(0) } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+</style>
+<defs>
+  <pattern id="seams" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0 V40 M0 40 H40" stroke="#1E1F1C" stroke-opacity=".05" stroke-width="1"/></pattern>
+  <pattern id="hz" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="16" fill="#1E1F1C"/></pattern>
+  <path id="arc" d="M690 148 C 790 30, 1010 40, 1124 224"/>
+</defs>
+<rect x="0" y="0" width="1280" height="320" rx="24" fill="#F5B300"/>
+<rect x="0" y="0" width="1280" height="320" rx="24" fill="url(#seams)"/>
+<!-- ===== brand (left) ===== -->
+<g transform="translate(40 22) scale(0.092)"><path d="M68 76 a10 10 0 0 1 10 -10 h36 a10 10 0 0 1 10 10 V446 H68 Z" fill="#1E1F1C"/><path d="M156 296 H428 V378 H156 Z M190 316 V358 H276 V316 Z M308 316 V358 H394 V316 Z" fill="#1E1F1C" fill-rule="evenodd"/><path d="M124 328 H448 l18 7 v8 H124 Z" fill="#1E1F1C"/><rect x="164" y="112" width="256" height="172" rx="12" fill="#1846D8"/><rect x="192" y="144" width="124" height="28" rx="4" fill="#E9E6DF"/></g>
+<path transform="translate(40 136) scale(0.78)" fill="#1E1F1C" d="M26 0L10.5 0Q6.9 0 6.9-3.6L6.9-68.4Q6.9-72 10.5-72L55.1-72Q58.7-72 58.7-68.4L58.7-56.5Q58.7-52.9 55.1-52.9L29.6-52.9L29.6-42.5L47-42.5Q50.6-42.5 50.6-38.9L50.6-26.9Q50.6-23.3 47-23.3L29.6-23.3L29.6-3.6Q29.6 0 26 0M129.2-53L129.2-18.9Q129.2-14.3 127.8-10.6Q126.5-6.8 123.1-4.1Q119.7-1.4 113.7 0.1Q107.6 1.5 98.2 1.5Q88.8 1.5 82.8 0.1Q76.7-1.4 73.3-4.1Q69.9-6.8 68.5-10.6Q67.1-14.3 67.1-18.9L67.1-53Q67.1-57.6 68.5-61.4Q69.9-65.1 73.3-67.8Q76.7-70.5 82.8-72Q88.8-73.5 98.2-73.5Q107.6-73.5 113.7-72Q119.7-70.5 123.1-67.8Q126.5-65.1 127.8-61.4Q129.2-57.6 129.2-53M89.8-49.4L89.8-22.5Q89.8-20.5 91.3-19.2Q92.8-17.8 98.2-17.8Q103.7-17.8 105.2-19.2Q106.6-20.5 106.6-22.5L106.6-49.4Q106.6-51.4 105.2-52.7Q103.7-54 98.2-54Q92.8-54 91.3-52.7Q89.8-51.4 89.8-49.4M160.9 0L145.5 0Q141.9 0 141.9-3.6L141.9-68.4Q141.9-72 145.5-72L178.8-72Q186.3-72 190.6-69.9Q194.9-67.8 196.7-64Q198.5-60.3 198.5-55.3L198.5-50.7Q198.5-46.5 197.3-43.6Q196.1-40.7 192.9-39.3Q198.4-38.7 201.7-34.9Q205-31.1 205-24.8L205-3.6Q205 0 201.4 0L185.9 0Q182.3 0 182.3-3.6L182.3-18.9Q182.3-21.2 181.4-22.2Q180.6-23.2 178.5-23.2L164.5-23.2L164.5-3.6Q164.5 0 160.9 0M172-54L164.5-54L164.5-41.2L172-41.2Q174.6-41.2 175.5-42.6Q176.4-43.9 176.4-45.9L176.4-49.3Q176.4-51.3 175.5-52.7Q174.6-54 172-54M235.3 0L219.8 0Q216.2 0 216.2-3.6L216.2-68.4Q216.2-72 219.8-72L235.3-72Q238.9-72 238.9-68.4L238.9-45.4L242.9-45.4L253.2-68.7Q254.6-72 258.2-72L273.6-72Q277.2-72 275.8-68.7L265.6-45.4Q271.2-45.1 274.6-41.5Q277.9-37.8 277.9-31.8L277.9-3.6Q277.9 0 274.3 0L258.9 0Q255.3 0 255.3-3.6L255.3-23.1Q255.3-26.5 252.1-26.5L238.9-26.5L238.9-3.6Q238.9 0 235.3 0"/>
+<path transform="translate(265.3 136) scale(0.78)" fill="#1846D8" d="M61.4 0L10.5 0Q6.9 0 6.9-3.6L6.9-68.4Q6.9-72 10.5-72L26-72Q29.6-72 29.6-68.4L29.6-18.9L43.3-18.9L43.3-35.1Q43.3-38.7 46.9-38.7L61.4-38.7Q65-38.7 65-35.1L65-3.6Q65 0 61.4 0M121 0L78.4 0Q74.8 0 74.8-3.6L74.8-15.5Q74.8-19.1 78.4-19.1L88.3-19.1L88.3-52.7L78.4-52.7Q74.8-52.7 74.8-56.3L74.8-68.4Q74.8-72 78.4-72L121-72Q124.6-72 124.6-68.4L124.6-56.3Q124.6-52.7 121-52.7L111.3-52.7L111.3-19.1L121-19.1Q124.6-19.1 124.6-15.5L124.6-3.6Q124.6 0 121 0M156 0L140.5 0Q136.9 0 136.9-3.6L136.9-68.4Q136.9-72 140.5-72L185.1-72Q188.7-72 188.7-68.4L188.7-56.5Q188.7-52.9 185.1-52.9L159.6-52.9L159.6-42.5L177-42.5Q180.6-42.5 180.6-38.9L180.6-26.9Q180.6-23.3 177-23.3L159.6-23.3L159.6-3.6Q159.6 0 156 0M232.7 0L216.5 0Q212.9 0 212.9-3.6L212.9-52.7L198.2-52.7Q194.6-52.7 194.6-56.3L194.6-68.4Q194.6-72 198.2-72L251-72Q254.6-72 254.6-68.4L254.6-56.3Q254.6-52.7 251-52.7L236.3-52.7L236.3-3.6Q236.3 0 232.7 0"/>
+<text x="92" y="48" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" font-weight="700" letter-spacing="1.2" fill="#4E4636">PORTALDOT · NODE OPERATIONS &amp; TOOLING</text>
+<text x="42" y="180" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="21" font-weight="600" fill="#1E1F1C">The Portaldot V3 testnet, lifted onto your bench. Writable.</text>
+<circle cx="48" cy="216" r="5" fill="#1846D8"/>
+<text x="62" y="221" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700" fill="#1E1F1C">200 / 200 sampled keys identical to V3</text>
+<text x="42" y="256" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5" fill="#4E4636">Chopsticks · fork-v3 · state_getKeysPaged · same bytes to V3</text>
+<!-- ===== story (right) ===== -->
+<rect x="596" y="292" width="664" height="3" fill="#1E1F1C"/>
+<g fill="#5C6166"><rect x="616" y="36" width="8" height="258"/><rect x="756" y="36" width="8" height="258"/><rect x="616" y="148" width="148" height="7"/><rect x="616" y="228" width="148" height="7"/></g>
+<g fill="#5C6166"><rect x="630" y="166" width="28" height="60"/><rect x="662" y="166" width="28" height="60"/><rect x="694" y="166" width="28" height="60"/><rect x="726" y="166" width="26" height="60"/></g>
+<rect x="640" y="186" width="100" height="20" rx="3" fill="#1E1F1C"/>
+<text x="690" y="200" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" font-weight="700" fill="#E9E6DF">200/200</text>
+<g transform="translate(690 148)"><path d="M-60 -18 H60 V0 H-60 Z" fill="none" stroke="#5C6166" stroke-width="2.5" stroke-dasharray="6 4"/><rect x="-54" y="-72" width="108" height="54" rx="4" fill="none" stroke="#5C6166" stroke-width="2.5" stroke-dasharray="6 4"/></g>
+<text x="616" y="312" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" font-weight="700" fill="#4E4636">V3 TESTNET · READ-ONLY</text>
+<!-- bench -->
+<rect x="1010" y="224" width="236" height="11" fill="url(#hz)"/>
+<rect x="1010" y="235" width="236" height="9" fill="#1E1F1C"/>
+<rect x="1020" y="244" width="11" height="48" fill="#1E1F1C"/><rect x="1226" y="244" width="11" height="48" fill="#1E1F1C"/>
+<text x="1246" y="312" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" font-weight="700" fill="#4E4636">YOUR BENCH</text>
+<ellipse data-story="beat-4" opacity="0" cx="1128" cy="293" rx="112" ry="6" fill="#1846D8">
+  <animate attributeName="opacity" dur="8s" repeatCount="indefinite" keyTimes="0;0.50;0.56;0.88;0.93;1" values="0;0;1;1;0;0"/>
+</ellipse>
+<!-- lift arc trail -->
+<use data-story="beat-3" opacity="0" href="#arc" fill="none" stroke="#1E1F1C" stroke-width="2.2" stroke-dasharray="2 7" stroke-linecap="round">
+  <animate attributeName="opacity" dur="8s" repeatCount="indefinite" keyTimes="0;0.22;0.28;0.50;0.60;1" values="0;0;0.8;0.8;0;0"/>
+</use>
+<!-- the moving unit: tines + pallet + load -->
+<g>
+  <animateMotion dur="8s" repeatCount="indefinite" keyPoints="0;0;1;1;0;0" keyTimes="0;0.22;0.50;0.94;0.955;1" calcMode="linear"><mpath href="#arc"/></animateMotion>
+  <animate attributeName="opacity" dur="8s" repeatCount="indefinite" keyTimes="0;0.90;0.93;0.965;0.98;1" values="1;1;0;0;1;1"/>
+  
+    <g class="settle">
+      <g data-story="beat-2">
+        <animateTransform attributeName="transform" type="translate" dur="8s" repeatCount="indefinite" keyTimes="0;0.10;0.22;0.93;0.945;1" values="-30 0;-30 0;0 0;0 0;-30 0;-30 0"/>
+        <rect x="-96" y="-11" width="160" height="6" fill="#1E1F1C"/>
+        <rect x="-100" y="-68" width="8" height="63" rx="2" fill="#1E1F1C"/>
+      </g>
+      <path d="M-60 -18 H60 V0 H-60 Z M-46 -13 V-5 H-12 V-13 Z M12 -13 V-5 H46 V-13 Z" fill="#1E1F1C" fill-rule="evenodd"/>
+      <rect x="-54" y="-72" width="108" height="54" rx="4" fill="none" stroke="#5C6166" stroke-width="3" stroke-dasharray="8 5"/>
+      <rect data-story="beat-4" opacity="0" x="-56" y="-74" width="112" height="56" rx="5" fill="#1846D8">
+        <animate attributeName="opacity" dur="8s" repeatCount="indefinite" keyTimes="0;0.50;0.54;0.90;0.93;1" values="0;0;1;1;0;0"/>
+      </rect>
+      <rect x="-40" y="-64" width="80" height="17" rx="2" fill="#E9E6DF"/>
+      <text x="0" y="-52" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-weight="700" font-size="11" fill="#1E1F1C">#118,061</text>
+    </g>
+</g>
+<!-- landed plate -->
+<g data-story="beat-4" opacity="0">
+  <animate attributeName="opacity" dur="8s" repeatCount="indefinite" keyTimes="0;0.54;0.58;0.88;0.93;1" values="0;0;1;1;0;0"/>
+  <rect x="1024" y="34" width="210" height="54" rx="6" fill="#E9E6DF"/>
+  <text x="1040" y="57" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5" font-weight="700" fill="#1E1F1C">5,508 KEYS · WRITABLE</text>
+  <text x="1040" y="77" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5" font-weight="700" fill="#1846D8">FORK-V3 · REHEARSE</text>
+</g>
+</svg>

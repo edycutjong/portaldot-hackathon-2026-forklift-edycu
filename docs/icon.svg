@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Forklift — lifts the Portaldot V3 testnet onto your bench, writable: Two fork tines slide under block #118,061, lift it off the V3 rack, and it lands on your bench, writable.">
+<!-- STORYBOARD (dur 6s — must equal this file's single master dur)
+  0-10%   steady state: yellow plate, graphite mast, the pallet resting LOW on the tine with its load as a hollow steel outline (racked) — the poster
+  10-38%  trigger:      the tine lifts the pallet up the mast (68px), outline still steel                                   data-story="beat-2"
+  38-48%  mechanism:    Two fork tines slide under block #118,061, lift it off the V3 rack, and it lands on your bench, writable.  (icon form: the load settles at the top and fills lift-blue, tag plate stays)   data-story="beat-3"
+  48-84%  resolution:   the load stays up and blue — lifted, writable                                                      data-story="beat-4"
+  84-100% breathe + seam fade: blue drains back to the steel outline and the pallet lowers to rest — back to the poster
+-->
+<style>
+  .settle { transform-box: fill-box; transform-origin: center bottom; animation: settle 6s cubic-bezier(.2,1.4,.4,1) infinite; }
+  @keyframes settle { 0%, 37% { transform: translateY(0) } 41% { transform: translateY(7px) } 45%, 100% { transform: translateY(0) } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+</style>
+<rect width="512" height="512" rx="112" fill="#F5B300"/>
+<path d="M68 76 a10 10 0 0 1 10 -10 h36 a10 10 0 0 1 10 10 V446 H68 Z" fill="#1E1F1C"/>
+<g>
+  <animateTransform attributeName="transform" type="translate" dur="6s" repeatCount="indefinite" keyTimes="0;0.10;0.38;0.84;0.96;1" values="0 68;0 68;0 0;0 0;0 68;0 68" calcMode="spline" keySplines="0 0 1 1;.4 0 .2 1;0 0 1 1;.4 0 .2 1;0 0 1 1"/>
+  <g class="settle">
+    <path d="M156 296 H428 V378 H156 Z M190 316 V358 H276 V316 Z M308 316 V358 H394 V316 Z" fill="#1E1F1C" fill-rule="evenodd"/>
+    <path d="M124 328 H448 l18 7 v8 H124 Z" fill="#1E1F1C"/>
+    <rect x="172" y="120" width="240" height="156" rx="10" fill="none" stroke="#5C6166" stroke-width="16" stroke-dasharray="30 18"/>
+    <rect data-story="beat-3" opacity="0" x="164" y="112" width="256" height="172" rx="12" fill="#1846D8">
+      <animate attributeName="opacity" dur="6s" repeatCount="indefinite" keyTimes="0;0.38;0.44;0.84;0.92;1" values="0;0;1;1;0;0" />
+    </rect>
+    <rect x="192" y="144" width="124" height="28" rx="4" fill="#E9E6DF"/>
+  </g>
+</g>
+</svg>

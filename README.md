@@ -1,20 +1,35 @@
+<a id="forklift"></a>
+
 <div align="center">
+  <img src="docs/icon.svg" alt="Forklift icon" width="144">
+  <h1>Forklift 🏗️</h1>
+  <p><em>A local fork of the Portaldot V3 testnet (or of mainnet state), pinned at a block and checked against the live chain key by key: predict a transaction on the fork, then send the same bytes to V3 and compare.</em></p>
+  <img src="docs/readme-hero.svg" alt="Forklift animated hero: fork tines lift a block of chain state off the rack and set it on your bench, writable" width="100%">
 
-# Forklift
+  <br/>
 
-**A local fork of the Portaldot V3 testnet (or of mainnet state), pinned at a block and checked against the live chain key by key: predict a transaction on the fork, then send the same bytes to V3 and compare.**
+  [![Live](https://img.shields.io/badge/🚀_Live-forklift.edycu.dev-1F4FE0?style=for-the-badge)](https://forklift.edycu.dev)
+  [![Pitch Deck](https://img.shields.io/badge/📊_Pitch-Deck-D9A13B?style=for-the-badge)](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/pitch-deck.pdf)
+  [![Demo Video](https://img.shields.io/badge/🎬_Demo-Video-ef4444?style=for-the-badge)](https://youtu.be/iVvEXQvfTYY)
+  [![DoraHacks BUIDL](https://img.shields.io/badge/DoraHacks-BUIDL_50248-3A3240?style=for-the-badge)](https://dorahacks.io/build/50248)
 
-![status](https://img.shields.io/badge/status-check--in_slice-orange)
-![python](https://img.shields.io/badge/python-3.11%2B-blue)
-![tests](https://img.shields.io/badge/tests-257_offline_%2B_6_live-brightgreen)
-[![CI](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/actions/workflows/ci.yml)
-![license](https://img.shields.io/badge/license-MIT-lightgrey)
+  <br/>
 
-Portaldot Hacker House 2026 · Track: Node Operations & Tooling
+  ![status](https://img.shields.io/badge/status-check--in_slice-orange?style=flat)
+  ![python](https://img.shields.io/badge/python-3.11%2B-blue?style=flat)
+  ![tests](https://img.shields.io/badge/tests-257_offline_%2B_6_live-brightgreen?style=flat)
+  [![CI](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/actions/workflows/ci.yml)
+  ![license](https://img.shields.io/badge/license-MIT-lightgrey?style=flat)
 
 </div>
 
-## Project Name
+---
+
+Portaldot Hacker House 2026 · Track: Node Operations & Tooling
+
+<a id="project-name"></a>
+
+## 🏷️ Project Name
 
 **Forklift** (`portaldot-forklift`, version 0.1.0): a command-line tool that gives a Portaldot developer a local chain
 that starts from **mainnet's real state** instead of an empty dev chain.
@@ -25,7 +40,9 @@ that starts from **mainnet's real state** instead of an empty dev chain.
 > **Portaldot V3 testnet** run by Chopsticks with V3's own runtime, and **`fork-1002-fast`**, a local fork of
 > Portaldot mainnet state (spec 1002) on the `portaldot_dev` dev runtime, which is not V3 (see *V3 status*).
 
-## Project Overview
+<a id="project-overview"></a>
+
+## 💡 Project Overview
 
 ### Problem Statement
 
@@ -113,7 +130,9 @@ nobody mistakes it for a testnet or for V3.
   explorer; `forklift tx <block-index>` re-reads any of them from the author's running fork (a fresh fork gives new
   hashes; the recorded rows are in `evidence/txs-2725953.json` and `evidence/refetch-2725953.json`).
 
-## Technical Architecture
+<a id="technical-architecture"></a>
+
+## 🏗️ Technical Architecture
 
 ![Forklift architecture: V3 is lifted at a pinned block, forked with Chopsticks and checked against the chain; a transaction is predicted on the fork, sent to V3 with the same bytes and compared](docs/architecture.png)
 
@@ -166,7 +185,9 @@ resolve, so the check-in slice was built on the mainnet path. The V3 testnet lau
 and its V3 rows in [`docs/PROOF.md`](docs/PROOF.md) were measured there. No public V3 node binary or chain
 spec exists (organisers' Discord, not archived here), so a V3 fork runs on Chopsticks, not on a node binary.
 
-## Smart Contracts
+<a id="smart-contracts"></a>
+
+## 📜 Smart Contracts
 
 One contract, the **Fork Receipt** (`forklift/contracts/receipt.wat`, compiled `receipt.wasm`, 169 bytes). It is
 hand-written for the rent-era Contracts pallet of the dev runtime the fork runs (`fork-1002-fast`); it has not been run on mainnet's runtime wasm. It needs no Rust toolchain.
@@ -194,7 +215,9 @@ itself is pallet-free: it only calls read RPC methods (`chain_getFinalizedHead`,
 **Rebuild the contract:** `wat2wasm forklift/contracts/receipt.wat -o forklift/contracts/receipt.wasm`
 (`pytest` checks that the committed `.wasm` is exactly what `wat2wasm` builds from the `.wat`, when `wat2wasm` is installed).
 
-## Installation & Setup
+<a id="installation--setup"></a>
+
+## 🚀 Installation & Setup
 
 **Requirements:** Python 3.11+; network access to `wss://mainnet.portaldot.io` (live lifts and `verify`; the unit tests
 are offline); measured on macOS arm64 only (the Linux download path exists but was not run); on Apple silicon, Rosetta (`softwareupdate --install-rosetta`), because the macOS `portaldot_dev` binary is
@@ -257,7 +280,9 @@ Per command, in [`docs/EXIT-CODES.md`](docs/EXIT-CODES.md).
 **Compile & deploy / launch frontend:** the contract is compiled with `wat2wasm` (command above; the compiled
 `receipt.wasm` is committed) and deployed by `forklift receipt`; there is no frontend.
 
-## Demo
+<a id="demo"></a>
+
+## 🎬 Demo
 
 - **Video:** demo: https://youtu.be/iVvEXQvfTYY
 - **Pitch deck:** [`docs/pitch-deck.pdf`](docs/pitch-deck.pdf) (10 slides, check-in; source [`deck/index.html`](deck/index.html)). Its figures are the rows of [`docs/PROOF.md`](docs/PROOF.md).
@@ -288,7 +313,9 @@ Per command, in [`docs/EXIT-CODES.md`](docs/EXIT-CODES.md).
 
 One benchmark run of the lift from a fresh process (a stub: one run per file; p50/p95 over several runs is planned): #2,725,953 in 19.85 s (keys 7.41 s, values 12.44 s), same `manifest_root` (`evidence/bench-lift-2026-10-14.json`).
 
-## Development
+<a id="development"></a>
+
+## 🧪 Development
 
 ```bash
 pip install -e '.[dev]' ruff
@@ -296,7 +323,9 @@ ruff check .
 pytest -q        # offline; CI runs the same, see [CONTRIBUTING.md](CONTRIBUTING.md)
 ```
 
-## Roadmap
+<a id="roadmap"></a>
+
+## 🗺️ Roadmap
 
 **Completed (check-in slice, 2026-10-14)**
 
@@ -320,7 +349,9 @@ pytest -q        # offline; CI runs the same, see [CONTRIBUTING.md](CONTRIBUTING
 - [ ] The Fork Receipt as an ink! 5 or Revive contract on the V3 testnet
 - [ ] A mainnet (1002) → V3 report: which lifted keys carry over, which need re-encoding, which have no home on V3
 
-## Team
+<a id="team"></a>
+
+## 👥 Team
 
 - **Team name:** edycu
 - **Members and roles:** Edy Cu, solo (design, review, on-chain decisions)
@@ -334,6 +365,8 @@ committed from 2026-10-14 (first commit `fa113a6`); earlier research is not incl
 Open-source libraries: `click`, `websockets`, `xxhash`, `substrate-interface`, `pytest`, `hatchling`. The node binary
 is `portaldot_dev` 2.0.0 from the `portaldot-testnet-*.tar.gz` tarballs in `portaldotVolunteer/Portaldot-node`, downloaded at run time.
 
-## License
+<a id="license"></a>
+
+## 📄 License
 
 MIT, see [`LICENSE`](LICENSE).
