@@ -81,7 +81,7 @@ nav.top ul a.gh { background: var(--ink); color: var(--bg); padding: 9px 14px; b
 nav.top ul a.gh:hover { transform: translate(-2px, -2px); box-shadow: 3px 3px 0 var(--after); }
 
 /* ------- hero ------- */
-.hero { display: grid; grid-template-columns: minmax(0, .98fr) minmax(0, 1.02fr); gap: 32px; align-items: center; padding: 52px 0 34px; }
+.hero { display: grid; grid-template-columns: minmax(0, .98fr) minmax(0, 1.02fr); gap: 32px; align-items: center; padding: 76px 0 64px; }
 .label { font: 700 12px/1.3 var(--font-data); letter-spacing: .06em; text-transform: uppercase; display: inline-flex; gap: 10px; align-items: center; }
 .label i { flex: none; width: 26px; height: 12px; background: repeating-linear-gradient(-45deg, var(--hazard) 0 5px, transparent 5px 10px); }
 h1, h2, .display { font-family: var(--font-display); font-weight: 400; text-transform: uppercase; letter-spacing: .02em; }
@@ -120,8 +120,8 @@ mark { background: var(--after); color: var(--plate); padding: 0 .14em; box-deco
 @keyframes on { from { opacity: 0; } }
 @keyframes off { from { opacity: 1; } }
 @keyframes pool { from { opacity: 0; transform: scaleX(.25); } }
-.relift { display: block; margin: 10px 0 0 auto; font: 700 11px/1 var(--font-data); letter-spacing: .06em; text-transform: uppercase; background: transparent; border: 2px solid var(--ink); border-radius: 3px; padding: 8px 10px; cursor: pointer; color: var(--ink); transition: background-color .15s, color .15s; }
-.relift:hover { background: var(--ink); color: var(--bg); }
+.relift { display: block; margin: 6px 0 0 auto; font: 700 12px/1 var(--font-data); letter-spacing: .04em; background: transparent; border: 0; border-bottom: 2px solid var(--ink); padding: 4px 0; cursor: pointer; color: var(--ink); transition: color .15s, border-color .15s; }
+.relift:hover { color: var(--after); border-color: var(--after); }
 
 /* hero load-in: one orchestrated stagger, from a visible default */
 .hero .label, .hero h1 .ln, .hero .sub, .hero .cta, .hero .cmd { animation: rise .7s var(--ease-out) backwards; }
@@ -152,7 +152,7 @@ section.band { padding: 96px 0; }
 
 /* ------- the run: shown twice ------- */
 .pair { display: grid; grid-template-columns: minmax(0, .86fr) minmax(0, 1.14fr); gap: 22px; align-items: start; }
-.frame { border: 2px solid var(--ink); border-radius: 6px; background: var(--plate); overflow: hidden; box-shadow: 6px 6px 0 var(--ink); }
+.frame { border: 2px solid var(--ink); border-radius: 6px; background: var(--plate); overflow: hidden; box-shadow: 6px 6px 0 var(--ink); position: sticky; top: 24px; }
 .frame .bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border-bottom: 2px solid var(--ink); font: 400 12px/1.2 var(--font-data); background: var(--plate-hi); }
 .frame .bar a { font-weight: 700; white-space: nowrap; }
 .frame figcaption { padding: 12px 14px; font-size: 14px; border-top: 2px solid var(--ink); background: var(--plate-hi); }
@@ -185,12 +185,10 @@ section.board ::selection { background: var(--bg); color: var(--ink); }
 .drow .f { display: flex; align-items: center; font: 700 12px/1.25 var(--font-data); text-transform: uppercase; letter-spacing: .05em; color: color-mix(in srgb, var(--plate) 76%, var(--ink)); padding: 0 6px; }
 .flap { position: relative; isolation: isolate; display: flex; flex-wrap: wrap; align-items: center; min-height: 52px; padding: 8px 12px; border-radius: 4px; font: 700 15px/1.2 var(--font-data); font-variant-numeric: tabular-nums;
   background: linear-gradient(180deg, color-mix(in srgb, var(--ink) 70%, var(--plate)) 0 50%, color-mix(in srgb, var(--ink) 78%, var(--plate)) 50% 100%); color: var(--plate); overflow-wrap: anywhere; }
-.flap::after { content: ""; position: absolute; z-index: -1; left: 0; right: 0; top: 50%; height: 1px; background: color-mix(in srgb, var(--ink) 92%, black); }
 .flap.ok { color: var(--plate); }
 .flap.moved { background: var(--bg); color: var(--ink); font-size: 19px; }
 .flap.stamp { animation: stamp .5s cubic-bezier(.2, 1.6, .4, 1) both; }
 @keyframes stamp { 0% { transform: scale(1.18) rotate(-2deg); box-shadow: 0 0 0 0 var(--bg); } 60% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--bg) 0%, transparent); } 100% { transform: none; } }
-.flap.moved::after { background: color-mix(in srgb, var(--rule) 80%, var(--ink)); }
 .flap .c { white-space: pre; }
 .flap .c.spin { color: color-mix(in srgb, var(--plate) 50%, transparent); }
 .flap.moved .c.spin { color: color-mix(in srgb, var(--ink) 45%, transparent); }
@@ -204,7 +202,7 @@ section.board ::selection { background: var(--bg); color: var(--ink); }
 .ticket .id { font: 700 22px/1 var(--font-data); letter-spacing: -.01em; }
 .ticket .call { font: 700 13px/1.3 var(--font-data); color: var(--muted); margin: 8px 0 14px; }
 .ticket dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 14px; }
-.ticket dt { font: 700 11px/1.6 var(--font-data); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.ticket dt { font: 700 12px/1.6 var(--font-data); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
 .ticket dd { font-family: var(--font-data); font-size: 13px; font-variant-numeric: tabular-nums; }
 .ticket .go { display: inline-block; margin-top: 14px; font-weight: 700; font-size: 14px; text-decoration: underline; text-decoration-thickness: 2px; }
 
@@ -241,6 +239,7 @@ section.map { background: var(--plate); border-top: 3px solid var(--ink); border
 .map figure { max-width: 600px; margin: 0 0 0 auto; border: 2px solid var(--ink); border-radius: 6px; overflow: hidden; background: var(--bg); box-shadow: 8px 8px 0 var(--ink); }
 .map figcaption { padding: 12px 16px; font-size: 14px; border-top: 2px solid var(--ink); background: var(--plate-hi); display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .map figcaption a { font-weight: 700; }
+.map .swipe-hint { display: none; font-weight: 700; flex-basis: 100%; }
 
 /* ------- load limits (honest) ------- */
 section.limits { background: var(--ink); color: var(--plate); }
@@ -276,6 +275,7 @@ section.limits ::selection { background: var(--bg); color: var(--ink); }
 .final h2 { font-size: clamp(30px, 4.4vw, 62px); line-height: 1.04; }
 .final p { max-width: 58ch; margin: 18px auto 0; }
 .final .cta { justify-content: center; }
+.final-cmd { margin-top: 26px; }
 .bench-edge { height: 26px; margin-top: 90px; background: repeating-linear-gradient(-45deg, var(--hazard) 0 18px, transparent 18px 36px); border-top: 3px solid var(--ink); border-bottom: 3px solid var(--ink); }
 footer { background: var(--ink); color: var(--plate); padding: 40px 0 46px; font-size: 15px; }
 footer .wrap { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; align-items: center; }
@@ -290,12 +290,16 @@ footer .brand { color: var(--bg); font-size: 18px; }
   .hero { grid-template-columns: minmax(0, 1fr); padding-top: 34px; gap: 26px; }
   .pair { grid-template-columns: minmax(0, 1fr); }
   .map .wrap { grid-template-columns: minmax(0, 1fr); gap: 32px; }
-  .map figure { margin: 0 auto; }
+  .map figure { margin: 0 auto; width: 100%; max-width: 100%; }
+  .map .swipe { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .map .swipe img { width: 860px; max-width: none; }
+  .map .swipe-hint { display: block; }
   .bento .card.w4, .bento .card.w2, .bento .card.w3 { grid-column: span 6; }
   .sends { grid-template-columns: 1fr; }
   nav.top ul li.opt { display: none; }
   .hero > div:first-child { display: contents; }
-  .hero .label { order: 1; } .hero h1 { order: 2; margin-bottom: 4px; } .hero .bay { order: 3; } .hero .sub { order: 4; } .hero .cta { order: 5; margin: 6px 0 0; } .hero .cmd { order: 6; }
+  .hero .label { order: 1; } .hero h1 { order: 2; margin-bottom: 4px; } .hero .cta { order: 3; margin: 4px 0 0; } .hero .bay { order: 4; } .hero .sub { order: 5; }
+  .frame { position: static; }
 }
 @media (max-width: 760px) {
   .wrap { padding: 0 18px; }
@@ -310,8 +314,11 @@ footer .brand { color: var(--bg); font-size: 18px; }
   section.band { padding: 70px 0; }
   .sub { font-size: 17px; }
   .cmd { font-size: 11.5px; }
-  .hero .cta .btn { flex: 1 1 100%; justify-content: center; }
-  .term pre { font-size: 10.5px; min-height: 0; overflow-wrap: anywhere; }
+  .hero .cta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .hero .cta .btn { justify-content: center; padding: 14px 10px; }
+  .hero .cta .btn.pri { grid-column: 1 / -1; }
+  .hero { padding: 30px 0 34px; }
+  .term pre { font-size: 11.5px; min-height: 0; max-height: 470px; overflow: auto; overflow-wrap: anywhere; }
   .drow, .drow.hd { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .drow .f { grid-column: 1 / -1; padding: 6px 2px 0; }
   .drow.hd .f-label { display: none; }
@@ -356,7 +363,6 @@ footer .brand { color: var(--bg); font-size: 18px; }
      <a class="btn" href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/pitch-deck.pdf">Pitch deck</a>
      <a class="btn" href="https://youtu.be/iVvEXQvfTYY"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M4 2.5v11l9.5-5.5z"/></svg>Watch the demo</a>
     </div>
-    <div class="cmd"><span>$</span><code id="cmd-text">forklift up --target v3 --at head --name v3</code><button class="copy" type="button" data-copy="#cmd-text">Copy</button></div>
    </div>
 
    <div class="bay">
@@ -367,7 +373,7 @@ footer .brand { color: var(--bg); font-size: 18px; }
       <filter id="glow" x="-30%" y="-300%" width="160%" height="700%"><feGaussianBlur stdDeviation="8"/></filter>
      </defs>
      <!-- rack: the live chain, steel outline -->
-     <text x="16" y="62" font-family="Martian Mono, monospace" font-size="15" font-weight="700" fill="#4E4636" letter-spacing=".05em">V3 TESTNET · LIFT READS ONLY</text>
+     <text x="16" y="62" font-family="Martian Mono, monospace" font-size="17" font-weight="700" fill="#4E4636" letter-spacing=".04em">V3 TESTNET · LIFT READS ONLY</text>
      <g fill="none" stroke="#5C6166" stroke-width="4">
       <path d="M16 470V82M210 470V82M16 202H210M16 342H210"/>
       <g stroke-dasharray="7 6" stroke-width="3">
@@ -412,10 +418,10 @@ footer .brand { color: var(--bg); font-size: 18px; }
       </g>
      </g>
      <line x1="0" y1="470" x2="740" y2="470" stroke="#1E1F1C" stroke-width="5"/>
-     <text x="16" y="496" font-family="Martian Mono, monospace" font-size="14" fill="#4E4636">racked: the lift only</text><text x="16" y="516" font-family="Martian Mono, monospace" font-size="14" fill="#4E4636">reads; stays live</text>
-     <text x="736" y="500" text-anchor="end" font-family="Martian Mono, monospace" font-size="15" font-weight="700" fill="#1E1F1C" letter-spacing=".04em">YOUR BENCH · fork-v3 · WRITABLE</text>
+     <text x="16" y="496" font-family="Martian Mono, monospace" font-size="17" fill="#4E4636">racked: the lift only</text><text x="16" y="519" font-family="Martian Mono, monospace" font-size="17" fill="#4E4636">reads; stays live</text>
+     <text x="736" y="500" text-anchor="end" font-family="Martian Mono, monospace" font-size="17" font-weight="700" fill="#1E1F1C" letter-spacing=".02em">YOUR BENCH · fork-v3 · WRITABLE</text>
     </svg>
-    <button class="relift" type="button" id="relift" aria-label="Play the lift animation again">Lift it again ↻</button>
+    <button class="relift" type="button" id="relift" aria-label="Play the lift animation again">↻ run the lift again</button>
    </div>
   </section>
 
@@ -572,8 +578,8 @@ footer .brand { color: var(--bg); font-size: 18px; }
     </dl>
    </div>
    <figure>
-    <img src="architecture.png" width="2560" height="2864" loading="lazy" alt="Forklift architecture: V3 is lifted at a pinned block, forked with Chopsticks and checked against the chain; a transaction is predicted on the fork, sent to V3 with the same bytes and compared">
-    <figcaption><span>Drawn from the code in <code>forklift/*.py</code>. Mainnet (spec 1002) is a read-only control path, labelled "not V3".</span><a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/architecture.png">Full size ↗</a></figcaption>
+    <div class="swipe"><img src="architecture.png" width="2560" height="2864" loading="lazy" alt="Forklift architecture: V3 is lifted at a pinned block, forked with Chopsticks and checked against the chain; a transaction is predicted on the fork, sent to V3 with the same bytes and compared"></div>
+    <figcaption><span class="swipe-hint">Swipe the diagram sideways to read it.</span><span>Drawn from the code in <code>forklift/*.py</code>. Mainnet (spec 1002) is a read-only control path, labelled "not V3".</span><a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/architecture.png">Full size ↗</a></figcaption>
    </figure>
   </div>
  </section>
@@ -600,7 +606,7 @@ footer .brand { color: var(--bg); font-size: 18px; }
    <div class="faq">
     <details open>
      <summary>Is this the real V3 testnet?</summary>
-     <div class="a"><p>The three sent transactions are on the public V3 testnet (<code>portaldot-v3</code>/3002), with node-console links in <a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/PROOF.md"><code>docs/PROOF.md</code></a>. The fork is <code>fork-v3</code>: V3's runtime under Chopsticks, not a V3 node. The mainnet path, <code>fork-1002-fast</code>, is labelled "not V3" in the README, <code>docs/PROOF.md</code> and the architecture diagram.</p></div>
+     <div class="a"><p>The three sent transactions are on the public V3 testnet (<code>portaldot-v3</code>/3002), with node-console links in <a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/PROOF.md"><code>docs/PROOF.md</code></a>. The fork is <code>fork-v3</code>: V3's runtime under Chopsticks, not a V3 node. The mainnet path, <code>fork-1002-fast</code>, is labelled "not V3" in the README and the architecture diagram, and <code>docs/PROOF.md</code> says "A local fork is not the Portaldot V3 testnet".</p></div>
     </details>
     <details>
      <summary>If it is a rehearsal, why did the fee differ?</summary>
@@ -616,11 +622,11 @@ footer .brand { color: var(--bg); font-size: 18px; }
     </details>
     <details>
      <summary>What is mocked?</summary>
-     <div class="a"><p>Nothing on the V3 path: the lift, fork, verify, rehearse and replay rows are real runs against the live testnet (<code>docs/PROOF.md</code>). There is no hosted fork and no web app: Forklift is a CLI, and the fork runs on your machine.</p></div>
+     <div class="a"><p>No data is mocked on the V3 path: the lift and the sent transactions are real reads and writes on the live V3 testnet, and the fork runs V3's own runtime wasm. The fork is Chopsticks, not a V3 node: it stubs unresolved host imports (<code>allow-unresolved-imports</code>) and can set the fee multiplier from the chain (both recorded). There is no hosted fork and no web app: Forklift is a CLI, and the fork runs on your machine.</p></div>
     </details>
     <details>
      <summary>How do I try it?</summary>
-     <div class="a"><p>Clone the repo, then <code>pip install -e '.[dev]'</code>. Run <code>forklift up --target v3 --at head --name v3</code>, then <code>forklift verify --name v3 --sample 200</code>, then <code>forklift rehearse System.remark …</code>. V3 forks need Node.js 18+ for Chopsticks. The README's Installation section has every flag.</p></div>
+     <div class="a"><p>Clone the repo, then <code>pip install -e '.[dev]'</code>. Run <code>forklift up --target v3 --at head --name v3</code>, then <code>forklift verify --name v3 --sample 200</code>, then <code>forklift rehearse System.remark …</code>. V3 forks need Node.js 18+ for Chopsticks. The README's Installation section covers the V3 commands; <code>forklift --help</code> lists every flag.</p></div>
     </details>
    </div>
   </div>
@@ -630,6 +636,7 @@ footer .brand { color: var(--bg); font-size: 18px; }
   <div class="wrap">
    <h2 id="final-h">Rehearse on a fork.<br><mark>Then send.</mark></h2>
    <p>MIT licensed. 257 offline tests and 6 live tests. Every figure on this page traces to <code>docs/PROOF.md</code>, a file in <code>evidence/</code>, or the README.</p>
+   <div class="cmd final-cmd"><span>$</span><code id="cmd-text">forklift up --target v3 --at head --name v3</code><button class="copy" type="button" data-copy="#cmd-text">Copy</button></div>
    <div class="cta">
     <a class="btn pri" href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu">View on GitHub</a>
     <a class="btn" href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/pitch-deck.pdf">Pitch deck</a>
