@@ -298,7 +298,7 @@ footer .brand { color: var(--bg); font-size: 18px; }
   .sends { grid-template-columns: 1fr; }
   nav.top ul li.opt { display: none; }
   .hero > div:first-child { display: contents; }
-  .hero .label { order: 1; } .hero h1 { order: 2; margin-bottom: 4px; } .hero .cta { order: 3; margin: 4px 0 0; } .hero .bay { order: 4; } .hero .sub { order: 5; }
+  .hero .label { order: 1; } .hero h1 { order: 2; margin-bottom: 4px; } .hero .sub { order: 3; } .hero .cta { order: 4; margin: 4px 0 0; } .hero .bay { order: 5; }
   .frame { position: static; }
 }
 @media (max-width: 760px) {
@@ -318,7 +318,7 @@ footer .brand { color: var(--bg); font-size: 18px; }
   .hero .cta .btn { justify-content: center; padding: 14px 10px; }
   .hero .cta .btn.pri { grid-column: 1 / -1; }
   .hero { padding: 30px 0 34px; }
-  .term pre { font-size: 11.5px; min-height: 0; max-height: 470px; overflow: auto; overflow-wrap: anywhere; }
+  .term pre { font-size: 11.5px; min-height: 0; overflow-wrap: anywhere; }
   .drow, .drow.hd { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .drow .f { grid-column: 1 / -1; padding: 6px 2px 0; }
   .drow.hd .f-label { display: none; }
@@ -357,7 +357,7 @@ footer .brand { color: var(--bg); font-size: 18px; }
    <div>
     <span class="label"><i></i>Portaldot Hacker House 2026 · Node Operations &amp; Tooling</span>
     <h1><span class="ln">Your transaction</span><span class="ln">runs twice. The</span><span class="ln">first time is</span><span class="ln"><mark>a rehearsal.</mark></span></h1>
-    <p class="sub">Forklift forks the live Portaldot V3 testnet at one pinned block on your machine, checks the fork against the chain (<b>200/200 sampled draws identical</b>), and runs your signed bytes there first. Then it sends the same bytes to V3 and shows you every field that moved.</p>
+    <p class="sub">A dry run for Portaldot V3 transactions, for builders and node operators. Forklift forks the live testnet at one pinned block on your machine, checks the fork against the chain (<b>200/200 sampled draws identical</b>) and runs your signed bytes there first, then sends the same bytes to V3 and lists every field that moved.</p>
     <div class="cta">
      <a class="btn pri" href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>View on GitHub</a>
      <a class="btn" href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/pitch-deck.pdf">Pitch deck</a>
