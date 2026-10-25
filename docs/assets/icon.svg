@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Forklift: fork tines carry a lifted blue load on a pallet">
+  <rect width="512" height="512" rx="112" fill="#F5B300"/>
+  <path d="M68 76 a10 10 0 0 1 10 -10 h36 a10 10 0 0 1 10 10 V446 H68 Z" fill="#1E1F1C"/>
+  <path d="M156 296 H428 V378 H156 Z M190 316 V358 H276 V316 Z M308 316 V358 H394 V316 Z" fill="#1E1F1C" fill-rule="evenodd"/>
+  <path d="M124 328 H448 l18 7 v8 H124 Z" fill="#1E1F1C"/>
+  <rect x="164" y="112" width="256" height="172" rx="12" fill="#1846D8"/>
+  <rect x="192" y="144" width="124" height="28" rx="4" fill="#E9E6DF"/>
+</svg>
