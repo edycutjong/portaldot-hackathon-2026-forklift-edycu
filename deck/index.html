@@ -123,11 +123,11 @@ p code, li code, td code, .what code { font-size: .84em; }
 
 /* 3 · what it does */
 .s3 .steps { position: absolute; left: 120px; top: 296px; width: 1680px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; }
-.s3 .step { padding: 30px 26px 26px; height: 500px; display: flex; flex-direction: column; }
+.s3 .step { padding: 30px 26px 26px; height: 520px; display: flex; flex-direction: column; }
 .s3 .n { font: 700 17px/1 var(--font-body); text-transform: uppercase; letter-spacing: .14em; color: var(--muted); }
 .s3 .verb { font: 400 40px/1 var(--font-display); text-transform: uppercase; margin: 12px 0 16px; }
 .s3 .cmd { font: 700 16px/1.45 var(--font-data); background: var(--ink); color: var(--plate); padding: 10px 12px; border-radius: 4px; white-space: nowrap; }
-.s3 .what { font: 400 22px/1.38 var(--font-body); margin-top: 16px; }
+.s3 .what { font: 400 23px/1.4 var(--font-body); margin-top: 16px; }
 .s3 .out.ink { color: var(--ink); }
 .s3 .out { margin-top: auto; padding-top: 14px; border-top: 2px solid #C9C4B8; font: 700 19px/1.45 var(--font-data); color: var(--after); }
 .s3 .ctrl { position: absolute; left: 120px; top: 842px; width: 1680px; padding: 20px 28px; display: flex; gap: 22px; align-items: center; }
@@ -189,8 +189,8 @@ p code, li code, td code, .what code { font-size: .84em; }
 .s8 .cols { position: absolute; left: 120px; top: 296px; width: 1680px; display: grid; grid-template-columns: 1fr 1.12fr 1fr; gap: 30px; }
 .s8 .c { padding: 32px 32px 28px; }
 .s8 h3 { font: 400 28px/1.12 var(--font-display); text-transform: uppercase; margin: 12px 0 18px; }
-.s8 p, .s8 li { font: 400 24px/1.42 var(--font-body); }
-.s8 .c { min-height: 560px; }
+.s8 p, .s8 li { font: 400 25px/1.45 var(--font-body); }
+.s8 .c { min-height: 600px; }
 .s8 ul { list-style: none; }
 .s8 li { padding: 9px 0 9px 26px; position: relative; border-top: 2px solid #C9C4B8; }
 .s8 li::before { content: ""; position: absolute; left: 0; top: 22px; width: 14px; height: 4px; background: var(--ink); }
@@ -275,7 +275,7 @@ body.presenter .slide.active .speaker-notes { display: block; position: absolute
   <h1><span>Your transaction</span><span>runs twice. The</span><span>first time is</span><span><mark>a rehearsal.</mark></span></h1>
   <div class="dps">
     <div><span class="lab">Keys lifted · #118,061</span><span class="val">5,508</span></div>
-    <div><span class="lab">Sampled keys identical</span><span class="val on">200/200</span></div>
+    <div><span class="lab">Sampled draws identical</span><span class="val on">200/200</span></div>
     <div><span class="lab">V3 sends, same tx hash</span><span class="val">3</span></div>
   </div>
   <div class="ver">v0.1.0 · MIT · Python 3.11+ · AI-assisted, see slide 10</div>
@@ -341,7 +341,7 @@ compare  8/14 fields match · DIFFERS: …,
          inclusion_height, fee, …
 <span class="p">$ </span>forklift replay 118621-1
 compare  <span class="hl">14/14 fields match</span></div>
-  <aside class="speaker-notes">Your transaction runs twice; the first time is a rehearsal. Forklift lifts the Portaldot V3 testnet at one block, 118,061, onto your machine, checks the fork against the live chain, 200 of 200 sampled keys identical, then runs your signed bytes on the fork before the same bytes go to V3. Three real V3 transactions were sent this way, each with the same tx hash as predicted.</aside>
+  <aside class="speaker-notes">Your transaction runs twice; the first time is a rehearsal. Forklift forks the Portaldot V3 testnet at one block, 118,061, on your machine, checks the fork against the live chain, 200 of 200 sampled draws identical, then runs your signed bytes on the fork before the same bytes go to V3. Three real V3 transactions were sent this way, each with the same tx hash as predicted.</aside>
 </section>
 
 <!-- 2 · PROBLEM -->
@@ -619,7 +619,7 @@ compare  <span class="hl">14/14 fields match</span></div>
   <div class="cols">
     <div class="c plate">
       <span class="lab">Uses</span>
-      <h3>The node, not a mock</h3>
+      <h3>Real chain data, not a mock</h3>
       <ul>
         <li>The historical-state RPC at a block hash: <code>state_getKeysPaged</code>, <code>state_queryStorageAt</code>.</li>
         <li>The <code>portaldot_dev</code> 2.0.0 node (community tarball), booted with zero peers.</li>
