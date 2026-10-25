@@ -100,7 +100,7 @@ p code, li code, td code, .what code { font-size: .84em; }
 .s1 .dps .val { font-size: 46px; }
 .s1 .ver { position: absolute; left: 120px; top: 908px; font: 700 18px/1 var(--font-data); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
 .s1 .scene { position: absolute; left: 1096px; top: 124px; width: 704px; height: auto; overflow: visible; }
-.s1 .term { position: absolute; left: 1030px; top: 700px; width: 770px; background: var(--ink); color: var(--plate); border-radius: 8px; box-shadow: 8px 8px 0 var(--after);
+.s1 .term { position: absolute; left: 1030px; top: 676px; width: 770px; background: var(--ink); color: var(--plate); border-radius: 8px; box-shadow: 8px 8px 0 var(--after);
   padding: 20px 24px; font: 400 18px/1.6 var(--font-data); white-space: pre; }
 .s1 .term .p { color: var(--bg); }
 .s1 .term .hl { background: var(--bg); color: var(--ink); padding: 0 3px; }
@@ -151,11 +151,12 @@ p code, li code, td code, .what code { font-size: .84em; }
 .s4 .rp .lab { color: var(--plate); }
 .s4 .rp b { font: 700 40px/1 var(--font-data); display: inline-block; margin-top: 6px; }
 .s4 .rp span.fee { font: 700 20px/1 var(--font-body); margin-left: 14px; }
+.s4 h2 { margin-top: 24px; }
 .s4 .why { position: absolute; left: 120px; top: 852px; width: 1680px; font: 400 23px/1.4 var(--font-body); }
 
 /* 5 · fidelity */
-.s5 .v3 { position: absolute; left: 120px; top: 296px; width: 1040px; height: 524px; padding: 34px 40px; }
-.s5 .ctl { position: absolute; left: 1210px; top: 296px; width: 590px; height: 524px; padding: 30px 36px; }
+.s5 .v3 { position: absolute; left: 120px; top: 336px; width: 1040px; height: 524px; padding: 34px 40px; }
+.s5 .ctl { position: absolute; left: 1210px; top: 336px; width: 590px; height: 524px; padding: 30px 36px; }
 .s5 .row { display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 16px; margin-top: 22px; }
 .s5 .cell { border-top: 4px solid var(--after); padding-top: 12px; }
 .s5 .cell .val { font-size: 40px; color: var(--after); margin-top: 0; }
@@ -171,13 +172,13 @@ p code, li code, td code, .what code { font-size: .84em; }
 .s6 .diagram { position: absolute; left: 120px; top: 262px; width: 1680px; height: 700px; }
 
 /* 7 · why it's new */
-.s7 .rows { position: absolute; left: 120px; top: 300px; width: 900px; }
+.s7 .rows { position: absolute; left: 120px; top: 350px; width: 900px; }
 .s7 .r { padding: 18px 0 18px; border-top: 3px solid var(--ink); }
 .s7 .r h3 { font: 400 29px/1.1 var(--font-display); text-transform: uppercase; }
 .s7 .r p { font: 400 22px/1.4 var(--font-body); margin-top: 8px; }
 .s7 .r code { font-size: 19px; }
 .s7 table { border-collapse: separate; border-spacing: 0; }
-.s7 .tbl { position: absolute; left: 1080px; top: 300px; width: 720px; padding: 28px 30px; }
+.s7 .tbl { position: absolute; left: 1080px; top: 350px; width: 720px; padding: 28px 30px; }
 .s7 .tbl table { position: static; width: 100%; }
 .s7 th { font: 700 17px/1.25 var(--font-body); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); text-align: left; padding: 0 20px 12px 0; vertical-align: bottom; }
 .s7 td { font: 400 22px/1.35 var(--font-body); padding: 26px 10px 26px 0; border-top: 2px solid #C9C4B8; vertical-align: top; }
@@ -279,13 +280,13 @@ body.presenter .slide.active .speaker-notes { display: block; position: absolute
   </div>
   <div class="ver">v0.1.0 · MIT · Python 3.11+ · AI-assisted, see slide 10</div>
   <svg class="scene" viewBox="0 0 740 530" role="img" aria-labelledby="bay-tc">
-     <title id="bay-tc">A forklift carries pallet #118,061 (5,508 keys) from the V3 testnet rack, where it stays as a read-only outline, and sets it on your bench, where it turns blue: writable.</title>
+     <title id="bay-tc">A forklift carries the state lifted at block #118,061 (5,508 keys) from the V3 testnet rack, where it stays as an outline (the lift only reads), and sets it on your bench, where it turns blue: writable.</title>
      <defs>
       <pattern id="hzc" width="22" height="22" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="11" height="22" fill="#1E1F1C"/></pattern>
       <filter id="glowc" x="-30%" y="-300%" width="160%" height="700%"><feGaussianBlur stdDeviation="8"/></filter>
      </defs>
      <!-- rack: the live chain, steel outline -->
-     <text x="16" y="62" font-family="Martian Mono, monospace" font-size="13" font-weight="700" fill="#4E4636" letter-spacing=".05em">V3 TESTNET · READ-ONLY</text>
+     <text x="16" y="62" font-family="Martian Mono, monospace" font-size="15" font-weight="700" fill="#4E4636" letter-spacing=".05em">V3 TESTNET · LIFT READS ONLY</text>
      <g fill="none" stroke="#5C6166" stroke-width="4">
       <path d="M16 470V82M210 470V82M16 202H210M16 342H210"/>
       <g stroke-dasharray="7 6" stroke-width="3">
@@ -307,9 +308,9 @@ body.presenter .slide.active .speaker-notes { display: block; position: absolute
       <rect x="526" y="208" width="120" height="68" rx="4" fill="#E9E6DF" stroke="#1E1F1C" stroke-width="2"/>
       <circle cx="534" cy="216" r="2.5" fill="#5C6166"/><circle cx="638" cy="216" r="2.5" fill="#5C6166"/>
       <text x="586" y="234" text-anchor="middle" font-family="Martian Mono, monospace" font-weight="700" font-size="16" fill="#1E1F1C">#118,061</text>
-      <text x="586" y="252" text-anchor="middle" font-family="Martian Mono, monospace" font-size="11" fill="#1E1F1C">5,508 KEYS</text>
-      <text class="t-racked" x="586" y="268" text-anchor="middle" font-family="Martian Mono, monospace" font-size="9.5" font-weight="700" fill="#5C6166" letter-spacing=".08em">RACKED</text>
-      <text class="t-lifted" x="586" y="268" text-anchor="middle" font-family="Martian Mono, monospace" font-size="9.5" font-weight="700" fill="#1846D8" letter-spacing=".08em">WRITABLE</text>
+      <text x="586" y="252" text-anchor="middle" font-family="Martian Mono, monospace" font-size="12.5" fill="#1E1F1C">5,508 KEYS</text>
+      <text class="t-racked" x="586" y="268" text-anchor="middle" font-family="Martian Mono, monospace" font-size="12" font-weight="700" fill="#5C6166" letter-spacing=".06em">RACKED</text>
+      <text class="t-lifted" x="586" y="268" text-anchor="middle" font-family="Martian Mono, monospace" font-size="12" font-weight="700" fill="#1846D8" letter-spacing=".06em">WRITABLE</text>
       <path d="M504 302H664V332H504Z" fill="#1E1F1C"/>
       <rect x="520" y="310" width="52" height="14" fill="#F5B300"/><rect x="596" y="310" width="52" height="14" fill="#F5B300"/>
      </g></g>
@@ -330,11 +331,12 @@ body.presenter .slide.active .speaker-notes { display: block; position: absolute
       </g>
      </g>
      <line x1="0" y1="470" x2="740" y2="470" stroke="#1E1F1C" stroke-width="5"/>
-     <text x="16" y="500" font-family="Martian Mono, monospace" font-size="12" fill="#4E4636">racked: stays live, read-only</text>
-     <text x="736" y="500" text-anchor="end" font-family="Martian Mono, monospace" font-size="13" font-weight="700" fill="#1E1F1C" letter-spacing=".05em">YOUR BENCH · fork-v3 · WRITABLE</text>
+     <text x="16" y="496" font-family="Martian Mono, monospace" font-size="14" fill="#4E4636">racked: the lift only</text><text x="16" y="516" font-family="Martian Mono, monospace" font-size="14" fill="#4E4636">reads; stays live</text>
+     <text x="736" y="500" text-anchor="end" font-family="Martian Mono, monospace" font-size="15" font-weight="700" fill="#1E1F1C" letter-spacing=".04em">YOUR BENCH · fork-v3 · WRITABLE</text>
     </svg>
   <div class="term" aria-label="forklift rehearse and replay output for V3 extrinsic 118621-1"><span class="p">$ </span>forklift rehearse Balances.transfer_keep_alive … --send
-chain    #118,621 118621-1 ok · finalized · tx 0x2247…c36f
+chain    #118,621 118621-1 ok · finalized · fee …
+         · tx 0x2247…c36f
 compare  8/14 fields match · DIFFERS: …,
          inclusion_height, fee, …
 <span class="p">$ </span>forklift replay 118621-1
@@ -403,7 +405,7 @@ compare  <span class="hl">14/14 fields match</span></div>
   </div>
   <div class="ctrl racked">
     <span class="tag-racked">Control path</span>
-    <p>Mainnet state (spec 1002, read-only) spliced into the official <code>portaldot_dev</code> 2.0.0 node, labelled <code>fork-1002-fast</code>, not V3: fund an account, act as a real whale and nominator, and a 169-byte Fork Receipt contract.</p>
+    <p>Mainnet state (spec 1002, read-only) spliced into the <code>portaldot_dev</code> 2.0.0 node (community tarball), labelled <code>fork-1002-fast</code>, not V3: fund an account, act as a real whale and nominator, and a 169-byte Fork Receipt contract.</p>
   </div>
   <aside class="speaker-notes">Five commands. Lift reads the chain at one block hash. Fork runs V3's own runtime on that state. Verify compares the fork with the live chain. Rehearse predicts a transaction on the fork, then sends the same bytes. Replay re-runs any V3 extrinsic on its parent block. The mainnet path is the control, always labelled.</aside>
 </section>
@@ -582,7 +584,7 @@ compare  <span class="hl">14/14 fields match</span></div>
     <text x="0" y="612" font-size="19" font-weight="700" fill="#1E1F1C">The one write path to a real chain. Every other write goes to a loopback fork.</text>
     <text x="0" y="666" font-size="19" fill="#1E1F1C">Every run writes <tspan font-family="Martian Mono" font-weight="700" font-size="17">evidence/*.json</tspan>; <tspan font-family="Martian Mono" font-weight="700" font-size="17">scripts/proof.py</tspan> generates <tspan font-family="Martian Mono" font-weight="700" font-size="17">docs/PROOF.md</tspan> from it.</text>
   </svg>
-  <aside class="speaker-notes">Left is the rack: the live chains, read at a pinned block hash. The middle is Forklift's Python modules. Right is the bench: local forks on loopback. The V3 fork runs on Chopsticks with V3's own runtime; the mainnet fork runs on the official portaldot_dev node. The one write to a real chain is rehearse --send, and only to V3.</aside>
+  <aside class="speaker-notes">Left is the rack: the live chains, read at a pinned block hash. The middle is Forklift's Python modules. Right is the bench: local forks on loopback. The V3 fork runs on Chopsticks with V3's own runtime; the mainnet fork runs on the portaldot_dev node binary. The one write to a real chain is rehearse --send, and only to V3.</aside>
 </section>
 
 <!-- 7 · WHY IT'S NEW -->
@@ -620,7 +622,7 @@ compare  <span class="hl">14/14 fields match</span></div>
       <h3>The node, not a mock</h3>
       <ul>
         <li>The historical-state RPC at a block hash: <code>state_getKeysPaged</code>, <code>state_queryStorageAt</code>.</li>
-        <li>The official <code>portaldot_dev</code> 2.0.0 node, booted with zero peers.</li>
+        <li>The <code>portaldot_dev</code> 2.0.0 node (community tarball), booted with zero peers.</li>
         <li>V3's own runtime wasm (spec 3002) on the fork.</li>
         <li>Both chains: the V3 testnet and mainnet state (spec 1002).</li>
       </ul>
@@ -647,7 +649,7 @@ compare  <span class="hl">14/14 fields match</span></div>
       </ul>
     </div>
   </div>
-  <aside class="speaker-notes">Forklift is node tooling in the literal sense: it reads the node's historical-state RPC, boots the official node binary, and runs V3's own runtime. On the way it recorded twelve friction points a Portaldot builder can hit, each with how to see it again. Everything is MIT, and every V3 figure is regenerated from evidence files.</aside>
+  <aside class="speaker-notes">Forklift is node tooling in the literal sense: it reads the node's historical-state RPC, boots the portaldot_dev node binary, and runs V3's own runtime. On the way it recorded twelve friction points a Portaldot builder can hit, each with how to see it again. Everything is MIT, and every V3 figure is regenerated from evidence files.</aside>
 </section>
 
 <!-- 9 · USERS AND MODEL -->
