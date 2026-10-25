@@ -27,6 +27,11 @@
 
 ---
 
+<div align="center">
+  <img src="docs/broll.gif" alt="Forklift b-roll from the demo video: forklift rehearse predicts a transfer on the fork, sends the same bytes to V3 with the same tx hash, and lists the fields that differ" width="100%">
+  <br/><sub>B-roll: rehearse on the fork, then send to V3 (2× speed) · <a href="https://youtu.be/iVvEXQvfTYY">full demo video</a></sub>
+</div>
+
 Portaldot Hacker House 2026 · Track: Node Operations & Tooling
 
 <a id="project-name"></a>
