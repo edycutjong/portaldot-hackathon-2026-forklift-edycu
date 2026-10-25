@@ -37,6 +37,13 @@ body.idle { cursor: none; }
 .viewport { position: fixed; inset: 0; }
 .stage { position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px; transform-origin: 50% 50%; }
 .slide { position: absolute; inset: 0; display: none; overflow: hidden; background: var(--bg); }
+.slide::before { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(1300px 600px at 76% 0%, color-mix(in srgb, var(--plate) 50%, transparent), transparent 70%),
+    radial-gradient(760px 420px at 14% 6%, color-mix(in srgb, var(--plate) 24%, transparent), transparent 70%),
+    repeating-linear-gradient(90deg, transparent 0 319px, color-mix(in srgb, var(--rule) 30%, transparent) 319px 322px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 .12 0 0 0 0 .1 0 0 0 0 .05 0 0 0 .08 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"); }
+mark { background: var(--after); color: var(--plate); padding: 0 .12em; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
 .slide.active { display: block; }
 a { color: inherit; text-decoration-thickness: 2px; text-underline-offset: 4px; }
 
@@ -49,7 +56,8 @@ a { color: inherit; text-decoration-thickness: 2px; text-underline-offset: 4px; 
 .tb code { font: 700 17px/1 var(--font-data); letter-spacing: 0; text-transform: none; }
 
 /* type */
-.eyebrow { font: 700 21px/1.2 var(--font-body); text-transform: uppercase; letter-spacing: .14em; color: var(--muted); }
+.eyebrow { display: flex; align-items: center; gap: 16px; font: 700 20px/1.25 var(--font-data); text-transform: uppercase; letter-spacing: .08em; color: var(--ink); }
+.eyebrow::before { content: ""; flex: none; width: 44px; height: 20px; background: repeating-linear-gradient(-45deg, var(--hazard) 0 8px, transparent 8px 16px); }
 h1, h2 { font-family: var(--font-display); font-weight: 400; text-transform: uppercase; letter-spacing: .02em; line-height: 1.02; }
 h2 { font-size: 68px; margin-top: 14px; }
 code, .mono { font-family: var(--font-data); font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -78,17 +86,25 @@ p code, li code, td code, .what code { font-size: .84em; }
 .tag-racked { display: inline-block; font: 700 16px/1 var(--font-body); text-transform: uppercase; letter-spacing: .12em;
   border: 3px solid var(--before); color: var(--ink); padding: 4px 10px 3px; border-radius: 4px; }
 
-/* 1 · cover */
-.s1 .eyebrow { position: absolute; left: 120px; top: 110px; }
-.s1 h1 { position: absolute; left: 112px; top: 150px; font-size: 150px; }
-.s1 .lede { position: absolute; left: 120px; top: 345px; width: 780px; font: 400 34px/1.35 var(--font-body); }
-.s1 .dps { position: absolute; left: 120px; top: 585px; display: flex; gap: 18px; }
-.s1 .dps .plate { padding: 26px 30px 24px; min-width: 248px; }
-.s1 .dps .val { font-size: 40px; }
-.s1 .txs { position: absolute; left: 120px; top: 770px; width: 820px; font: 400 25px/1.5 var(--font-body); }
-.s1 .txs code { font-size: 23px; white-space: nowrap; }
-.s1 .ver { position: absolute; left: 120px; top: 900px; font: 700 20px/1 var(--font-body); text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
-.s1 .scene { position: absolute; left: 960px; top: 150px; width: 860px; height: 676px; }
+/* 1 · cover: mirrors the landing hero (same headline, same lift scene, same data plate) */
+.s1 .brand { position: absolute; left: 120px; top: 78px; display: flex; align-items: center; gap: 18px; font: 400 40px/1 var(--font-display); letter-spacing: .02em; }
+.s1 .brand svg { width: 60px; height: 60px; }
+.s1 .eyebrow { position: absolute; left: 120px; top: 188px; font-size: 18px; }
+.s1 h1 { position: absolute; left: 116px; top: 246px; font-size: 80px; line-height: 1.15; }
+.s1 h1 span { display: block; }
+.s1 .dps { position: absolute; left: 120px; top: 716px; display: grid; grid-template-columns: repeat(3, 268px); border: 3px solid var(--ink); border-radius: 8px; overflow: hidden;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--plate) 72%, white), color-mix(in srgb, var(--plate) 88%, var(--ink))); box-shadow: 0 4px 0 var(--rule); }
+.s1 .dps > div { padding: 22px 24px 20px; }
+.s1 .dps > div + div { border-left: 2px dashed var(--before); }
+.s1 .dps .lab { font: 700 15px/1.25 var(--font-data); letter-spacing: .06em; }
+.s1 .dps .val { font-size: 46px; }
+.s1 .ver { position: absolute; left: 120px; top: 908px; font: 700 18px/1 var(--font-data); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.s1 .scene { position: absolute; left: 1096px; top: 124px; width: 704px; height: auto; overflow: visible; }
+.s1 .term { position: absolute; left: 1030px; top: 700px; width: 770px; background: var(--ink); color: var(--plate); border-radius: 8px; box-shadow: 8px 8px 0 var(--after);
+  padding: 20px 24px; font: 400 18px/1.6 var(--font-data); white-space: pre; }
+.s1 .term .p { color: var(--bg); }
+.s1 .term .hl { background: var(--bg); color: var(--ink); padding: 0 3px; }
+.s1 .t-racked { opacity: 0; }
 
 /* 2 · problem: rack on the left, bench on the right, nothing crosses */
 .s2 .rack { position: absolute; left: 120px; top: 360px; width: 760px; height: 470px; padding: 40px 44px; }
@@ -218,10 +234,16 @@ body.presenter .slide.active .speaker-notes { display: block; position: absolute
   background: var(--ink); color: var(--plate); padding: 26px 120px; font: 400 26px/1.45 var(--font-body); z-index: 6; }
 
 @media (prefers-reduced-motion: no-preference) {
-  .s1.active .load { animation: lift 1.1s cubic-bezier(.3,.7,.2,1) both; }
-  .s1.active .pool { animation: pool .5s ease-out 1s both; }
-  @keyframes lift { 0% { transform: translate(-150px, -20px); } 70% { transform: translate(0, -8px); } 85% { transform: translate(0, 3px); } 100% { transform: none; } }
-  @keyframes pool { from { opacity: 0; } to { opacity: 1; } }
+  .s1.active .truck, .s1.active .loadx { animation: drive 1.15s cubic-bezier(.16, 1, .3, 1) .3s backwards; }
+  .s1.active .forks, .s1.active .loady { animation: lower .6s cubic-bezier(.5, 0, .3, 1.4) 1.45s backwards; }
+  .s1.active .fill, .s1.active .t-lifted { animation: on .4s ease-out 2.03s backwards; }
+  .s1.active .t-racked { animation: off .4s ease-out 2.03s backwards; }
+  .s1.active .pool { transform-box: fill-box; transform-origin: center; animation: pool .7s cubic-bezier(.16, 1, .3, 1) 2.07s backwards; }
+  @keyframes drive { from { transform: translateX(-360px); } }
+  @keyframes lower { from { transform: translateY(-122px); } }
+  @keyframes on { from { opacity: 0; } }
+  @keyframes off { from { opacity: 1; } }
+  @keyframes pool { from { opacity: 0; transform: scaleX(.25); } }
 }
 
 /* print: one slide per page, final state, no chrome */
@@ -234,6 +256,10 @@ body.presenter .slide.active .speaker-notes { display: block; position: absolute
     break-inside: avoid; page-break-inside: avoid; transform: none !important; }
   .speaker-notes { display: none !important; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
+  /* the grain and the uprights rasterise per page in a PDF (9 MB); print keeps the high-bay light only */
+  .slide::before { background:
+    radial-gradient(1300px 600px at 76% 0%, color-mix(in srgb, var(--plate) 50%, transparent), transparent 70%),
+    radial-gradient(760px 420px at 14% 6%, color-mix(in srgb, var(--plate) 24%, transparent), transparent 70%); }
 }
 </style>
 </head>
@@ -243,54 +269,77 @@ body.presenter .slide.active .speaker-notes { display: block; position: absolute
 
 <!-- 1 · COVER: the frozen moment of design.md §2, re-aimed at the V3 pin -->
 <section class="slide s1" data-title="Cover">
+  <div class="brand"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#1E1F1C"/><path d="M68 76a10 10 0 0 1 10-10h36a10 10 0 0 1 10 10V446H68Z" fill="#F5B300"/><path d="M156 296H428V378H156ZM190 316V358H276V316ZM308 316V358H394V316Z" fill="#F5B300" fill-rule="evenodd"/><path d="M124 328H448l18 7v8H124Z" fill="#F5B300"/><rect x="164" y="112" width="256" height="172" rx="12" fill="#1846D8"/><rect x="192" y="144" width="124" height="28" rx="4" fill="#E9E6DF"/></svg>FORKLIFT</div>
   <div class="eyebrow">Portaldot Hacker House 2026 · Node Operations &amp; Tooling</div>
-  <h1>Forklift</h1>
-  <p class="lede">Lift a chain's real state onto your bench. Predict the transaction there first. Then send the same bytes to the Portaldot V3 testnet.</p>
+  <h1><span>Your transaction</span><span>runs twice. The</span><span>first time is</span><span><mark>a rehearsal.</mark></span></h1>
   <div class="dps">
-    <div class="plate"><span class="lab">V3 pin block</span><span class="val">#118,061</span></div>
-    <div class="plate"><span class="lab">Keys lifted</span><span class="val">5,508</span></div>
-    <div class="plate"><span class="lab">Verify, sampled</span><span class="val on">200/200</span></div>
+    <div><span class="lab">Keys lifted · #118,061</span><span class="val">5,508</span></div>
+    <div><span class="lab">Sampled keys identical</span><span class="val on">200/200</span></div>
+    <div><span class="lab">V3 sends, same tx hash</span><span class="val">3</span></div>
   </div>
-  <p class="txs">Three real V3 transactions, each predicted on a fork first:<br><code>118555-1</code> · <code>118621-1</code> · <code>118669-1</code></p>
   <div class="ver">v0.1.0 · MIT · Python 3.11+ · AI-assisted, see slide 10</div>
-  <svg class="scene" viewBox="0 0 700 550" role="img" aria-label="A forklift lifts pallet #118,061 off the steel V3 testnet rack onto the bench, where it is filled blue: 5,508 keys lifted, verify 200 of 200 identical">
-    <defs>
-      <pattern id="hz1" width="20" height="20" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="10" height="20" fill="#1E1F1C"/></pattern>
-      <marker id="ah1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#1846D8"/></marker>
-    </defs>
-    <rect x="0" y="470" width="700" height="4" fill="#1E1F1C"/>
-    <!-- rack: the live V3 testnet, read-only (steel) -->
-    <g fill="#5C6166"><rect x="16" y="40" width="10" height="432"/><rect x="226" y="40" width="10" height="432"/>
-      <rect x="16" y="190" width="220" height="9"/><rect x="16" y="330" width="220" height="9"/></g>
-    <g fill="#5C6166"><rect x="38" y="216" width="42" height="112"/><rect x="86" y="216" width="42" height="112"/><rect x="134" y="216" width="42" height="112"/><rect x="182" y="216" width="36" height="112"/>
-      <rect x="38" y="356" width="42" height="112"/><rect x="86" y="356" width="42" height="112"/><rect x="134" y="356" width="42" height="112"/><rect x="182" y="356" width="36" height="112"/></g>
-    <g fill="none" stroke="#5C6166" stroke-width="3" stroke-dasharray="9 6"><rect x="46" y="80" width="160" height="80"/><rect x="40" y="160" width="172" height="26"/></g>
-    <text x="126" y="126" text-anchor="middle" font-family="Martian Mono" font-weight="700" font-size="15" fill="#4E4636">#118,061</text>
-    <text x="16" y="26" font-family="Atkinson Hyperlegible" font-weight="700" font-size="15" letter-spacing="1.5" fill="#1E1F1C">V3 TESTNET · LIVE · READ-ONLY</text>
-    <path d="M212 110 C 300 20, 380 40, 410 150" fill="none" stroke="#1E1F1C" stroke-width="2.5" stroke-dasharray="3 8" stroke-linecap="round"/>
-    <path d="M402 140 l9 13 l6 -15" fill="none" stroke="#1E1F1C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <!-- bench: the writable fork; chevrons mark its edge -->
-    <rect x="380" y="372" width="310" height="18" fill="url(#hz1)"/>
-    <rect x="380" y="390" width="310" height="14" fill="#1E1F1C"/>
-    <rect x="394" y="404" width="16" height="68" fill="#1E1F1C"/><rect x="660" y="404" width="16" height="68" fill="#1E1F1C"/>
-    <ellipse class="pool" cx="535" cy="474" rx="150" ry="9" fill="#1846D8"/>
-    <g class="load">
-      <path d="M338 150 a6 6 0 0 1 6 -6 h16 a6 6 0 0 1 6 6 V472 h-28 Z" fill="#1E1F1C"/>
-      <path d="M366 340 H670 l14 5 v7 H366 Z" fill="#1E1F1C"/>
-      <path d="M400 324 H660 V372 H400 Z M426 336 V360 H506 V336 Z M554 336 V360 H634 V336 Z" fill="#1E1F1C" fill-rule="evenodd"/>
-      <rect x="426" y="340" width="80" height="12" fill="#1E1F1C"/><rect x="554" y="340" width="80" height="12" fill="#1E1F1C"/>
-      <rect x="408" y="160" width="244" height="164" rx="10" fill="#1846D8"/>
-      <rect x="428" y="178" width="178" height="40" rx="4" fill="#E9E6DF"/>
-      <text x="517" y="205" text-anchor="middle" font-family="Martian Mono" font-weight="700" font-size="18" fill="#1E1F1C">#118,061</text>
-      <text x="430" y="252" font-family="Martian Mono" font-weight="700" font-size="14" fill="#E9E6DF">5,508 KEYS LIFTED</text>
-      <text x="430" y="276" font-family="Martian Mono" font-weight="700" font-size="14" fill="#E9E6DF">portaldot-v3 / 3002</text>
-      <text x="430" y="300" font-family="Martian Mono" font-weight="700" font-size="14" fill="#E9E6DF">WRITABLE · LOOPBACK</text>
-    </g>
-    <!-- verify reads back against the live chain -->
-    <path d="M520 488 C 430 504, 300 504, 244 480" fill="none" stroke="#1846D8" stroke-width="3.5" marker-end="url(#ah1)"/>
-    <text x="252" y="536" font-family="Martian Mono" font-weight="700" font-size="16" fill="#1E1F1C">verify → 200/200 identical, exit 0</text>
-  </svg>
-  <aside class="speaker-notes">Forklift picks one block of a Portaldot chain, block 118,061 of the V3 testnet here, lifts its state onto a fork on your machine, and checks that fork against the live chain. Then it predicts a transaction on the fork before the same signed bytes go to V3. Three real V3 transactions were sent this way.</aside>
+  <svg class="scene" viewBox="0 0 740 530" role="img" aria-labelledby="bay-tc">
+     <title id="bay-tc">A forklift carries pallet #118,061 (5,508 keys) from the V3 testnet rack, where it stays as a read-only outline, and sets it on your bench, where it turns blue: writable.</title>
+     <defs>
+      <pattern id="hzc" width="22" height="22" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="11" height="22" fill="#1E1F1C"/></pattern>
+      <filter id="glowc" x="-30%" y="-300%" width="160%" height="700%"><feGaussianBlur stdDeviation="8"/></filter>
+     </defs>
+     <!-- rack: the live chain, steel outline -->
+     <text x="16" y="62" font-family="Martian Mono, monospace" font-size="13" font-weight="700" fill="#4E4636" letter-spacing=".05em">V3 TESTNET · READ-ONLY</text>
+     <g fill="none" stroke="#5C6166" stroke-width="4">
+      <path d="M16 470V82M210 470V82M16 202H210M16 342H210"/>
+      <g stroke-dasharray="7 6" stroke-width="3">
+       <rect x="38" y="96" width="150" height="76" rx="6"/><path d="M30 172H196V202H30Z"/>
+       <rect x="38" y="244" width="150" height="68" rx="6" opacity=".55"/><path d="M30 312H196V342H30Z" opacity=".55"/>
+      </g>
+     </g>
+     <rect x="62" y="118" width="102" height="34" rx="3" fill="none" stroke="#5C6166" stroke-width="2"/>
+     <text x="113" y="140" text-anchor="middle" font-family="Martian Mono, monospace" font-size="13" font-weight="700" fill="#4E4636">#118,061</text>
+     <!-- bench: your fork; chevrons mark where writable begins -->
+     <path d="M500 332H732V352H500Z" fill="url(#hzc)" stroke="#1E1F1C" stroke-width="2"/>
+     <path d="M500 352H732V364H500Z" fill="#1E1F1C"/>
+     <path d="M518 364V470M714 364V470" stroke="#1E1F1C" stroke-width="10"/>
+     <ellipse class="pool" cx="586" cy="333" rx="132" ry="9" fill="#1846D8" filter="url(#glowc)"/>
+     <!-- the load (moves with the truck, then is set down) -->
+     <g class="loadx"><g class="loady">
+      <rect x="512" y="194" width="148" height="108" rx="6" fill="#F5B300" stroke="#5C6166" stroke-width="3" stroke-dasharray="7 6"/>
+      <rect class="fill" x="512" y="194" width="148" height="108" rx="6" fill="#1846D8" stroke="#1E1F1C" stroke-width="2"/>
+      <rect x="526" y="208" width="120" height="68" rx="4" fill="#E9E6DF" stroke="#1E1F1C" stroke-width="2"/>
+      <circle cx="534" cy="216" r="2.5" fill="#5C6166"/><circle cx="638" cy="216" r="2.5" fill="#5C6166"/>
+      <text x="586" y="234" text-anchor="middle" font-family="Martian Mono, monospace" font-weight="700" font-size="16" fill="#1E1F1C">#118,061</text>
+      <text x="586" y="252" text-anchor="middle" font-family="Martian Mono, monospace" font-size="11" fill="#1E1F1C">5,508 KEYS</text>
+      <text class="t-racked" x="586" y="268" text-anchor="middle" font-family="Martian Mono, monospace" font-size="9.5" font-weight="700" fill="#5C6166" letter-spacing=".08em">RACKED</text>
+      <text class="t-lifted" x="586" y="268" text-anchor="middle" font-family="Martian Mono, monospace" font-size="9.5" font-weight="700" fill="#1846D8" letter-spacing=".08em">WRITABLE</text>
+      <path d="M504 302H664V332H504Z" fill="#1E1F1C"/>
+      <rect x="520" y="310" width="52" height="14" fill="#F5B300"/><rect x="596" y="310" width="52" height="14" fill="#F5B300"/>
+     </g></g>
+     <!-- the truck -->
+     <g class="truck">
+      <path d="M292 442V384Q292 364 312 364H392L412 342H472V442Z" fill="#1E1F1C"/>
+      <path d="M292 404H268Q256 404 256 416V442H292Z" fill="#1E1F1C"/>
+      <path d="M396 342V312Q396 300 408 300H418V342Z" fill="#1E1F1C"/>
+      <path d="M360 364L372 256M462 342V256M344 256H480" stroke="#1E1F1C" stroke-width="10" stroke-linecap="round" fill="none"/>
+      <path d="M446 334L458 300" stroke="#1E1F1C" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="326" cy="446" r="25" fill="#1E1F1C"/><circle cx="436" cy="444" r="28" fill="#1E1F1C"/>
+      <circle cx="326" cy="446" r="8" fill="#F5B300"/><circle cx="436" cy="444" r="9" fill="#F5B300"/>
+      <rect x="472" y="136" width="16" height="310" fill="#1E1F1C"/>
+      <path d="M480 150V430" stroke="#F5B300" stroke-width="2" opacity=".55"/>
+      <g class="forks">
+       <rect x="488" y="210" width="12" height="118" fill="#1E1F1C"/>
+       <path d="M488 311H668l12 4v5H488Z" fill="#1E1F1C"/>
+      </g>
+     </g>
+     <line x1="0" y1="470" x2="740" y2="470" stroke="#1E1F1C" stroke-width="5"/>
+     <text x="16" y="500" font-family="Martian Mono, monospace" font-size="12" fill="#4E4636">racked: stays live, read-only</text>
+     <text x="736" y="500" text-anchor="end" font-family="Martian Mono, monospace" font-size="13" font-weight="700" fill="#1E1F1C" letter-spacing=".05em">YOUR BENCH · fork-v3 · WRITABLE</text>
+    </svg>
+  <div class="term" aria-label="forklift rehearse and replay output for V3 extrinsic 118621-1"><span class="p">$ </span>forklift rehearse Balances.transfer_keep_alive … --send
+chain    #118,621 118621-1 ok · finalized · tx 0x2247…c36f
+compare  8/14 fields match · DIFFERS: …,
+         inclusion_height, fee, …
+<span class="p">$ </span>forklift replay 118621-1
+compare  <span class="hl">14/14 fields match</span></div>
+  <aside class="speaker-notes">Your transaction runs twice; the first time is a rehearsal. Forklift lifts the Portaldot V3 testnet at one block, 118,061, onto your machine, checks the fork against the live chain, 200 of 200 sampled keys identical, then runs your signed bytes on the fork before the same bytes go to V3. Three real V3 transactions were sent this way, each with the same tx hash as predicted.</aside>
 </section>
 
 <!-- 2 · PROBLEM -->
@@ -363,7 +412,7 @@ body.presenter .slide.active .speaker-notes { display: block; position: absolute
 <section class="slide s4" data-title="Live V3 proof">
   <div class="head">
     <div class="eyebrow">Live V3 proof · signer <span class="mono">5EnCf9Pa…ejvg</span> · 2026-10-20 · all finalized</div>
-    <h2>Predicted on a fork. Then sent to V3.</h2>
+    <h2>Predicted on a fork. <mark>Then sent to V3.</mark></h2>
   </div>
   <div class="tags">
     <article class="tag plate"><div class="hole"></div>
@@ -647,8 +696,9 @@ body.presenter .slide.active .speaker-notes { display: block; position: absolute
     </ul>
   </div>
   <div class="links plate">
-    <div class="qr" aria-label="QR code: the GitHub repository"><svg viewBox="0 0 41 41" class="segno"><path fill="#e9e6df" d="M0 0h41v41h-41z"/><path class="qrline" stroke="#1e1f1c" d="M2 2.5h7m1 0h1m1 0h2m1 0h1m1 0h2m4 0h1m1 0h1m4 0h1m1 0h7m-37 1h1m5 0h1m1 0h1m3 0h2m3 0h2m3 0h5m3 0h1m5 0h1m-37 1h1m1 0h3m1 0h1m4 0h2m6 0h1m2 0h1m2 0h4m1 0h1m1 0h3m1 0h1m-37 1h1m1 0h3m1 0h1m1 0h1m2 0h2m2 0h3m2 0h1m1 0h2m1 0h3m2 0h1m1 0h3m1 0h1m-37 1h1m1 0h3m1 0h1m2 0h2m1 0h1m6 0h1m4 0h5m1 0h1m1 0h3m1 0h1m-37 1h1m5 0h1m2 0h2m4 0h5m1 0h2m1 0h1m3 0h1m1 0h1m5 0h1m-37 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-29 1h2m1 0h1m2 0h1m1 0h1m2 0h2m1 0h3m2 0h2m-29 1h1m1 0h2m1 0h3m1 0h2m2 0h1m1 0h1m2 0h2m1 0h1m2 0h1m1 0h2m2 0h1m2 0h1m1 0h2m-37 1h1m2 0h1m4 0h1m1 0h2m1 0h3m2 0h1m1 0h1m1 0h2m1 0h1m2 0h2m3 0h1m1 0h1m-33 1h5m1 0h1m6 0h2m1 0h3m1 0h1m1 0h1m2 0h1m4 0h1m-32 1h2m3 0h3m3 0h2m1 0h1m1 0h1m1 0h1m1 0h1m1 0h4m1 0h3m1 0h2m-34 1h2m3 0h1m8 0h1m1 0h1m1 0h2m1 0h1m2 0h2m2 0h2m1 0h1m1 0h3m-36 1h4m2 0h2m1 0h2m1 0h5m1 0h1m4 0h4m1 0h5m1 0h2m-36 1h4m1 0h1m2 0h2m2 0h2m1 0h1m2 0h2m3 0h3m1 0h1m3 0h1m1 0h2m-35 1h2m1 0h1m2 0h1m2 0h1m4 0h1m3 0h6m5 0h3m2 0h1m-33 1h2m1 0h1m2 0h3m3 0h1m1 0h1m1 0h1m3 0h1m1 0h1m3 0h1m1 0h1m1 0h4m-37 1h1m1 0h4m2 0h2m3 0h1m3 0h3m1 0h4m2 0h1m1 0h3m1 0h4m-37 1h1m2 0h1m2 0h3m2 0h1m8 0h1m1 0h1m3 0h2m3 0h1m1 0h1m1 0h2m-37 1h2m1 0h3m1 0h1m1 0h1m3 0h5m2 0h1m1 0h3m2 0h2m2 0h1m1 0h1m1 0h1m-35 1h2m3 0h1m2 0h1m1 0h2m1 0h6m1 0h1m6 0h2m1 0h2m3 0h1m-36 1h1m9 0h4m1 0h6m1 0h1m1 0h1m2 0h2m3 0h1m-32 1h1m3 0h1m1 0h1m1 0h1m3 0h1m1 0h1m1 0h1m1 0h1m2 0h2m1 0h1m1 0h2m1 0h1m-32 1h1m1 0h3m5 0h2m5 0h1m1 0h1m2 0h1m2 0h2m3 0h1m1 0h5m-35 1h1m2 0h3m2 0h4m2 0h1m4 0h1m1 0h5m2 0h1m1 0h1m1 0h1m1 0h1m-36 1h1m1 0h2m2 0h1m1 0h1m2 0h3m2 0h1m3 0h1m2 0h5m1 0h1m1 0h1m1 0h3m-36 1h1m3 0h2m2 0h3m6 0h1m2 0h1m2 0h1m1 0h1m2 0h1m1 0h2m1 0h2m-36 1h1m2 0h2m2 0h3m3 0h3m2 0h4m4 0h3m1 0h3m2 0h2m-32 1h3m1 0h3m1 0h2m3 0h2m1 0h2m1 0h2m1 0h6m1 0h1m-27 1h1m3 0h1m2 0h2m3 0h6m1 0h2m3 0h1m1 0h1m1 0h1m-37 1h7m1 0h2m1 0h2m1 0h2m2 0h1m1 0h1m1 0h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h3m-37 1h1m5 0h1m1 0h2m1 0h2m3 0h4m1 0h1m1 0h2m1 0h3m3 0h1m-33 1h1m1 0h3m1 0h1m3 0h2m1 0h1m2 0h1m3 0h1m5 0h1m1 0h6m-34 1h1m1 0h3m1 0h1m1 0h3m2 0h1m1 0h3m3 0h1m1 0h2m1 0h2m1 0h2m1 0h1m1 0h1m1 0h1m-37 1h1m1 0h3m1 0h1m1 0h1m1 0h4m1 0h1m2 0h1m2 0h3m4 0h3m1 0h3m-35 1h1m5 0h1m2 0h1m1 0h1m3 0h1m2 0h2m4 0h3m2 0h1m1 0h4m-35 1h7m1 0h1m2 0h1m4 0h2m6 0h4m4 0h5"/></svg></div>
+    <div class="qr" aria-label="QR code: forklift.edycu.dev"><svg viewBox="0 0 33 33" class="segno"><path fill="#e9e6df" d="M0 0h33v33h-33z"/><path class="qrline" stroke="#1e1f1c" d="M2 2.5h7m2 0h1m3 0h1m4 0h1m3 0h7m-29 1h1m5 0h1m1 0h1m3 0h3m7 0h1m5 0h1m-29 1h1m1 0h3m1 0h1m1 0h6m6 0h1m1 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m4 0h2m1 0h2m1 0h1m1 0h2m1 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m3 0h1m1 0h2m3 0h1m1 0h1m2 0h1m1 0h3m1 0h1m-29 1h1m5 0h1m2 0h3m7 0h2m1 0h1m5 0h1m-29 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-18 1h1m1 0h2m2 0h1m1 0h1m-19 1h3m1 0h2m2 0h1m2 0h3m1 0h1m9 0h2m-26 1h2m1 0h1m1 0h2m1 0h3m1 0h1m1 0h4m1 0h2m1 0h2m2 0h1m-28 1h1m3 0h3m1 0h2m2 0h1m2 0h1m3 0h1m1 0h1m2 0h3m-28 1h2m1 0h1m3 0h2m4 0h2m1 0h1m1 0h1m1 0h1m2 0h1m4 0h1m-29 1h1m4 0h2m1 0h2m1 0h2m2 0h1m1 0h1m3 0h1m1 0h1m2 0h3m-29 1h1m1 0h3m2 0h1m2 0h3m1 0h2m3 0h1m2 0h2m1 0h2m1 0h1m-29 1h1m2 0h1m1 0h4m2 0h1m3 0h5m1 0h1m1 0h3m1 0h2m-27 1h3m2 0h9m1 0h6m1 0h2m1 0h2m-29 1h2m2 0h1m1 0h1m2 0h4m3 0h3m2 0h1m2 0h2m1 0h2m-24 1h1m4 0h1m3 0h1m1 0h2m2 0h1m2 0h1m-24 1h1m1 0h1m1 0h1m1 0h1m1 0h5m1 0h3m3 0h1m1 0h2m-22 1h1m4 0h8m2 0h1m3 0h3m1 0h4m-28 1h2m1 0h1m1 0h2m2 0h4m3 0h8m1 0h1m-19 1h2m1 0h2m1 0h1m1 0h1m1 0h1m1 0h1m3 0h2m1 0h2m-29 1h7m2 0h2m1 0h1m4 0h1m1 0h2m1 0h1m1 0h1m1 0h1m-27 1h1m5 0h1m1 0h4m2 0h2m2 0h1m1 0h1m3 0h1m3 0h1m-29 1h1m1 0h3m1 0h1m4 0h1m2 0h2m2 0h1m1 0h7m-27 1h1m1 0h3m1 0h1m1 0h1m1 0h2m2 0h1m1 0h1m1 0h2m4 0h1m2 0h1m-28 1h1m1 0h3m1 0h1m1 0h1m1 0h1m2 0h4m3 0h1m2 0h1m4 0h1m-29 1h1m5 0h1m1 0h1m1 0h3m3 0h1m3 0h1m3 0h2m1 0h1m-28 1h7m2 0h1m5 0h1m2 0h3m2 0h1m3 0h1"/></svg></div>
     <ul>
+      <li><b>Landing · scan the code</b><a href="https://forklift.edycu.dev/"><code>forklift.edycu.dev</code></a></li>
       <li><b>Repository</b><a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu"><code>github.com/edycutjong/<br>portaldot-hackathon-2026-<br>forklift-edycu</code></a></li>
       <li><b>Proof tables</b><a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/PROOF.md"><code>docs/PROOF.md</code></a></li>
       <li><b>One V3 tx on node-console</b><a href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x0ae8b2b94d34dc27fd931b8095654675510dc53533582ad0cad19712591db8a9"><code>118621-1</code></a></li>
@@ -673,7 +723,7 @@ body.presenter .slide.active .speaker-notes { display: block; position: absolute
     const tb = document.createElement('footer');
     tb.className = 'tb';
     tb.innerHTML = '<span class="name">Forklift</span><span>' + s.dataset.title + '</span>' +
-      '<span>v0.1.0 · facts at build <code>44b7edc</code></span>' +
+      '<span>v0.1.0 · facts at build <code>44b7edc</code> · deck 2026-10-25</span>' +
       '<span>Portaldot Hacker House 2026</span>' +
       '<span class="no">' + pad(i + 1) + ' / ' + pad(N) + '</span>';
     s.appendChild(tb);
