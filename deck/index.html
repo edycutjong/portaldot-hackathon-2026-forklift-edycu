@@ -278,7 +278,7 @@ body.presenter .slide.active .speaker-notes { display: block; position: absolute
     <div><span class="lab">Sampled draws identical</span><span class="val on">200/200</span></div>
     <div><span class="lab">V3 sends, same tx hash</span><span class="val">3</span></div>
   </div>
-  <div class="ver">v0.1.0 · MIT · Python 3.11+ · AI-assisted, see slide 10</div>
+  <div class="ver"><a data-rel href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/releases/latest" style="color:inherit">v0.1.0</a> · MIT · Python 3.11+ · AI-assisted, see slide 10</div>
   <svg class="scene" viewBox="0 0 740 530" role="img" aria-labelledby="bay-tc">
      <title id="bay-tc">A forklift carries the state lifted at block #118,061 (5,508 keys) from the V3 testnet rack, where it stays as an outline (the lift only reads), and sets it on your bench, where it turns blue: writable.</title>
      <defs>
@@ -725,11 +725,14 @@ compare  <span class="hl">14/14 fields match</span></div>
     const tb = document.createElement('footer');
     tb.className = 'tb';
     tb.innerHTML = '<span class="name">Forklift</span><span>' + s.dataset.title + '</span>' +
-      '<span>v0.1.0 · facts at build <code>44b7edc</code> · deck 2026-10-25</span>' +
+      '<span><a data-rel href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/releases/latest" style="color:inherit">v0.1.0</a> · facts at build <code>44b7edc</code> · deck 2026-10-25</span>' +
       '<span>Portaldot Hacker House 2026</span>' +
       '<span class="no">' + pad(i + 1) + ' / ' + pad(N) + '</span>';
     s.appendChild(tb);
   });
+  // release version: baked text first, then the latest tag if the API answers
+  fetch('https://api.github.com/repos/edycutjong/portaldot-hackathon-2026-forklift-edycu/releases/latest').then(r => r.ok ? r.json() : null)
+    .then(j => { if (j && j.tag_name) document.querySelectorAll('[data-rel]').forEach(a => { a.textContent = j.tag_name; }); }).catch(() => {});
   let cur = 0, overview = false;
   const fit = () => {
     const k = Math.min(innerWidth / 1920, innerHeight / 1080);

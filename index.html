@@ -658,13 +658,17 @@ footer .brand { color: var(--bg); font-size: 18px; }
    <li><a href="https://youtu.be/iVvEXQvfTYY">Demo video</a></li>
    <li><a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/LICENSE">MIT License</a></li>
   </ul>
-  <span>Portaldot Hacker House 2026 · DoraHacks</span>
+  <span><a data-rel href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/releases/latest">v0.1.0</a> · Portaldot Hacker House 2026 · DoraHacks</span>
  </div>
 </footer>
 
 <script>
 (() => {
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // release version: baked text first, then the latest tag if the API answers
+  fetch('https://api.github.com/repos/edycutjong/portaldot-hackathon-2026-forklift-edycu/releases/latest').then(r => r.ok ? r.json() : null)
+    .then(j => { if (j && j.tag_name) document.querySelectorAll('[data-rel]').forEach(a => { a.textContent = j.tag_name; }); }).catch(() => {});
 
   // copy the run command
   document.querySelectorAll('[data-copy]').forEach(b => b.addEventListener('click', async () => {
