@@ -12,6 +12,7 @@
   [![Pitch Deck](https://img.shields.io/badge/📊_Pitch-Deck-D9A13B?style=for-the-badge)](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/pitch-deck.pdf)
   [![Demo Video](https://img.shields.io/badge/🎬_Demo-Video-ef4444?style=for-the-badge)](https://youtu.be/iVvEXQvfTYY)
   [![DoraHacks BUIDL](https://img.shields.io/badge/DoraHacks-BUIDL_50248-3A3240?style=for-the-badge)](https://dorahacks.io/build/50248)
+  [![Portaldot Hacker House 2026](https://img.shields.io/badge/🏆_Portaldot-Hacker_House_2026-8b5cf6?style=for-the-badge)](https://dorahacks.io/hackathon/portaldot-hacker-house-2026/detail)
 
   <br/>
 
@@ -19,6 +20,7 @@
   ![python](https://img.shields.io/badge/python-3.11%2B-blue?style=flat)
   ![tests](https://img.shields.io/badge/tests-257_offline_%2B_6_live-brightgreen?style=flat)
   [![CI](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/actions/workflows/ci.yml)
+  [![Release](https://img.shields.io/github/v/release/edycutjong/portaldot-hackathon-2026-forklift-edycu?sort=semver)](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/releases/latest)
   ![license](https://img.shields.io/badge/license-MIT-lightgrey?style=flat)
 
 </div>
