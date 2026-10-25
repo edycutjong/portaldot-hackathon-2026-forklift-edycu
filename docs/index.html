@@ -1,0 +1,716 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Forklift: rehearse a Portaldot V3 transaction on a fork, then send it</title>
+<meta name="description" content="Forklift lifts the live Portaldot V3 testnet at one pinned block onto your machine, checks the fork against the chain, runs your signed transaction there first, then sends the same bytes to V3 and lists every field that moved.">
+<meta name="theme-color" content="#F5B300">
+<link rel="canonical" href="https://forklift.edycu.dev/">
+<link rel="icon" type="image/svg+xml" href="assets/icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Forklift">
+<meta property="og:url" content="https://forklift.edycu.dev/">
+<meta property="og:title" content="Forklift: your transaction runs twice. The first time is a rehearsal.">
+<meta property="og:description" content="Lift Portaldot V3 at a pinned block, check the fork against the chain, rehearse the signed bytes, then send them to V3 and compare every field.">
+<meta property="og:image" content="https://forklift.edycu.dev/assets/og.png?v=2">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Forklift sets pallet #118,061 (5,508 keys) from the V3 rack onto a bench, writable.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Forklift: your transaction runs twice. The first time is a rehearsal.">
+<meta name="twitter:description" content="Lift Portaldot V3 at a pinned block, rehearse the signed bytes on the fork, then send them to V3 and compare every field.">
+<meta name="twitter:image" content="https://forklift.edycu.dev/assets/og.png?v=2">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bungee&family=Martian+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #F5B300;
+  --plate:   #E9E6DF;
+  --ink:     #1E1F1C;
+  --muted:   #4E4636;
+  --before:  #5C6166;
+  --after:   #1846D8;
+  --hazard:  #1E1F1C;
+  --rule:    #C98F00;
+  --font-display: "Bungee", "Arial Black", Impact, sans-serif;
+  --font-body:    "Atkinson Hyperlegible", "Helvetica Neue", Arial, sans-serif;
+  --font-data:    "Martian Mono", ui-monospace, Menlo, monospace;
+  --plate-hi: color-mix(in srgb, var(--plate) 72%, white);
+  --plate-lo: color-mix(in srgb, var(--plate) 88%, var(--ink));
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; }
+html { background: var(--bg); color: var(--ink); font: 400 18px/1.55 var(--font-body); scroll-behavior: smooth;
+  scrollbar-color: var(--ink) var(--rule); -webkit-text-size-adjust: 100%; }
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track { background: var(--rule); }
+::-webkit-scrollbar-thumb { background: var(--ink); border: 3px solid var(--rule); border-radius: 8px; }
+::selection { background: var(--ink); color: var(--bg); }
+body { overflow-x: hidden; caret-color: var(--after); }
+a { color: inherit; text-underline-offset: .2em; text-decoration-thickness: 2px; }
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; border-radius: 3px; }
+code, .mono { font-family: var(--font-data); font-size: .84em; font-variant-numeric: tabular-nums; }
+img { max-width: 100%; display: block; }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 0 40px; }
+.skip { position: absolute; left: -9999px; top: 8px; background: var(--ink); color: var(--bg); padding: 8px 14px; z-index: 9; }
+.skip:focus { left: 8px; }
+
+/* ------- the goods-in bay: grain + high-bay light + faint rack uprights ------- */
+.bay-ground { position: relative; isolation: isolate; }
+.bay-ground::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(900px 420px at 74% 0%, color-mix(in srgb, var(--plate) 55%, transparent), transparent 70%),
+    radial-gradient(520px 300px at 18% 8%, color-mix(in srgb, var(--plate) 28%, transparent), transparent 70%),
+    repeating-linear-gradient(90deg, transparent 0 239px, color-mix(in srgb, var(--rule) 35%, transparent) 239px 241px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 .12 0 0 0 0 .1 0 0 0 0 .05 0 0 0 .08 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 70%, transparent);
+          mask-image: linear-gradient(180deg, #000 0, #000 70%, transparent); }
+
+/* ------- nav ------- */
+nav.top { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 20px 0; border-bottom: 3px solid var(--ink); }
+.brand { display: flex; gap: 12px; align-items: center; font: 400 22px/1 var(--font-display); letter-spacing: .02em; text-decoration: none; }
+.brand img { width: 36px; height: 36px; }
+nav.top ul { display: flex; align-items: center; gap: 26px; list-style: none; padding: 0; font-weight: 700; font-size: 15px; }
+nav.top ul a { text-decoration: none; padding: 6px 0; background: linear-gradient(var(--ink), var(--ink)) 0 100% / 0 2px no-repeat; transition: background-size .25s var(--ease-out); }
+nav.top ul a:hover { background-size: 100% 2px; }
+nav.top ul a.gh { background: var(--ink); color: var(--bg); padding: 9px 14px; border-radius: 4px; transition: transform .15s, box-shadow .15s; }
+nav.top ul a.gh:hover { transform: translate(-2px, -2px); box-shadow: 3px 3px 0 var(--after); }
+
+/* ------- hero ------- */
+.hero { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr); gap: 44px; align-items: center; padding: 52px 0 34px; }
+.label { font: 700 12px/1.3 var(--font-data); letter-spacing: .08em; text-transform: uppercase; display: inline-flex; gap: 10px; align-items: center; }
+.label i { flex: none; width: 26px; height: 12px; background: repeating-linear-gradient(-45deg, var(--hazard) 0 5px, transparent 5px 10px); }
+h1, h2, .display { font-family: var(--font-display); font-weight: 400; text-transform: uppercase; letter-spacing: .02em; }
+h1 { font-size: clamp(27px, 3.6vw, 52px); line-height: 1.13; margin: 20px 0 24px; }
+h1 .ln { display: block; }
+mark { background: var(--after); color: var(--plate); padding: 0 .14em; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.sub { max-width: 60ch; font-size: 19px; }
+.sub b, .num { font-family: var(--font-data); font-weight: 700; font-size: .84em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cta { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0 18px; }
+.btn { display: inline-flex; align-items: center; gap: 10px; font: 700 16px/1 var(--font-body); padding: 15px 22px; border: 2px solid var(--ink); border-radius: 4px; text-decoration: none; background: transparent; color: var(--ink); cursor: pointer;
+  transition: transform .15s var(--ease-out), box-shadow .15s var(--ease-out), background-color .15s; }
+.btn:hover { transform: translate(-2px, -2px); box-shadow: 4px 4px 0 var(--ink); }
+.btn:active { transform: translate(0, 0); box-shadow: 0 0 0 var(--ink); }
+.btn.pri { background: var(--ink); color: var(--bg); }
+.btn.pri:hover { box-shadow: 4px 4px 0 var(--after); }
+.btn svg { width: 18px; height: 18px; flex: none; }
+.cmd { display: inline-flex; align-items: center; gap: 12px; max-width: 100%; font: 400 13.5px/1 var(--font-data); background: var(--plate); border: 2px solid var(--ink); border-radius: 4px; padding: 6px 6px 6px 14px; }
+.cmd > span { color: var(--muted); }
+.cmd code { font-size: 1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.copy { font: 700 11px/1 var(--font-data); letter-spacing: .06em; text-transform: uppercase; border: 0; background: var(--ink); color: var(--bg); padding: 8px 10px; border-radius: 3px; cursor: pointer; transition: background-color .15s, color .15s; }
+.copy:hover { background: var(--after); color: var(--plate); }
+.copy.done { background: var(--after); color: var(--plate); }
+
+/* the lift — the one authored moment */
+.bay { position: relative; }
+.bay svg { width: 100%; height: auto; overflow: visible; }
+.truck { animation: drive 1.15s var(--ease-out) .35s backwards; }
+.loadx { animation: drive 1.15s var(--ease-out) .35s backwards; }
+.forks, .loady { animation: lower .6s cubic-bezier(.5, 0, .3, 1.4) 1.5s backwards; }
+.fill, .tag-lifted { animation: on .4s ease-out 2.08s backwards; }
+.tag-racked { opacity: 0; animation: off .4s ease-out 2.08s backwards; }
+.pool { transform-box: fill-box; transform-origin: center; animation: pool .7s var(--ease-out) 2.12s backwards; }
+@keyframes drive { from { transform: translateX(-360px); } }
+@keyframes lower { from { transform: translateY(-122px); } }
+@keyframes on { from { opacity: 0; } }
+@keyframes off { from { opacity: 1; } }
+@keyframes pool { from { opacity: 0; transform: scaleX(.25); } }
+.relift { position: absolute; right: 0; top: 0; font: 700 11px/1 var(--font-data); letter-spacing: .06em; text-transform: uppercase; background: transparent; border: 2px solid var(--ink); border-radius: 3px; padding: 8px 10px; cursor: pointer; color: var(--ink); transition: background-color .15s, color .15s; }
+.relift:hover { background: var(--ink); color: var(--bg); }
+
+/* hero load-in: one orchestrated stagger, from a visible default */
+.hero .label, .hero h1 .ln, .hero .sub, .hero .cta, .hero .cmd { animation: rise .7s var(--ease-out) backwards; }
+.hero h1 .ln:nth-child(1) { animation-delay: .06s; } .hero h1 .ln:nth-child(2) { animation-delay: .14s; }
+.hero h1 .ln:nth-child(3) { animation-delay: .22s; } .hero h1 .ln:nth-child(4) { animation-delay: .3s; }
+.hero .sub { animation-delay: .42s; } .hero .cta { animation-delay: .52s; } .hero .cmd { animation-delay: .6s; }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); filter: blur(3px); } }
+
+/* ------- data plate (receipts) ------- */
+.plateband { position: relative; margin: 30px 0 30px; background: linear-gradient(180deg, var(--plate-hi), var(--plate-lo)); border: 2px solid var(--ink); border-radius: 6px;
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); box-shadow: 0 3px 0 var(--rule), 0 18px 30px -18px color-mix(in srgb, var(--ink) 55%, transparent); }
+.plateband > p.plate-title { position: absolute; top: -12px; left: 22px; background: var(--bg); padding: 0 8px; font: 700 11px/22px var(--font-data); letter-spacing: .08em; text-transform: uppercase; }
+.cell { padding: 30px 26px 24px; position: relative; }
+.cell + .cell { border-left: 1px dashed var(--before); }
+.cell::after { content: ""; position: absolute; top: 10px; right: 10px; width: 9px; height: 9px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, var(--plate-hi), var(--before)); box-shadow: 0 1px 0 var(--plate-hi); }
+.cell small { display: block; font: 700 11px/1.35 var(--font-data); letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; min-height: 2.7em; }
+.cell strong { display: block; font: 700 clamp(30px, 3.1vw, 46px)/1 var(--font-data); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.cell strong.lit { color: var(--after); }
+.cell p { font-size: 15px; margin-top: 12px; }
+
+/* ------- section frame ------- */
+section.band { padding: 96px 0; }
+.head { max-width: 760px; margin-bottom: 40px; }
+.head h2 { font-size: clamp(26px, 3vw, 42px); line-height: 1.06; margin: 14px 0 16px; text-wrap: balance; }
+.head p { max-width: 64ch; font-size: 18px; }
+.head.center { margin-left: auto; margin-right: auto; text-align: center; }
+.head.center p { margin: 0 auto; }
+
+/* ------- the run: shown twice ------- */
+.pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr); gap: 22px; align-items: start; }
+.frame { border: 2px solid var(--ink); border-radius: 6px; background: var(--plate); overflow: hidden; box-shadow: 6px 6px 0 var(--ink); }
+.frame .bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border-bottom: 2px solid var(--ink); font: 400 12px/1.2 var(--font-data); background: var(--plate-hi); }
+.frame .bar a { font-weight: 700; white-space: nowrap; }
+.frame figcaption { padding: 12px 14px; font-size: 14px; border-top: 2px solid var(--ink); background: var(--plate-hi); }
+.term { background: var(--ink); color: var(--plate); border: 2px solid var(--ink); border-radius: 6px; box-shadow: 6px 6px 0 var(--after); overflow: hidden; }
+.term .bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-bottom: 1px solid color-mix(in srgb, var(--plate) 18%, transparent); font: 400 12px/1.3 var(--font-data); color: color-mix(in srgb, var(--plate) 70%, var(--ink)); }
+.term .bar button { font: 700 11px/1 var(--font-data); letter-spacing: .06em; text-transform: uppercase; background: var(--bg); color: var(--ink); border: 0; border-radius: 3px; padding: 7px 10px; cursor: pointer; transition: background-color .15s, color .15s; }
+.term .bar button:hover { background: var(--plate); }
+.term pre { margin: 0; padding: 16px 16px 20px; font: 400 12.5px/1.6 var(--font-data); white-space: pre-wrap; overflow-wrap: anywhere; min-height: 520px; }
+.term .p { color: var(--bg); }
+.term .k { color: color-mix(in srgb, var(--plate) 62%, var(--ink)); }
+.term .hl { color: var(--ink); background: var(--bg); padding: 0 2px; }
+.term .x { color: var(--bg); font-weight: 700; }
+.term a { color: var(--plate); text-decoration-color: color-mix(in srgb, var(--plate) 45%, transparent); }
+.term a:hover { color: var(--bg); }
+.term .ln.hidden { display: none; }
+.term .caret { display: inline-block; width: .6em; height: 1.1em; vertical-align: -2px; background: var(--bg); animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.note { font-size: 14px; color: var(--muted); margin-top: 14px; max-width: 70ch; }
+
+/* ------- the docket board (fork vs V3) ------- */
+section.board { background: var(--ink); color: var(--plate); }
+section.board .label { color: var(--bg); }
+section.board .label i { background: repeating-linear-gradient(-45deg, var(--bg) 0 5px, transparent 5px 10px); }
+section.board .head p { color: color-mix(in srgb, var(--plate) 84%, var(--ink)); }
+section.board ::selection { background: var(--bg); color: var(--ink); }
+.docket { border: 2px solid color-mix(in srgb, var(--plate) 30%, transparent); border-radius: 8px; padding: 10px; background: color-mix(in srgb, var(--ink) 86%, black); }
+.drow { display: grid; grid-template-columns: 1.05fr 1.6fr 1.6fr 1.15fr; gap: 8px; align-items: stretch; }
+.drow + .drow { margin-top: 8px; }
+.drow.hd { font: 700 11px/1.2 var(--font-data); letter-spacing: .08em; text-transform: uppercase; color: color-mix(in srgb, var(--plate) 70%, var(--ink)); padding: 6px 2px 2px; }
+.drow .f { display: flex; align-items: center; font: 700 12px/1.25 var(--font-data); text-transform: uppercase; letter-spacing: .05em; color: color-mix(in srgb, var(--plate) 76%, var(--ink)); padding: 0 6px; }
+.flap { position: relative; display: flex; align-items: center; min-height: 52px; padding: 8px 12px; border-radius: 4px; font: 700 15px/1.2 var(--font-data); font-variant-numeric: tabular-nums;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ink) 70%, var(--plate)) 0 50%, color-mix(in srgb, var(--ink) 78%, var(--plate)) 50% 100%); color: var(--plate); overflow-wrap: anywhere; }
+.flap::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: color-mix(in srgb, var(--ink) 92%, black); }
+.flap.ok { color: var(--plate); }
+.flap.moved { background: var(--bg); color: var(--ink); }
+.flap.moved::after { background: color-mix(in srgb, var(--rule) 80%, var(--ink)); }
+.flap .c { display: inline-block; white-space: pre; }
+.flap .c.spin { color: color-mix(in srgb, var(--plate) 50%, transparent); }
+.flap.moved .c.spin { color: color-mix(in srgb, var(--ink) 45%, transparent); }
+.docket-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 24px; padding: 14px 6px 4px; font: 400 13px/1.5 var(--font-data); color: color-mix(in srgb, var(--plate) 80%, var(--ink)); }
+.docket-foot b { color: var(--bg); }
+.sends { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 40px; }
+.ticket { position: relative; background: var(--plate); color: var(--ink); border-radius: 6px; padding: 20px 20px 18px; text-decoration: none; display: block;
+  transition: transform .2s var(--ease-out), box-shadow .2s var(--ease-out); }
+.ticket::before { content: ""; position: absolute; top: 14px; right: 14px; width: 14px; height: 14px; border-radius: 50%; background: var(--ink); box-shadow: inset 0 0 0 4px var(--plate-lo); }
+.ticket:hover { transform: translateY(-4px) rotate(-.4deg); box-shadow: 0 10px 0 -2px var(--bg); }
+.ticket .id { font: 700 22px/1 var(--font-data); letter-spacing: -.01em; }
+.ticket .call { font: 700 13px/1.3 var(--font-data); color: var(--muted); margin: 8px 0 14px; }
+.ticket dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 14px; }
+.ticket dt { font: 700 11px/1.6 var(--font-data); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.ticket dd { font-family: var(--font-data); font-size: 13px; font-variant-numeric: tabular-nums; }
+.ticket .go { display: inline-block; margin-top: 14px; font-weight: 700; font-size: 14px; text-decoration: underline; text-decoration-thickness: 2px; }
+
+/* ------- the machine (bento) ------- */
+.bento { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 18px; }
+.card { position: relative; background: var(--plate); border: 2px solid var(--ink); border-radius: 6px; padding: 24px 24px 22px; display: flex; flex-direction: column; gap: 12px;
+  transition: transform .2s var(--ease-out), box-shadow .2s var(--ease-out); }
+.card:hover { transform: translate(-3px, -3px); box-shadow: 5px 5px 0 var(--ink); }
+.card.w4 { grid-column: span 4; } .card.w2 { grid-column: span 2; } .card.w3 { grid-column: span 3; }
+.card h3 { font: 400 22px/1.1 var(--font-display); text-transform: uppercase; letter-spacing: .02em; }
+.card p { font-size: 16px; max-width: 52ch; }
+.card .glyph { width: 46px; height: 46px; }
+.chip { align-self: flex-start; margin-top: auto; font: 700 12px/1 var(--font-data); background: var(--ink); color: var(--bg); padding: 8px 10px; border-radius: 3px; }
+.card.guard { background: var(--ink); color: var(--plate); }
+.card.guard h3 { color: var(--bg); }
+.card.guard .chip { background: var(--bg); color: var(--ink); }
+.card.guard:hover { box-shadow: 5px 5px 0 var(--after); }
+.keybars { display: flex; align-items: flex-end; gap: 3px; height: 54px; margin-top: 4px; }
+.keybars i { flex: 1; background: var(--after); border-radius: 1px; }
+.keybars i:nth-child(3n) { background: var(--before); }
+.mini { font: 400 12px/1.4 var(--font-data); color: var(--muted); }
+.rehearse-strip { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; font: 700 12px/1.3 var(--font-data); }
+.rehearse-strip span { border: 2px solid var(--ink); border-radius: 4px; padding: 8px 10px; text-align: center; }
+.rehearse-strip span.v { background: var(--after); color: var(--plate); border-color: var(--after); }
+.rehearse-strip em { font-style: normal; }
+
+/* ------- map ------- */
+section.map { background: var(--plate); border-top: 3px solid var(--ink); border-bottom: 3px solid var(--ink); }
+.map figure { max-width: 760px; margin: 0 auto; border: 2px solid var(--ink); border-radius: 6px; overflow: hidden; background: var(--bg); box-shadow: 8px 8px 0 var(--ink); }
+.map figcaption { padding: 12px 16px; font-size: 14px; border-top: 2px solid var(--ink); background: var(--plate-hi); display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.map figcaption a { font-weight: 700; }
+
+/* ------- load limits (honest) ------- */
+section.limits { background: var(--ink); color: var(--plate); }
+section.limits h2 { color: var(--bg); }
+section.limits .head p { color: color-mix(in srgb, var(--plate) 84%, var(--ink)); }
+section.limits ::selection { background: var(--bg); color: var(--ink); }
+.limit-plate { border: 2px solid color-mix(in srgb, var(--plate) 35%, transparent); border-radius: 8px; padding: 6px 34px; position: relative; }
+.limit-plate::before, .limit-plate::after { content: ""; position: absolute; top: 14px; width: 10px; height: 10px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, var(--plate), var(--before)); }
+.limit-plate::before { left: 12px; } .limit-plate::after { right: 12px; }
+.limit { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 20px; padding: 28px 0; align-items: baseline; }
+.limit + .limit { border-top: 1px dashed color-mix(in srgb, var(--plate) 30%, transparent); }
+.limit .no { font: 400 18px/1.2 var(--font-display); color: var(--bg); text-transform: uppercase; letter-spacing: .02em; }
+.limit blockquote { font: italic 400 clamp(20px, 2vw, 26px)/1.4 var(--font-body); max-width: 60ch; }
+.limit blockquote code { font-style: normal; color: var(--bg); }
+.limit cite { display: block; margin-top: 10px; font: 700 12px/1.3 var(--font-data); font-style: normal; letter-spacing: .06em; text-transform: uppercase; color: color-mix(in srgb, var(--plate) 66%, var(--ink)); }
+.limit cite a { color: inherit; }
+
+/* ------- FAQ ------- */
+.faq { max-width: 880px; }
+.faq details { border-top: 2px solid var(--ink); }
+.faq details:last-child { border-bottom: 2px solid var(--ink); }
+.faq summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 20px 2px; font-weight: 700; font-size: 20px; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: ""; flex: none; width: 26px; height: 26px; border: 2px solid var(--ink); border-radius: 3px;
+  background: linear-gradient(var(--ink), var(--ink)) center / 12px 2px no-repeat, linear-gradient(var(--ink), var(--ink)) center / 2px 12px no-repeat; transition: transform .25s var(--ease-out), background-color .2s; }
+.faq details[open] summary::after { background: linear-gradient(var(--ink), var(--ink)) center / 12px 2px no-repeat, var(--plate); }
+.faq summary:hover::after { background-color: var(--plate); }
+.faq .a { padding: 0 2px 22px; max-width: 70ch; font-size: 17px; }
+.faq .a p + p { margin-top: 10px; }
+
+/* ------- final + footer ------- */
+.final { text-align: center; padding: 110px 0 0; }
+.final h2 { font-size: clamp(30px, 4.4vw, 62px); line-height: 1.04; }
+.final p { max-width: 58ch; margin: 18px auto 0; }
+.final .cta { justify-content: center; }
+.bench-edge { height: 26px; margin-top: 90px; background: repeating-linear-gradient(-45deg, var(--hazard) 0 18px, transparent 18px 36px); border-top: 3px solid var(--ink); border-bottom: 3px solid var(--ink); }
+footer { background: var(--ink); color: var(--plate); padding: 40px 0 46px; font-size: 15px; }
+footer .wrap { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; align-items: center; }
+footer ul { display: flex; flex-wrap: wrap; gap: 8px 22px; list-style: none; padding: 0; }
+footer a { color: var(--plate); }
+footer a:hover { color: var(--bg); }
+footer ::selection { background: var(--bg); color: var(--ink); }
+footer .brand { color: var(--bg); font-size: 18px; }
+
+/* ------- responsive ------- */
+@media (max-width: 980px) {
+  .hero { grid-template-columns: minmax(0, 1fr); padding-top: 34px; gap: 26px; }
+  .pair { grid-template-columns: minmax(0, 1fr); }
+  .bento .card.w4, .bento .card.w2, .bento .card.w3 { grid-column: span 6; }
+  .sends { grid-template-columns: 1fr; }
+  nav.top ul li.opt { display: none; }
+}
+@media (max-width: 760px) {
+  .wrap { padding: 0 18px; }
+  nav.top ul { gap: 14px; }
+  .plateband { grid-template-columns: 1fr 1fr; }
+  .cell:nth-of-type(3) { border-left: 0; }
+  .cell:nth-of-type(n+3) { border-top: 1px dashed var(--before); }
+  .cell { padding: 24px 16px 18px; }
+  .cell small { min-height: 0; }
+  .plateband > p.plate-title { position: static; grid-column: 1 / -1; background: transparent; padding: 14px 16px 0; line-height: 1.4; }
+  .drow.hd .chk { display: none; }
+  section.band { padding: 70px 0; }
+  .sub { font-size: 17px; }
+  .cmd { font-size: 11.5px; }
+  .term pre { font-size: 11px; min-height: 0; }
+  .drow, .drow.hd { grid-template-columns: 1fr 1fr; }
+  .drow .f { grid-column: 1 / -1; padding: 6px 2px 0; }
+  .drow.hd .f-label { display: none; }
+  .drow .chk { grid-column: 1 / -1; }
+  .flap { font-size: 13px; min-height: 44px; }
+  .limit { grid-template-columns: 1fr; gap: 8px; }
+  .limit-plate { padding: 6px 20px; }
+  .relift { top: -8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .tag-racked { opacity: 0; }
+}
+@media print {
+  .bay-ground::before, .relift, .copy, .term .bar button { display: none; }
+  .term .ln.hidden { display: inline; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="bay-ground">
+ <div class="wrap">
+  <nav class="top" aria-label="Main">
+   <a class="brand" href="#top" aria-label="Forklift, top of page"><img src="assets/icon.svg" alt="" width="36" height="36">FORKLIFT</a>
+   <ul>
+    <li class="opt"><a href="#run">The run</a></li>
+    <li class="opt"><a href="#docket">Fork vs V3</a></li>
+    <li class="opt"><a href="#machine">The machine</a></li>
+    <li class="opt"><a href="#faq">FAQ</a></li>
+    <li><a class="gh" href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu">GitHub</a></li>
+   </ul>
+  </nav>
+
+  <section class="hero" id="top">
+   <div>
+    <span class="label"><i></i>Portaldot Hacker House 2026 · Node Operations &amp; Tooling</span>
+    <h1><span class="ln">Your transaction</span><span class="ln">runs twice. The</span><span class="ln">first time is</span><span class="ln"><mark>a rehearsal.</mark></span></h1>
+    <p class="sub">Before you send a call to the Portaldot V3 testnet, Forklift lifts the live chain at one pinned block onto your machine (<b>5,508 keys at #118,061</b>), checks the fork against the chain (<b>200/200 identical</b>), signs once, and runs those exact bytes on the fork. Then it sends them to V3 and shows you every field that moved.</p>
+    <div class="cta">
+     <a class="btn pri" href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>View on GitHub</a>
+     <a class="btn" href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/pitch-deck.pdf">Pitch deck</a>
+     <a class="btn" href="https://youtu.be/iVvEXQvfTYY"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M4 2.5v11l9.5-5.5z"/></svg>Watch the demo</a>
+    </div>
+    <div class="cmd"><span>$</span><code id="cmd-text">forklift up --target v3 --at head --name v3</code><button class="copy" type="button" data-copy="#cmd-text">Copy</button></div>
+   </div>
+
+   <div class="bay">
+    <button class="relift" type="button" id="relift" aria-label="Play the lift animation again">Lift it again</button>
+    <svg viewBox="0 0 740 530" role="img" aria-labelledby="bay-t">
+     <title id="bay-t">A forklift carries pallet #118,061 (5,508 keys) from the V3 testnet rack, where it stays as a read-only outline, and sets it on your bench, where it turns blue: writable.</title>
+     <defs>
+      <pattern id="hz" width="22" height="22" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="11" height="22" fill="#1E1F1C"/></pattern>
+      <filter id="glow" x="-30%" y="-300%" width="160%" height="700%"><feGaussianBlur stdDeviation="8"/></filter>
+     </defs>
+     <!-- rack: the live chain, steel outline -->
+     <text x="16" y="62" font-family="Martian Mono, monospace" font-size="13" font-weight="700" fill="#4E4636" letter-spacing=".05em">V3 TESTNET · READ-ONLY</text>
+     <g fill="none" stroke="#5C6166" stroke-width="4">
+      <path d="M16 470V82M210 470V82M16 202H210M16 342H210"/>
+      <g stroke-dasharray="7 6" stroke-width="3">
+       <rect x="38" y="96" width="150" height="76" rx="6"/><path d="M30 172H196V202H30Z"/>
+       <rect x="38" y="244" width="150" height="68" rx="6" opacity=".55"/><path d="M30 312H196V342H30Z" opacity=".55"/>
+      </g>
+     </g>
+     <rect x="62" y="118" width="102" height="34" rx="3" fill="none" stroke="#5C6166" stroke-width="2"/>
+     <text x="113" y="140" text-anchor="middle" font-family="Martian Mono, monospace" font-size="13" font-weight="700" fill="#4E4636">#118,061</text>
+     <!-- bench: your fork; chevrons mark where writable begins -->
+     <path d="M500 332H732V352H500Z" fill="url(#hz)" stroke="#1E1F1C" stroke-width="2"/>
+     <path d="M500 352H732V364H500Z" fill="#1E1F1C"/>
+     <path d="M518 364V470M714 364V470" stroke="#1E1F1C" stroke-width="10"/>
+     <ellipse class="pool" cx="586" cy="333" rx="132" ry="9" fill="#1846D8" filter="url(#glow)"/>
+     <!-- the load (moves with the truck, then is set down) -->
+     <g class="loadx"><g class="loady">
+      <rect x="512" y="194" width="148" height="108" rx="6" fill="#F5B300" stroke="#5C6166" stroke-width="3" stroke-dasharray="7 6"/>
+      <rect class="fill" x="512" y="194" width="148" height="108" rx="6" fill="#1846D8" stroke="#1E1F1C" stroke-width="2"/>
+      <rect x="526" y="208" width="120" height="68" rx="4" fill="#E9E6DF" stroke="#1E1F1C" stroke-width="2"/>
+      <circle cx="534" cy="216" r="2.5" fill="#5C6166"/><circle cx="638" cy="216" r="2.5" fill="#5C6166"/>
+      <text x="586" y="234" text-anchor="middle" font-family="Martian Mono, monospace" font-weight="700" font-size="16" fill="#1E1F1C">#118,061</text>
+      <text x="586" y="252" text-anchor="middle" font-family="Martian Mono, monospace" font-size="11" fill="#1E1F1C">5,508 KEYS</text>
+      <text class="tag-racked" x="586" y="268" text-anchor="middle" font-family="Martian Mono, monospace" font-size="9.5" font-weight="700" fill="#5C6166" letter-spacing=".08em">RACKED</text>
+      <text class="tag-lifted" x="586" y="268" text-anchor="middle" font-family="Martian Mono, monospace" font-size="9.5" font-weight="700" fill="#1846D8" letter-spacing=".08em">WRITABLE</text>
+      <path d="M504 302H664V332H504Z" fill="#1E1F1C"/>
+      <rect x="520" y="310" width="52" height="14" fill="#F5B300"/><rect x="596" y="310" width="52" height="14" fill="#F5B300"/>
+     </g></g>
+     <!-- the truck -->
+     <g class="truck">
+      <path d="M292 442V384Q292 364 312 364H392L412 342H472V442Z" fill="#1E1F1C"/>
+      <path d="M292 404H268Q256 404 256 416V442H292Z" fill="#1E1F1C"/>
+      <path d="M396 342V312Q396 300 408 300H418V342Z" fill="#1E1F1C"/>
+      <path d="M360 364L372 256M462 342V256M344 256H480" stroke="#1E1F1C" stroke-width="10" stroke-linecap="round" fill="none"/>
+      <path d="M446 334L458 300" stroke="#1E1F1C" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="326" cy="446" r="25" fill="#1E1F1C"/><circle cx="436" cy="444" r="28" fill="#1E1F1C"/>
+      <circle cx="326" cy="446" r="8" fill="#F5B300"/><circle cx="436" cy="444" r="9" fill="#F5B300"/>
+      <rect x="472" y="136" width="16" height="310" fill="#1E1F1C"/>
+      <path d="M480 150V430" stroke="#F5B300" stroke-width="2" opacity=".55"/>
+      <g class="forks">
+       <rect x="488" y="210" width="12" height="118" fill="#1E1F1C"/>
+       <path d="M488 311H668l12 4v5H488Z" fill="#1E1F1C"/>
+      </g>
+     </g>
+     <line x1="0" y1="470" x2="740" y2="470" stroke="#1E1F1C" stroke-width="5"/>
+     <text x="16" y="500" font-family="Martian Mono, monospace" font-size="12" fill="#4E4636">racked: stays live, read-only</text>
+     <text x="736" y="500" text-anchor="end" font-family="Martian Mono, monospace" font-size="13" font-weight="700" fill="#1E1F1C" letter-spacing=".05em">YOUR BENCH · fork-v3 · WRITABLE</text>
+    </svg>
+   </div>
+  </section>
+
+  <section class="plateband" id="plate" aria-label="Data plate: measured on the Portaldot V3 testnet, 2026-10-20">
+   <p class="plate-title">Data plate · Portaldot V3 testnet · run 2026-10-20</p>
+   <div class="cell"><small>Keys lifted · block #118,061</small><strong data-count="5508" data-fmt="comma">5,508</strong><p>Two lifts of the same block, the same <code>manifest_root</code>.</p></div>
+   <div class="cell"><small>Sampled keys identical, fork vs chain</small><strong class="lit" data-count="200" data-suffix="/200">200/200</strong><p><code>verify --sample 200</code> exits 0.</p></div>
+   <div class="cell"><small>V3 transactions rehearsed, then sent</small><strong data-count="3">3</strong><p>Same tx hash on the fork and on V3, each time.</p></div>
+   <div class="cell"><small>Replay fields equal · 118669-1</small><strong class="lit" data-count="16" data-suffix="/16">16/16</strong><p>Re-run on its parent block, fee to the planck. The other two: 10/10, 14/14.</p></div>
+  </section>
+ </div>
+</header>
+
+<main id="main">
+ <section class="band" id="run" aria-labelledby="run-h">
+  <div class="wrap">
+   <div class="head">
+    <span class="label"><i></i>Bay 1 · The run, 2026-10-20</span>
+    <h2 id="run-h">One signature, two chains, every field compared.</h2>
+    <p>Forklift signed a 0.2 tPOT transfer once, ran it on a fork of V3, then sent the same bytes to the V3 testnet. Left: the block the chain recorded. Right: what the CLI printed.</p>
+   </div>
+   <div class="pair">
+    <figure class="frame">
+     <div class="bar"><span>node-console.portaldot.dev · V3 block #118,621</span><a href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x0ae8b2b94d34dc27fd931b8095654675510dc53533582ad0cad19712591db8a9">Open ↗</a></div>
+     <a href="assets/console-118621.webp" aria-label="Open the node-console screenshot at full size"><img src="assets/console-118621.webp" width="1500" height="939" loading="lazy" alt="Portaldot node-console, V3 testnet block 118,621: extrinsic balances.transferKeepAlive of 0.2000 tPOT to 5F2BvZkMs, extrinsic hash 0x2247c66b…, and its events Withdraw, NewAccount, Endowed, Transfer, Deposit, TransactionFeePaid, ExtrinsicSuccess."></a>
+     <figcaption>Block <span class="num">#118,621</span> on the public explorer. Extrinsic hash <span class="num">0x2247c66b…</span>: the same hash the fork predicted.</figcaption>
+    </figure>
+    <div class="term" id="term">
+     <div class="bar"><span>forklift · Portaldot V3 testnet</span><button type="button" id="replay-run">Replay the run</button></div>
+<pre aria-label="Terminal output of forklift rehearse --send and forklift replay"><span class="ln"><span class="p">$ </span>forklift rehearse Balances.transfer_keep_alive --args '{"dest": "5F2BvZkMsEYF8ua1M2xkLt1XqjCb4YYuBZvNEWTWhtzbBjus", "value": 20000000000000}' --signer "$SIGNER" --name v3 --send
+</span><span class="ln">rehearse Balances.transfer_keep_alive as 5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg (nonce 1) · Portaldot V3 testnet
+</span><span class="ln"><span class="x">fork </span>    118618-1 ok · fee 0.01480596076462 tPOT · Balances.Withdraw, System.NewAccount, Balances.Endowed, Balances.Transfer, Balances.Deposit, TransactionPayment.TransactionFeePaid, System.ExtrinsicSuccess
+</span><span class="ln">         tx <span class="hl">0x2247c66b758511ac0f1dcae218343c769e1f7d7d311f84a22ee71d9673fdc36f</span>
+</span><span class="ln">         Δ 5EnCf9Pa… -0.21480596076462 tPOT
+</span><span class="ln">         Δ 5F2BvZkM… 0.2 tPOT
+</span><span class="ln"><span class="x">chain</span>    #118,621 118621-1 ok · finalized · fee 0.01480596072802 tPOT · tx <span class="hl">0x2247c66b758511ac0f1dcae218343c769e1f7d7d311f84a22ee71d9673fdc36f</span>
+</span><span class="ln">         block 0x0ae8b2b94d34dc27fd931b8095654675510dc53533582ad0cad19712591db8a9
+</span><span class="ln">         <a href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x0ae8b2b94d34dc27fd931b8095654675510dc53533582ad0cad19712591db8a9">https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x0ae8b2b9…</a>
+</span><span class="ln"><span class="x">compare</span>  8/14 fields match · DIFFERS: event[0] Balances.Withdraw, event[4] Balances.Deposit, event[5] TransactionPayment.TransactionFeePaid, inclusion_height, fee, delta 5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg
+</span><span class="ln"><span class="p">$ </span>echo $?
+</span><span class="ln">7
+</span><span class="ln"><span class="p">$ </span>forklift replay 118621-1
+</span><span class="ln">replay   118621-1 on Portaldot V3 testnet · signer 5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg
+</span><span class="ln"><span class="x">fork </span>    @acala-network/chopsticks@1.5.2 at the parent block #118,620 0xe7e5645c45500f61cb8a5f6c5dad696dc73614e12dffbcb19f0f5931a6c77754
+</span><span class="ln"><span class="x">chain</span>    118621-1 ok · fee 0.01480596072802 tPOT · tx 0x2247c66b758511ac0f1dcae218343c769e1f7d7d311f84a22ee71d9673fdc36f
+</span><span class="ln"><span class="x">replay</span>   118621-1 ok · fee 0.01480596072802 tPOT · tx 0x2247c66b758511ac0f1dcae218343c769e1f7d7d311f84a22ee71d9673fdc36f
+</span><span class="ln"><span class="x">compare</span>  <span class="hl">14/14 fields match</span>
+</span><span class="ln"><span class="p">$ </span>echo $?
+</span><span class="ln">0</span></pre>
+    </div>
+   </div>
+   <p class="note">The output lines are forklift's own formatters applied to the recorded runs in <a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/evidence/rehearse-v3.json"><code>evidence/rehearse-v3.json</code></a> (recorded 2026-10-20 14:44:20 UTC) and <a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/evidence/replay-v3.json"><code>evidence/replay-v3.json</code></a>; the command lines are rebuilt from the recorded call and arguments. Exit <code>7</code> means the chain differed from the prediction, and every differing field is listed.</p>
+  </div>
+ </section>
+
+ <section class="band board" id="docket" aria-labelledby="docket-h">
+  <div class="wrap">
+   <div class="head">
+    <span class="label"><i></i>Goods-in docket · extrinsic 118621-1</span>
+    <h2 id="docket-h">Same bytes, same hash. The fee moved, and Forklift says so.</h2>
+    <p>The fork predicted inclusion at #118,618. V3 included it three blocks later, and the fee came in 3,660 planck lower. Replayed on its parent block, the fee matches to the planck.</p>
+   </div>
+   <div class="docket" role="table" aria-label="Prediction on the fork versus what the V3 testnet recorded, transfer 118621-1">
+    <div class="drow hd" role="row"><span class="f f-label" role="columnheader">Field</span><span role="columnheader">Fork · predicted</span><span role="columnheader">V3 · actual</span><span class="chk" role="columnheader">Check</span></div>
+    <div class="drow" role="row"><span class="f" role="rowheader">Tx hash</span><span class="flap" role="cell" data-flap>0x2247…c36f</span><span class="flap" role="cell" data-flap>0x2247…c36f</span><span class="flap ok chk" role="cell" data-flap>SAME</span></div>
+    <div class="drow" role="row"><span class="f" role="rowheader">Result</span><span class="flap" role="cell" data-flap>ok</span><span class="flap" role="cell" data-flap>ok · finalized</span><span class="flap ok chk" role="cell" data-flap>SAME</span></div>
+    <div class="drow" role="row"><span class="f" role="rowheader">Event sequence</span><span class="flap" role="cell" data-flap>7 events</span><span class="flap" role="cell" data-flap>7 events</span><span class="flap ok chk" role="cell" data-flap>SAME ORDER</span></div>
+    <div class="drow" role="row"><span class="f" role="rowheader">Recipient Δ</span><span class="flap" role="cell" data-flap>+0.2 tPOT</span><span class="flap" role="cell" data-flap>+0.2 tPOT</span><span class="flap ok chk" role="cell" data-flap>EXACT</span></div>
+    <div class="drow" role="row"><span class="f" role="rowheader">Included at</span><span class="flap" role="cell" data-flap>#118,618</span><span class="flap" role="cell" data-flap>#118,621</span><span class="flap moved chk" role="cell" data-flap>+3 BLOCKS</span></div>
+    <div class="drow" role="row"><span class="f" role="rowheader">Fee (tPOT)</span><span class="flap" role="cell" data-flap>0.01480596076462</span><span class="flap" role="cell" data-flap>0.01480596072802</span><span class="flap moved chk" role="cell" data-flap>−3,660 PLANCK</span></div>
+    <div class="docket-foot"><span><b>compare 8/14</b> fields match · exit 7 · six rows of fourteen shown</span><span>replay on #118,620: <b>14/14</b> · fee equal</span></div>
+   </div>
+
+   <div class="sends">
+    <a class="ticket" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x17eca420df66958b442d068061505cbecb51e33f3020e84ea4579ca99c3efe1b">
+     <div class="id">118555-1</div><div class="call">System.remark</div>
+     <dl><dt>Included</dt><dd>#118,546 → #118,555</dd><dt>Fee gap</dt><dd>8,269 planck</dd><dt>Compare</dt><dd>4/10 · exit 7</dd><dt>Replay</dt><dd>10/10 · fee equal</dd></dl>
+     <span class="go">Block #118,555 on node-console ↗</span>
+    </a>
+    <a class="ticket" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x0ae8b2b94d34dc27fd931b8095654675510dc53533582ad0cad19712591db8a9">
+     <div class="id">118621-1</div><div class="call">Balances.transfer_keep_alive · 0.2 tPOT</div>
+     <dl><dt>Included</dt><dd>#118,618 → #118,621</dd><dt>Fee gap</dt><dd>3,660 planck</dd><dt>Compare</dt><dd>8/14 · exit 7</dd><dt>Replay</dt><dd>14/14 · fee equal</dd></dl>
+     <span class="go">Block #118,621 on node-console ↗</span>
+    </a>
+    <a class="ticket" href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x05ee11c4b3835f6b535a3f8fac442fc9a4c95c4b24353c89ed1a8eac1d12eca7">
+     <div class="id">118669-1</div><div class="call">Utility.batch · remark + 0.1 tPOT</div>
+     <dl><dt>Included</dt><dd>#118,665 → #118,669</dd><dt>Fee gap</dt><dd>5,390 planck</dd><dt>Compare</dt><dd>10/16 · exit 7</dd><dt>Replay</dt><dd>16/16 · fee equal</dd></dl>
+     <span class="go">Block #118,669 on node-console ↗</span>
+    </a>
+   </div>
+  </div>
+ </section>
+
+ <section class="band bay-ground" id="machine" aria-labelledby="machine-h">
+  <div class="wrap">
+   <div class="head">
+    <span class="label"><i></i>Bay 2 · The machine</span>
+    <h2 id="machine-h">Five verbs. One pinned block.</h2>
+    <p>Each verb is one command in a Python CLI. Lift and verify read the live chain at a pinned block hash; only <code>rehearse --send</code> writes, and only to V3.</p>
+   </div>
+   <div class="bento">
+    <article class="card w4">
+     <svg class="glyph" viewBox="0 0 48 48" aria-hidden="true"><path d="M6 40h36M10 40V18h28v22M10 26h28M10 33h28" fill="none" stroke="#1E1F1C" stroke-width="3"/><rect x="16" y="6" width="16" height="10" rx="2" fill="#1846D8"/></svg>
+     <h3>Lift</h3>
+     <p>Reads every top-trie key of the live chain at one pinned block hash and hashes every key and value into a <code>manifest_root</code>.</p>
+     <div class="keybars" aria-hidden="true"><i style="height:38%"></i><i style="height:62%"></i><i style="height:48%"></i><i style="height:90%"></i><i style="height:55%"></i><i style="height:72%"></i><i style="height:40%"></i><i style="height:84%"></i><i style="height:66%"></i><i style="height:30%"></i><i style="height:78%"></i><i style="height:58%"></i><i style="height:96%"></i><i style="height:44%"></i><i style="height:68%"></i><i style="height:52%"></i><i style="height:86%"></i><i style="height:36%"></i><i style="height:74%"></i><i style="height:60%"></i></div>
+     <p class="mini">#118,061 · 5,508 keys · 4.83 s · two runs, the same root</p>
+     <span class="chip">state_getKeysPaged @ #118,061</span>
+    </article>
+    <article class="card w2">
+     <svg class="glyph" viewBox="0 0 48 48" aria-hidden="true"><path d="M8 6v36M8 30h30l4 2v3H8" fill="none" stroke="#1E1F1C" stroke-width="3"/><rect x="14" y="10" width="22" height="16" rx="2" fill="#1846D8"/></svg>
+     <h3>Fork</h3>
+     <p>Runs V3's own runtime wasm on your machine. The fork must serve V3's genesis and start at the lifted block.</p>
+     <span class="chip">Chopsticks 1.5.2</span>
+    </article>
+    <article class="card w2">
+     <svg class="glyph" viewBox="0 0 48 48" aria-hidden="true"><circle cx="20" cy="20" r="12" fill="none" stroke="#1E1F1C" stroke-width="3"/><path d="M29 29l12 12" stroke="#1E1F1C" stroke-width="4" stroke-linecap="round"/><path d="M14 20l4 4 8-8" fill="none" stroke="#1846D8" stroke-width="3"/></svg>
+     <h3>Verify</h3>
+     <p>Draws keys on the live chain, reads each on both sides, and exits 0 only when they agree.</p>
+     <span class="chip">verify --sample 200</span>
+    </article>
+    <article class="card w4">
+     <svg class="glyph" viewBox="0 0 48 48" aria-hidden="true"><rect x="4" y="14" width="16" height="20" rx="2" fill="none" stroke="#1E1F1C" stroke-width="3"/><rect x="28" y="14" width="16" height="20" rx="2" fill="#1846D8"/><path d="M20 24h8" stroke="#1E1F1C" stroke-width="3"/></svg>
+     <h3>Rehearse</h3>
+     <p>Signs once and applies those bytes on the fork: events, fee, balance deltas. With <code>--send</code>, the same bytes go to V3 and the two outcomes are compared field by field.</p>
+     <div class="rehearse-strip" aria-hidden="true"><span>fork · predicted</span><em>same bytes →</em><span class="v">V3 · actual</span></div>
+     <span class="chip">exit 7 = the chain differed</span>
+    </article>
+    <article class="card w3">
+     <svg class="glyph" viewBox="0 0 48 48" aria-hidden="true"><path d="M38 24a14 14 0 1 1-4.1-9.9" fill="none" stroke="#1E1F1C" stroke-width="3"/><path d="M36 6v9h-9" fill="none" stroke="#1E1F1C" stroke-width="3"/><circle cx="24" cy="24" r="5" fill="#1846D8"/></svg>
+     <h3>Replay</h3>
+     <p>Re-applies any V3 extrinsic's own bytes on a fork of its parent block and checks the fork against what the chain recorded.</p>
+     <span class="chip">replay 118621-1 · 14/14</span>
+    </article>
+    <article class="card w3 guard">
+     <svg class="glyph" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4l16 6v12c0 11-7 18-16 22C15 40 8 33 8 22V10z" fill="none" stroke="#F5B300" stroke-width="3"/><path d="M17 24h14" stroke="#F5B300" stroke-width="4"/></svg>
+     <h3>Write-guard</h3>
+     <p>Nothing is ever submitted to mainnet. A fork client refuses any non-loopback endpoint. <code>rehearse --send</code> is the one path to a real chain, and it sends only to V3.</p>
+     <span class="chip">author_submitExtrinsic → V3 only</span>
+    </article>
+   </div>
+  </div>
+ </section>
+
+ <section class="band map" id="map" aria-labelledby="map-h">
+  <div class="wrap">
+   <div class="head center">
+    <h2 id="map-h">Rack, forklift, bench.</h2>
+    <p>Chains on the left are read at a pinned block hash. Forks on the right run on loopback. Every box in the middle names a file in <code>forklift/</code>.</p>
+   </div>
+   <figure>
+    <img src="architecture.png" width="2560" height="2864" loading="lazy" alt="Forklift architecture: V3 is lifted at a pinned block, forked with Chopsticks and checked against the chain; a transaction is predicted on the fork, sent to V3 with the same bytes and compared">
+    <figcaption><span>Drawn from the code in <code>forklift/*.py</code>. Mainnet (spec 1002) is a read-only control path, labelled "not V3".</span><a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/architecture.png">Full size ↗</a></figcaption>
+   </figure>
+  </div>
+ </section>
+
+ <section class="band limits" id="limits" aria-labelledby="limits-h">
+  <div class="wrap">
+   <div class="head">
+    <h2 id="limits-h">Load limits, stamped on the plate.</h2>
+    <p>A truck's data plate says what it cannot lift. These three lines are quoted from the README, word for word.</p>
+   </div>
+   <div class="limit-plate">
+    <div class="limit"><span class="no">Line 1</span><div><blockquote>It is a sample, not a proof of every key.</blockquote><cite><a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu#solution">README · Solution, step 3</a></cite></div></div>
+    <div class="limit"><span class="no">Line 2</span><div><blockquote>If the chain includes it later, the fee may differ and <code>rehearse</code> says so (exit <code>7</code>); it never adjusts a prediction after the fact.</blockquote><cite><a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu#boundaries-read-before-trusting-a-fork">README · Boundaries</a></cite></div></div>
+    <div class="limit"><span class="no">Line 3</span><div><blockquote>A V3 fork is Chopsticks, not a V3 node.</blockquote><cite><a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu#boundaries-read-before-trusting-a-fork">README · Boundaries</a></cite></div></div>
+   </div>
+  </div>
+ </section>
+
+ <section class="band" id="faq" aria-labelledby="faq-h">
+  <div class="wrap">
+   <div class="head">
+    <h2 id="faq-h">Questions a judge would ask</h2>
+   </div>
+   <div class="faq">
+    <details open>
+     <summary>Is this the real V3 testnet?</summary>
+     <div class="a"><p>The three sent transactions are on the public V3 testnet (<code>portaldot-v3</code>/3002), with node-console links in <a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/PROOF.md"><code>docs/PROOF.md</code></a>. The fork is <code>fork-v3</code>: V3's runtime under Chopsticks, not a V3 node. The mainnet path, <code>fork-1002-fast</code>, is labelled "not V3" everywhere.</p></div>
+    </details>
+    <details>
+     <summary>If it is a rehearsal, why did the fee differ?</summary>
+     <div class="a"><p>Fees move every block on V3: <code>TransactionPayment.NextFeeMultiplier</code> changed between every pair of 20 consecutive blocks. The three transactions landed 3 to 9 blocks after the predicted block, and their fees differed by 3,660 to 8,269 planck. Replayed at their parent blocks, all three match the chain to the planck (10/10, 14/14, 16/16).</p></div>
+    </details>
+    <details>
+     <summary>Can it touch mainnet?</summary>
+     <div class="a"><p>It only reads mainnet, at a fixed block hash. A fork client refuses any endpoint that is not a loopback fork, and <code>rehearse --send</code> sends only to V3.</p></div>
+    </details>
+    <details>
+     <summary>Is every key checked?</summary>
+     <div class="a"><p>No. <code>verify</code> samples 200 keys on the live chain, then compares the fork's whole key set with the lift (5,508 = 5,508) and every lifted value: 5,497 identical. The other 11 are child-trie roots, which the fork reads as null; <code>verify</code> counts and lists them. Child tries are not lifted.</p></div>
+    </details>
+    <details>
+     <summary>What is mocked?</summary>
+     <div class="a"><p>Nothing on the demo path. There is no hosted fork and no web app: Forklift is a CLI, and the fork runs on your machine.</p></div>
+    </details>
+    <details>
+     <summary>How do I try it?</summary>
+     <div class="a"><p>Clone the repo, then <code>pip install -e '.[dev]'</code>. Run <code>forklift up --target v3 --at head --name v3</code>, then <code>forklift verify --name v3 --sample 200</code>, then <code>forklift rehearse System.remark …</code>. V3 forks need Node.js 18+ for Chopsticks. The README's Installation section has every flag.</p></div>
+    </details>
+   </div>
+  </div>
+ </section>
+
+ <section class="final bay-ground" aria-labelledby="final-h">
+  <div class="wrap">
+   <h2 id="final-h">Rehearse on a fork.<br><mark>Then send.</mark></h2>
+   <p>MIT licensed. 257 offline tests and 6 live tests. Every figure on this page traces to <code>docs/PROOF.md</code>, a file in <code>evidence/</code>, or the README.</p>
+   <div class="cta">
+    <a class="btn pri" href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu">View on GitHub</a>
+    <a class="btn" href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/pitch-deck.pdf">Pitch deck</a>
+    <a class="btn" href="https://youtu.be/iVvEXQvfTYY">Watch the demo</a>
+   </div>
+  </div>
+  <div class="bench-edge" aria-hidden="true"></div>
+ </section>
+</main>
+
+<footer>
+ <div class="wrap">
+  <a class="brand" href="#top">FORKLIFT</a>
+  <ul>
+   <li><a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu">GitHub</a></li>
+   <li><a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/PROOF.md">PROOF.md</a></li>
+   <li><a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/pitch-deck.pdf">Pitch deck (PDF)</a></li>
+   <li><a href="https://youtu.be/iVvEXQvfTYY">Demo video</a></li>
+   <li><a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/LICENSE">MIT License</a></li>
+  </ul>
+  <span>Portaldot Hacker House 2026 · DoraHacks</span>
+ </div>
+</footer>
+
+<script>
+(() => {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // copy the run command
+  document.querySelectorAll('[data-copy]').forEach(b => b.addEventListener('click', async () => {
+    const t = document.querySelector(b.dataset.copy).textContent;
+    try { await navigator.clipboard.writeText(t); b.textContent = 'Copied'; b.classList.add('done'); }
+    catch { b.textContent = 'Select ⌘C'; }
+    setTimeout(() => { b.textContent = 'Copy'; b.classList.remove('done'); }, 1600);
+  }));
+
+  // the lift, again
+  const bay = document.querySelector('.bay svg');
+  document.getElementById('relift').addEventListener('click', () => {
+    const els = bay.querySelectorAll('.truck,.loadx,.loady,.forks,.fill,.tag-lifted,.tag-racked,.pool');
+    els.forEach(e => { e.style.animation = 'none'; });
+    void bay.getBoundingClientRect();
+    els.forEach(e => { e.style.animation = ''; });
+  });
+
+  if (reduce || !('IntersectionObserver' in window)) return;
+  const once = (el, fn, margin = '0px 0px -15% 0px') => {
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { io.disconnect(); fn(); } }), { rootMargin: margin });
+    io.observe(el);
+  };
+
+  // data plate count-up (the final value is already in the HTML)
+  document.querySelectorAll('[data-count]').forEach(el => {
+    const end = +el.dataset.count, suf = el.dataset.suffix || '', comma = el.dataset.fmt === 'comma';
+    const fmt = n => (comma ? n.toLocaleString('en-US') : String(n)) + suf;
+    const final = el.textContent;
+    once(el, () => {
+      const t0 = performance.now(), dur = 1100;
+      const step = t => { const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 4);
+        el.textContent = p < 1 ? fmt(Math.round(end * e)) : final; if (p < 1) requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+    }, '0px');
+  });
+
+  // docket flaps: characters spin, then settle on the recorded value
+  const glyphs = '0123456789ABCDEF#+-.';
+  const board = document.querySelector('.docket');
+  const flaps = [...board.querySelectorAll('[data-flap]')];
+  const runFlaps = () => flaps.forEach((f, i) => {
+    const txt = f.dataset.v || (f.dataset.v = f.textContent);
+    f.textContent = '';
+    const cs = [...txt].map(ch => { const s = document.createElement('span'); s.className = 'c'; s.textContent = ch; f.appendChild(s); return s; });
+    const delay = 120 + Math.floor(i / 3) * 140 + (i % 3) * 60;
+    cs.forEach((s, j) => {
+      const real = s.textContent; if (real === ' ' || real === '·') return;
+      const spins = 4 + ((j * 7 + i * 3) % 6); let k = 0;
+      s.classList.add('spin');
+      const tick = () => { if (k++ < spins) { s.textContent = glyphs[(j * 5 + k * 3 + i) % glyphs.length]; setTimeout(tick, 45); }
+        else { s.textContent = real; s.classList.remove('spin'); } };
+      setTimeout(tick, delay + j * 18);
+    });
+  });
+  once(board, runFlaps);
+
+  // terminal: type the commands, print the output lines
+  const term = document.getElementById('term');
+  const lines = [...term.querySelectorAll('.ln')];
+  let timer = [];
+  const play = () => {
+    timer.forEach(clearTimeout); timer = [];
+    lines.forEach(l => l.classList.add('hidden'));
+    let t = 150;
+    lines.forEach(l => {
+      const isCmd = !!l.querySelector('.p');
+      timer.push(setTimeout(() => l.classList.remove('hidden'), t));
+      t += isCmd ? 520 : 150;
+    });
+  };
+  once(term, play);
+  document.getElementById('replay-run').addEventListener('click', play);
+})();
+</script>
+</body>
+</html>
