@@ -16,7 +16,7 @@
 <meta property="og:image" content="https://forklift.edycu.dev/assets/og.png?v=2">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Forklift sets pallet #118,061 (5,508 keys) from the V3 rack onto a bench, writable.">
+<meta property="og:image:alt" content="Forklift sets a load of V3 state, block #118,061 (5,508 keys), from the V3 rack onto a bench, writable.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Forklift: your transaction runs twice. The first time is a rehearsal.">
 <meta name="twitter:description" content="Lift Portaldot V3 at a pinned block, rehearse the signed bytes on the fork, then send them to V3 and compare every field.">
@@ -51,8 +51,10 @@ html { background: var(--bg); color: var(--ink); font: 400 18px/1.55 var(--font-
 body { overflow-x: hidden; caret-color: var(--after); }
 a { color: inherit; text-underline-offset: .2em; text-decoration-thickness: 2px; }
 :focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; border-radius: 3px; }
+section.board :focus-visible, section.limits :focus-visible, footer :focus-visible, .term :focus-visible, .card.guard :focus-visible, .btn.pri:focus-visible { outline-color: var(--after); }
+section.board :focus-visible, section.limits :focus-visible, footer :focus-visible, .term :focus-visible { outline-color: var(--bg); }
 code, .mono { font-family: var(--font-data); font-size: .84em; font-variant-numeric: tabular-nums; }
-img { max-width: 100%; display: block; }
+img { max-width: 100%; height: auto; display: block; }
 .wrap { max-width: 1240px; margin: 0 auto; padding: 0 40px; }
 .skip { position: absolute; left: -9999px; top: 8px; background: var(--ink); color: var(--bg); padding: 8px 14px; z-index: 9; }
 .skip:focus { left: 8px; }
@@ -79,15 +81,16 @@ nav.top ul a.gh { background: var(--ink); color: var(--bg); padding: 9px 14px; b
 nav.top ul a.gh:hover { transform: translate(-2px, -2px); box-shadow: 3px 3px 0 var(--after); }
 
 /* ------- hero ------- */
-.hero { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr); gap: 44px; align-items: center; padding: 52px 0 34px; }
-.label { font: 700 12px/1.3 var(--font-data); letter-spacing: .08em; text-transform: uppercase; display: inline-flex; gap: 10px; align-items: center; }
+.hero { display: grid; grid-template-columns: minmax(0, .98fr) minmax(0, 1.02fr); gap: 32px; align-items: center; padding: 52px 0 34px; }
+.label { font: 700 12px/1.3 var(--font-data); letter-spacing: .06em; text-transform: uppercase; display: inline-flex; gap: 10px; align-items: center; }
 .label i { flex: none; width: 26px; height: 12px; background: repeating-linear-gradient(-45deg, var(--hazard) 0 5px, transparent 5px 10px); }
 h1, h2, .display { font-family: var(--font-display); font-weight: 400; text-transform: uppercase; letter-spacing: .02em; }
-h1 { font-size: clamp(27px, 3.6vw, 52px); line-height: 1.13; margin: 20px 0 24px; }
+h1 { font-size: clamp(27px, 3.35vw, 48px); line-height: 1.13; margin: 20px 0 24px; }
 h1 .ln { display: block; }
 mark { background: var(--after); color: var(--plate); padding: 0 .14em; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
 .sub { max-width: 60ch; font-size: 19px; }
-.sub b, .num { font-family: var(--font-data); font-weight: 700; font-size: .84em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sub b, .num { font-family: var(--font-data); font-weight: 700; font-size: .84em; font-variant-numeric: tabular-nums; }
+.sub { text-wrap: pretty; }
 .cta { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0 18px; }
 .btn { display: inline-flex; align-items: center; gap: 10px; font: 700 16px/1 var(--font-body); padding: 15px 22px; border: 2px solid var(--ink); border-radius: 4px; text-decoration: none; background: transparent; color: var(--ink); cursor: pointer;
   transition: transform .15s var(--ease-out), box-shadow .15s var(--ease-out), background-color .15s; }
@@ -117,7 +120,7 @@ mark { background: var(--after); color: var(--plate); padding: 0 .14em; box-deco
 @keyframes on { from { opacity: 0; } }
 @keyframes off { from { opacity: 1; } }
 @keyframes pool { from { opacity: 0; transform: scaleX(.25); } }
-.relift { position: absolute; right: 0; top: 0; font: 700 11px/1 var(--font-data); letter-spacing: .06em; text-transform: uppercase; background: transparent; border: 2px solid var(--ink); border-radius: 3px; padding: 8px 10px; cursor: pointer; color: var(--ink); transition: background-color .15s, color .15s; }
+.relift { display: block; margin: 10px 0 0 auto; font: 700 11px/1 var(--font-data); letter-spacing: .06em; text-transform: uppercase; background: transparent; border: 2px solid var(--ink); border-radius: 3px; padding: 8px 10px; cursor: pointer; color: var(--ink); transition: background-color .15s, color .15s; }
 .relift:hover { background: var(--ink); color: var(--bg); }
 
 /* hero load-in: one orchestrated stagger, from a visible default */
@@ -148,7 +151,7 @@ section.band { padding: 96px 0; }
 .head.center p { margin: 0 auto; }
 
 /* ------- the run: shown twice ------- */
-.pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr); gap: 22px; align-items: start; }
+.pair { display: grid; grid-template-columns: minmax(0, .86fr) minmax(0, 1.14fr); gap: 22px; align-items: start; }
 .frame { border: 2px solid var(--ink); border-radius: 6px; background: var(--plate); overflow: hidden; box-shadow: 6px 6px 0 var(--ink); }
 .frame .bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border-bottom: 2px solid var(--ink); font: 400 12px/1.2 var(--font-data); background: var(--plate-hi); }
 .frame .bar a { font-weight: 700; white-space: nowrap; }
@@ -157,7 +160,7 @@ section.band { padding: 96px 0; }
 .term .bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-bottom: 1px solid color-mix(in srgb, var(--plate) 18%, transparent); font: 400 12px/1.3 var(--font-data); color: color-mix(in srgb, var(--plate) 70%, var(--ink)); }
 .term .bar button { font: 700 11px/1 var(--font-data); letter-spacing: .06em; text-transform: uppercase; background: var(--bg); color: var(--ink); border: 0; border-radius: 3px; padding: 7px 10px; cursor: pointer; transition: background-color .15s, color .15s; }
 .term .bar button:hover { background: var(--plate); }
-.term pre { margin: 0; padding: 16px 16px 20px; font: 400 12.5px/1.6 var(--font-data); white-space: pre-wrap; overflow-wrap: anywhere; min-height: 520px; }
+.term pre { margin: 0; padding: 16px 16px 20px; font: 400 12px/1.6 var(--font-data); white-space: pre-wrap; overflow-wrap: break-word; min-height: 520px; }
 .term .p { color: var(--bg); }
 .term .k { color: color-mix(in srgb, var(--plate) 62%, var(--ink)); }
 .term .hl { color: var(--ink); background: var(--bg); padding: 0 2px; }
@@ -176,17 +179,19 @@ section.board .label i { background: repeating-linear-gradient(-45deg, var(--bg)
 section.board .head p { color: color-mix(in srgb, var(--plate) 84%, var(--ink)); }
 section.board ::selection { background: var(--bg); color: var(--ink); }
 .docket { border: 2px solid color-mix(in srgb, var(--plate) 30%, transparent); border-radius: 8px; padding: 10px; background: color-mix(in srgb, var(--ink) 86%, black); }
-.drow { display: grid; grid-template-columns: 1.05fr 1.6fr 1.6fr 1.15fr; gap: 8px; align-items: stretch; }
+.drow { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.6fr) minmax(0, 1.6fr) minmax(0, 1.15fr); gap: 8px; align-items: stretch; }
 .drow + .drow { margin-top: 8px; }
 .drow.hd { font: 700 11px/1.2 var(--font-data); letter-spacing: .08em; text-transform: uppercase; color: color-mix(in srgb, var(--plate) 70%, var(--ink)); padding: 6px 2px 2px; }
 .drow .f { display: flex; align-items: center; font: 700 12px/1.25 var(--font-data); text-transform: uppercase; letter-spacing: .05em; color: color-mix(in srgb, var(--plate) 76%, var(--ink)); padding: 0 6px; }
-.flap { position: relative; display: flex; align-items: center; min-height: 52px; padding: 8px 12px; border-radius: 4px; font: 700 15px/1.2 var(--font-data); font-variant-numeric: tabular-nums;
+.flap { position: relative; isolation: isolate; display: flex; flex-wrap: wrap; align-items: center; min-height: 52px; padding: 8px 12px; border-radius: 4px; font: 700 15px/1.2 var(--font-data); font-variant-numeric: tabular-nums;
   background: linear-gradient(180deg, color-mix(in srgb, var(--ink) 70%, var(--plate)) 0 50%, color-mix(in srgb, var(--ink) 78%, var(--plate)) 50% 100%); color: var(--plate); overflow-wrap: anywhere; }
-.flap::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: color-mix(in srgb, var(--ink) 92%, black); }
+.flap::after { content: ""; position: absolute; z-index: -1; left: 0; right: 0; top: 50%; height: 1px; background: color-mix(in srgb, var(--ink) 92%, black); }
 .flap.ok { color: var(--plate); }
-.flap.moved { background: var(--bg); color: var(--ink); }
+.flap.moved { background: var(--bg); color: var(--ink); font-size: 19px; }
+.flap.stamp { animation: stamp .5s cubic-bezier(.2, 1.6, .4, 1) both; }
+@keyframes stamp { 0% { transform: scale(1.18) rotate(-2deg); box-shadow: 0 0 0 0 var(--bg); } 60% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--bg) 0%, transparent); } 100% { transform: none; } }
 .flap.moved::after { background: color-mix(in srgb, var(--rule) 80%, var(--ink)); }
-.flap .c { display: inline-block; white-space: pre; }
+.flap .c { white-space: pre; }
 .flap .c.spin { color: color-mix(in srgb, var(--plate) 50%, transparent); }
 .flap.moved .c.spin { color: color-mix(in srgb, var(--ink) 45%, transparent); }
 .docket-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 24px; padding: 14px 6px 4px; font: 400 13px/1.5 var(--font-data); color: color-mix(in srgb, var(--plate) 80%, var(--ink)); }
@@ -228,7 +233,12 @@ section.board ::selection { background: var(--bg); color: var(--ink); }
 
 /* ------- map ------- */
 section.map { background: var(--plate); border-top: 3px solid var(--ink); border-bottom: 3px solid var(--ink); }
-.map figure { max-width: 760px; margin: 0 auto; border: 2px solid var(--ink); border-radius: 6px; overflow: hidden; background: var(--bg); box-shadow: 8px 8px 0 var(--ink); }
+.map .wrap { display: grid; grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr); gap: 56px; align-items: center; }
+.map .head { margin-bottom: 0; }
+.map dl { margin-top: 26px; display: grid; gap: 16px; }
+.map dt { font: 400 18px/1.1 var(--font-display); text-transform: uppercase; letter-spacing: .02em; }
+.map dd { font-size: 16px; margin-top: 4px; max-width: 46ch; }
+.map figure { max-width: 600px; margin: 0 0 0 auto; border: 2px solid var(--ink); border-radius: 6px; overflow: hidden; background: var(--bg); box-shadow: 8px 8px 0 var(--ink); }
 .map figcaption { padding: 12px 16px; font-size: 14px; border-top: 2px solid var(--ink); background: var(--plate-hi); display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .map figcaption a { font-weight: 700; }
 
@@ -279,9 +289,13 @@ footer .brand { color: var(--bg); font-size: 18px; }
 @media (max-width: 980px) {
   .hero { grid-template-columns: minmax(0, 1fr); padding-top: 34px; gap: 26px; }
   .pair { grid-template-columns: minmax(0, 1fr); }
+  .map .wrap { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  .map figure { margin: 0 auto; }
   .bento .card.w4, .bento .card.w2, .bento .card.w3 { grid-column: span 6; }
   .sends { grid-template-columns: 1fr; }
   nav.top ul li.opt { display: none; }
+  .hero > div:first-child { display: contents; }
+  .hero .label { order: 1; } .hero h1 { order: 2; margin-bottom: 4px; } .hero .bay { order: 3; } .hero .sub { order: 4; } .hero .cta { order: 5; margin: 6px 0 0; } .hero .cmd { order: 6; }
 }
 @media (max-width: 760px) {
   .wrap { padding: 0 18px; }
@@ -296,15 +310,16 @@ footer .brand { color: var(--bg); font-size: 18px; }
   section.band { padding: 70px 0; }
   .sub { font-size: 17px; }
   .cmd { font-size: 11.5px; }
-  .term pre { font-size: 11px; min-height: 0; }
-  .drow, .drow.hd { grid-template-columns: 1fr 1fr; }
+  .hero .cta .btn { flex: 1 1 100%; justify-content: center; }
+  .term pre { font-size: 10.5px; min-height: 0; overflow-wrap: anywhere; }
+  .drow, .drow.hd { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .drow .f { grid-column: 1 / -1; padding: 6px 2px 0; }
   .drow.hd .f-label { display: none; }
   .drow .chk { grid-column: 1 / -1; }
-  .flap { font-size: 13px; min-height: 44px; }
+  .flap { font-size: 11.5px; min-height: 42px; padding: 8px 9px; }
+  .flap.moved { font-size: 14px; }
   .limit { grid-template-columns: 1fr; gap: 8px; }
   .limit-plate { padding: 6px 20px; }
-  .relift { top: -8px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
@@ -335,7 +350,7 @@ footer .brand { color: var(--bg); font-size: 18px; }
    <div>
     <span class="label"><i></i>Portaldot Hacker House 2026 · Node Operations &amp; Tooling</span>
     <h1><span class="ln">Your transaction</span><span class="ln">runs twice. The</span><span class="ln">first time is</span><span class="ln"><mark>a rehearsal.</mark></span></h1>
-    <p class="sub">Before you send a call to the Portaldot V3 testnet, Forklift lifts the live chain at one pinned block onto your machine (<b>5,508 keys at #118,061</b>), checks the fork against the chain (<b>200/200 identical</b>), signs once, and runs those exact bytes on the fork. Then it sends them to V3 and shows you every field that moved.</p>
+    <p class="sub">Forklift lifts the live Portaldot V3 testnet at one pinned block onto your machine, checks the fork against the chain (<b>200/200 identical</b>), and runs your signed bytes there first. Then it sends the same bytes to V3 and shows you every field that moved.</p>
     <div class="cta">
      <a class="btn pri" href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>View on GitHub</a>
      <a class="btn" href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/pitch-deck.pdf">Pitch deck</a>
@@ -345,15 +360,14 @@ footer .brand { color: var(--bg); font-size: 18px; }
    </div>
 
    <div class="bay">
-    <button class="relift" type="button" id="relift" aria-label="Play the lift animation again">Lift it again</button>
     <svg viewBox="0 0 740 530" role="img" aria-labelledby="bay-t">
-     <title id="bay-t">A forklift carries pallet #118,061 (5,508 keys) from the V3 testnet rack, where it stays as a read-only outline, and sets it on your bench, where it turns blue: writable.</title>
+     <title id="bay-t">A forklift carries the state lifted at block #118,061 (5,508 keys) from the V3 testnet rack, where it stays as an outline (the lift only reads), and sets it on your bench, where it turns blue: writable.</title>
      <defs>
       <pattern id="hz" width="22" height="22" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="11" height="22" fill="#1E1F1C"/></pattern>
       <filter id="glow" x="-30%" y="-300%" width="160%" height="700%"><feGaussianBlur stdDeviation="8"/></filter>
      </defs>
      <!-- rack: the live chain, steel outline -->
-     <text x="16" y="62" font-family="Martian Mono, monospace" font-size="13" font-weight="700" fill="#4E4636" letter-spacing=".05em">V3 TESTNET · READ-ONLY</text>
+     <text x="16" y="62" font-family="Martian Mono, monospace" font-size="15" font-weight="700" fill="#4E4636" letter-spacing=".05em">V3 TESTNET · LIFT READS ONLY</text>
      <g fill="none" stroke="#5C6166" stroke-width="4">
       <path d="M16 470V82M210 470V82M16 202H210M16 342H210"/>
       <g stroke-dasharray="7 6" stroke-width="3">
@@ -375,9 +389,9 @@ footer .brand { color: var(--bg); font-size: 18px; }
       <rect x="526" y="208" width="120" height="68" rx="4" fill="#E9E6DF" stroke="#1E1F1C" stroke-width="2"/>
       <circle cx="534" cy="216" r="2.5" fill="#5C6166"/><circle cx="638" cy="216" r="2.5" fill="#5C6166"/>
       <text x="586" y="234" text-anchor="middle" font-family="Martian Mono, monospace" font-weight="700" font-size="16" fill="#1E1F1C">#118,061</text>
-      <text x="586" y="252" text-anchor="middle" font-family="Martian Mono, monospace" font-size="11" fill="#1E1F1C">5,508 KEYS</text>
-      <text class="tag-racked" x="586" y="268" text-anchor="middle" font-family="Martian Mono, monospace" font-size="9.5" font-weight="700" fill="#5C6166" letter-spacing=".08em">RACKED</text>
-      <text class="tag-lifted" x="586" y="268" text-anchor="middle" font-family="Martian Mono, monospace" font-size="9.5" font-weight="700" fill="#1846D8" letter-spacing=".08em">WRITABLE</text>
+      <text x="586" y="252" text-anchor="middle" font-family="Martian Mono, monospace" font-size="12.5" fill="#1E1F1C">5,508 KEYS</text>
+      <text class="tag-racked" x="586" y="268" text-anchor="middle" font-family="Martian Mono, monospace" font-size="12" font-weight="700" fill="#5C6166" letter-spacing=".06em">RACKED</text>
+      <text class="tag-lifted" x="586" y="268" text-anchor="middle" font-family="Martian Mono, monospace" font-size="12" font-weight="700" fill="#1846D8" letter-spacing=".06em">WRITABLE</text>
       <path d="M504 302H664V332H504Z" fill="#1E1F1C"/>
       <rect x="520" y="310" width="52" height="14" fill="#F5B300"/><rect x="596" y="310" width="52" height="14" fill="#F5B300"/>
      </g></g>
@@ -398,9 +412,10 @@ footer .brand { color: var(--bg); font-size: 18px; }
       </g>
      </g>
      <line x1="0" y1="470" x2="740" y2="470" stroke="#1E1F1C" stroke-width="5"/>
-     <text x="16" y="500" font-family="Martian Mono, monospace" font-size="12" fill="#4E4636">racked: stays live, read-only</text>
-     <text x="736" y="500" text-anchor="end" font-family="Martian Mono, monospace" font-size="13" font-weight="700" fill="#1E1F1C" letter-spacing=".05em">YOUR BENCH · fork-v3 · WRITABLE</text>
+     <text x="16" y="496" font-family="Martian Mono, monospace" font-size="14" fill="#4E4636">racked: the lift only</text><text x="16" y="516" font-family="Martian Mono, monospace" font-size="14" fill="#4E4636">reads; stays live</text>
+     <text x="736" y="500" text-anchor="end" font-family="Martian Mono, monospace" font-size="15" font-weight="700" fill="#1E1F1C" letter-spacing=".04em">YOUR BENCH · fork-v3 · WRITABLE</text>
     </svg>
+    <button class="relift" type="button" id="relift" aria-label="Play the lift animation again">Lift it again ↻</button>
    </div>
   </section>
 
@@ -425,8 +440,8 @@ footer .brand { color: var(--bg); font-size: 18px; }
    <div class="pair">
     <figure class="frame">
      <div class="bar"><span>node-console.portaldot.dev · V3 block #118,621</span><a href="https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x0ae8b2b94d34dc27fd931b8095654675510dc53533582ad0cad19712591db8a9">Open ↗</a></div>
-     <a href="assets/console-118621.webp" aria-label="Open the node-console screenshot at full size"><img src="assets/console-118621.webp" width="1500" height="939" loading="lazy" alt="Portaldot node-console, V3 testnet block 118,621: extrinsic balances.transferKeepAlive of 0.2000 tPOT to 5F2BvZkMs, extrinsic hash 0x2247c66b…, and its events Withdraw, NewAccount, Endowed, Transfer, Deposit, TransactionFeePaid, ExtrinsicSuccess."></a>
-     <figcaption>Block <span class="num">#118,621</span> on the public explorer. Extrinsic hash <span class="num">0x2247c66b…</span>: the same hash the fork predicted.</figcaption>
+     <a href="assets/console-118621.webp" aria-label="Open the node-console screenshot at full size"><img src="assets/console-118621.webp" width="1400" height="1009" loading="lazy" alt="Portaldot node-console, V3 testnet block 118,621: extrinsic balances.transferKeepAlive of 0.2000 tPOT to 5F2BvZkMs, extrinsic hash 0x2247c66b…, and its events Withdraw, NewAccount, Endowed, Transfer, Deposit, TransactionFeePaid, ExtrinsicSuccess."></a>
+     <figcaption>Block <span class="num">#118,621</span> on the public explorer. Boxed: extrinsic hash <span class="num">0x2247c66b…</span>, the same hash the fork predicted.</figcaption>
     </figure>
     <div class="term" id="term">
      <div class="bar"><span>forklift · Portaldot V3 testnet</span><button type="button" id="replay-run">Replay the run</button></div>
@@ -452,7 +467,7 @@ footer .brand { color: var(--bg); font-size: 18px; }
 </span><span class="ln">0</span></pre>
     </div>
    </div>
-   <p class="note">The output lines are forklift's own formatters applied to the recorded runs in <a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/evidence/rehearse-v3.json"><code>evidence/rehearse-v3.json</code></a> (recorded 2026-10-20 14:44:20 UTC) and <a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/evidence/replay-v3.json"><code>evidence/replay-v3.json</code></a>; the command lines are rebuilt from the recorded call and arguments. Exit <code>7</code> means the chain differed from the prediction, and every differing field is listed.</p>
+   <p class="note">Output lines: forklift's own formatters applied to <a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/evidence/rehearse-v3.json"><code>evidence/rehearse-v3.json</code></a> (recorded 2026-10-20 14:44:20 UTC) and <a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/evidence/replay-v3.json"><code>replay-v3.json</code></a>. Command lines rebuilt from the recorded call; the explorer URL is shortened on screen. Exit <code>7</code>: the chain differed, and every differing field is listed.</p>
   </div>
  </section>
 
@@ -498,8 +513,8 @@ footer .brand { color: var(--bg); font-size: 18px; }
   <div class="wrap">
    <div class="head">
     <span class="label"><i></i>Bay 2 · The machine</span>
-    <h2 id="machine-h">Five verbs. One pinned block.</h2>
-    <p>Each verb is one command in a Python CLI. Lift and verify read the live chain at a pinned block hash; only <code>rehearse --send</code> writes, and only to V3.</p>
+    <h2 id="machine-h">Five steps. One pinned block.</h2>
+    <p>Four are commands (<code>lift</code>, <code>verify</code>, <code>rehearse</code>, <code>replay</code>); Fork is what <code>forklift up</code> starts. Lift and verify read the live chain at a pinned block hash; only <code>rehearse --send</code> writes, and only to V3.</p>
    </div>
    <div class="bento">
     <article class="card w4">
@@ -514,7 +529,7 @@ footer .brand { color: var(--bg); font-size: 18px; }
      <svg class="glyph" viewBox="0 0 48 48" aria-hidden="true"><path d="M8 6v36M8 30h30l4 2v3H8" fill="none" stroke="#1E1F1C" stroke-width="3"/><rect x="14" y="10" width="22" height="16" rx="2" fill="#1846D8"/></svg>
      <h3>Fork</h3>
      <p>Runs V3's own runtime wasm on your machine. The fork must serve V3's genesis and start at the lifted block.</p>
-     <span class="chip">Chopsticks 1.5.2</span>
+     <span class="chip">forklift up · Chopsticks 1.5.2</span>
     </article>
     <article class="card w2">
      <svg class="glyph" viewBox="0 0 48 48" aria-hidden="true"><circle cx="20" cy="20" r="12" fill="none" stroke="#1E1F1C" stroke-width="3"/><path d="M29 29l12 12" stroke="#1E1F1C" stroke-width="4" stroke-linecap="round"/><path d="M14 20l4 4 8-8" fill="none" stroke="#1846D8" stroke-width="3"/></svg>
@@ -547,9 +562,14 @@ footer .brand { color: var(--bg); font-size: 18px; }
 
  <section class="band map" id="map" aria-labelledby="map-h">
   <div class="wrap">
-   <div class="head center">
+   <div class="head">
     <h2 id="map-h">Rack, forklift, bench.</h2>
-    <p>Chains on the left are read at a pinned block hash. Forks on the right run on loopback. Every box in the middle names a file in <code>forklift/</code>.</p>
+    <p>Read the diagram left to right.</p>
+    <dl>
+     <div><dt>Rack</dt><dd>The live V3 testnet and mainnet, read at a pinned block hash.</dd></div>
+     <div><dt>Forklift</dt><dd>One Python CLI. Every box in the middle names a file in <code>forklift/</code>.</dd></div>
+     <div><dt>Bench</dt><dd>Forks on loopback. Only <code>rehearse --send</code> writes to a live chain, and only to V3.</dd></div>
+    </dl>
    </div>
    <figure>
     <img src="architecture.png" width="2560" height="2864" loading="lazy" alt="Forklift architecture: V3 is lifted at a pinned block, forked with Chopsticks and checked against the chain; a transaction is predicted on the fork, sent to V3 with the same bytes and compared">
@@ -580,7 +600,7 @@ footer .brand { color: var(--bg); font-size: 18px; }
    <div class="faq">
     <details open>
      <summary>Is this the real V3 testnet?</summary>
-     <div class="a"><p>The three sent transactions are on the public V3 testnet (<code>portaldot-v3</code>/3002), with node-console links in <a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/PROOF.md"><code>docs/PROOF.md</code></a>. The fork is <code>fork-v3</code>: V3's runtime under Chopsticks, not a V3 node. The mainnet path, <code>fork-1002-fast</code>, is labelled "not V3" everywhere.</p></div>
+     <div class="a"><p>The three sent transactions are on the public V3 testnet (<code>portaldot-v3</code>/3002), with node-console links in <a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/PROOF.md"><code>docs/PROOF.md</code></a>. The fork is <code>fork-v3</code>: V3's runtime under Chopsticks, not a V3 node. The mainnet path, <code>fork-1002-fast</code>, is labelled "not V3" in the README, <code>docs/PROOF.md</code> and the architecture diagram.</p></div>
     </details>
     <details>
      <summary>If it is a rehearsal, why did the fee differ?</summary>
@@ -596,7 +616,7 @@ footer .brand { color: var(--bg); font-size: 18px; }
     </details>
     <details>
      <summary>What is mocked?</summary>
-     <div class="a"><p>Nothing on the demo path. There is no hosted fork and no web app: Forklift is a CLI, and the fork runs on your machine.</p></div>
+     <div class="a"><p>Nothing on the V3 path: the lift, fork, verify, rehearse and replay rows are real runs against the live testnet (<code>docs/PROOF.md</code>). There is no hosted fork and no web app: Forklift is a CLI, and the fork runs on your machine.</p></div>
     </details>
     <details>
      <summary>How do I try it?</summary>
@@ -667,11 +687,14 @@ footer .brand { color: var(--bg); font-size: 18px; }
     const fmt = n => (comma ? n.toLocaleString('en-US') : String(n)) + suf;
     const final = el.textContent;
     once(el, () => {
+      const wait = Math.max(0, 2300 - performance.now());
+      setTimeout(() => {
       const t0 = performance.now(), dur = 1100;
       const step = t => { const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 4);
         el.textContent = p < 1 ? fmt(Math.round(end * e)) : final; if (p < 1) requestAnimationFrame(step); };
       requestAnimationFrame(step);
-    }, '0px');
+      }, wait);
+    }, '0px 0px -40% 0px');
   });
 
   // docket flaps: characters spin, then settle on the recorded value
@@ -691,6 +714,7 @@ footer .brand { color: var(--bg); font-size: 18px; }
         else { s.textContent = real; s.classList.remove('spin'); } };
       setTimeout(tick, delay + j * 18);
     });
+    if (f.classList.contains('moved')) setTimeout(() => f.classList.add('stamp'), delay + cs.length * 18 + 520);
   });
   once(board, runFlaps);
 
