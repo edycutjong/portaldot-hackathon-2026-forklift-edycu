@@ -1,0 +1,439 @@
+{
+  "bench": "p50/p95 over 7 fresh-process runs per command",
+  "method": "wall-clock seconds from spawn to exit of a fresh `forklift` process; percentiles by linear interpolation between the closest ranks; only runs that met their exit contract are counted",
+  "recorded_utc": "2026-10-30T22:23:31+00:00",
+  "host": {
+    "machine": "arm64",
+    "system": "Darwin",
+    "macos": "26.5.2",
+    "cpu": "Apple M1 Max",
+    "cores": 10,
+    "python": "3.11.1",
+    "forklift": "forklift, version 0.1.0",
+    "chopsticks": "@acala-network/chopsticks@1.5.2"
+  },
+  "conditions": "one machine, runs back to back per command, not an idle Mac (1-minute load average before/after each command is recorded per scenario); the public mainnet and V3 nodes are shared",
+  "pin": {
+    "mainnet_block": 2725953
+  },
+  "scenarios": {
+    "lift": {
+      "command": "forklift lift --at 2725953",
+      "against": "mainnet 1002 (read-only)",
+      "runs_all": 7,
+      "runs_ok": 7,
+      "wall_s": [
+        24.33,
+        24.03,
+        23.53,
+        24.32,
+        23.96,
+        23.41,
+        23.9
+      ],
+      "exit_codes": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "load_avg_1m_before": 10.16,
+      "load_avg_1m_after": 4.61,
+      "per_run": [
+        {
+          "keys_lifted": 16324,
+          "keys_s": 9.46,
+          "values_s": 14.2,
+          "total_s": 23.66,
+          "manifest_root": "0xa430d6a9f16d631da45fd0d0cb5ae600db1854612218e21aabeb7f26d7ba002b"
+        },
+        {
+          "keys_lifted": 16324,
+          "keys_s": 9.42,
+          "values_s": 13.97,
+          "total_s": 23.38,
+          "manifest_root": "0xa430d6a9f16d631da45fd0d0cb5ae600db1854612218e21aabeb7f26d7ba002b"
+        },
+        {
+          "keys_lifted": 16324,
+          "keys_s": 9.3,
+          "values_s": 13.6,
+          "total_s": 22.89,
+          "manifest_root": "0xa430d6a9f16d631da45fd0d0cb5ae600db1854612218e21aabeb7f26d7ba002b"
+        },
+        {
+          "keys_lifted": 16324,
+          "keys_s": 9.6,
+          "values_s": 14.11,
+          "total_s": 23.71,
+          "manifest_root": "0xa430d6a9f16d631da45fd0d0cb5ae600db1854612218e21aabeb7f26d7ba002b"
+        },
+        {
+          "keys_lifted": 16324,
+          "keys_s": 9.06,
+          "values_s": 14.29,
+          "total_s": 23.35,
+          "manifest_root": "0xa430d6a9f16d631da45fd0d0cb5ae600db1854612218e21aabeb7f26d7ba002b"
+        },
+        {
+          "keys_lifted": 16324,
+          "keys_s": 9.0,
+          "values_s": 13.9,
+          "total_s": 22.9,
+          "manifest_root": "0xa430d6a9f16d631da45fd0d0cb5ae600db1854612218e21aabeb7f26d7ba002b"
+        },
+        {
+          "keys_lifted": 16324,
+          "keys_s": 9.29,
+          "values_s": 13.96,
+          "total_s": 23.24,
+          "manifest_root": "0xa430d6a9f16d631da45fd0d0cb5ae600db1854612218e21aabeb7f26d7ba002b"
+        }
+      ],
+      "runs": 7,
+      "p50_s": 23.96,
+      "p95_s": 24.33,
+      "min_s": 23.41,
+      "max_s": 24.33,
+      "manifest_roots_identical": true,
+      "manifest_root": "0xa430d6a9f16d631da45fd0d0cb5ae600db1854612218e21aabeb7f26d7ba002b",
+      "keys_s_p50": 9.3,
+      "keys_s_p95": 9.56,
+      "values_s_p50": 13.97,
+      "values_s_p95": 14.26,
+      "total_s_p50": 23.35,
+      "total_s_p95": 23.7
+    },
+    "verify": {
+      "command": "forklift verify --sample 200",
+      "against": "fork-v3 vs live V3",
+      "runs_all": 7,
+      "runs_ok": 7,
+      "wall_s": [
+        28.43,
+        19.89,
+        23.2,
+        20.27,
+        18.35,
+        17.98,
+        20.31
+      ],
+      "exit_codes": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "load_avg_1m_before": 4.61,
+      "load_avg_1m_after": 3.87,
+      "per_run": [
+        {
+          "seed": 20261031001,
+          "draws": 200,
+          "unique_keys": 196,
+          "classes": {
+            "identical": 200
+          },
+          "mismatches": 0,
+          "pin": 258306
+        },
+        {
+          "seed": 20261031002,
+          "draws": 200,
+          "unique_keys": 196,
+          "classes": {
+            "identical": 200
+          },
+          "mismatches": 0,
+          "pin": 258306
+        },
+        {
+          "seed": 20261031003,
+          "draws": 200,
+          "unique_keys": 198,
+          "classes": {
+            "identical": 200
+          },
+          "mismatches": 0,
+          "pin": 258306
+        },
+        {
+          "seed": 20261031004,
+          "draws": 200,
+          "unique_keys": 196,
+          "classes": {
+            "identical": 200
+          },
+          "mismatches": 0,
+          "pin": 258306
+        },
+        {
+          "seed": 20261031005,
+          "draws": 200,
+          "unique_keys": 194,
+          "classes": {
+            "identical": 200
+          },
+          "mismatches": 0,
+          "pin": 258306
+        },
+        {
+          "seed": 20261031006,
+          "draws": 200,
+          "unique_keys": 195,
+          "classes": {
+            "identical": 200
+          },
+          "mismatches": 0,
+          "pin": 258306
+        },
+        {
+          "seed": 20261031007,
+          "draws": 200,
+          "unique_keys": 198,
+          "classes": {
+            "identical": 200
+          },
+          "mismatches": 0,
+          "pin": 258306
+        }
+      ],
+      "runs": 7,
+      "p50_s": 20.27,
+      "p95_s": 26.86,
+      "min_s": 17.98,
+      "max_s": 28.43
+    },
+    "rehearse": {
+      "command": "forklift rehearse System.remark",
+      "against": "fresh fork-v3, prediction only",
+      "runs_all": 7,
+      "runs_ok": 7,
+      "wall_s": [
+        36.88,
+        39.38,
+        41.05,
+        38.86,
+        38.44,
+        40.66,
+        38.58
+      ],
+      "exit_codes": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "load_avg_1m_before": 3.87,
+      "load_avg_1m_after": 4.42,
+      "per_run": [
+        {
+          "predicted_success": true,
+          "extrinsic_id": "258373-1",
+          "tx_hash": "0xf93b452b6cd1e01ef14097fcad2805a07a2fb2981f78868c1aa1137bc61d0f5a",
+          "fork_head_before": 258372
+        },
+        {
+          "predicted_success": true,
+          "extrinsic_id": "258384-1",
+          "tx_hash": "0xc25f20107ab312fd8e796a724d361c8554a1d61b1a71579102b5611f1217e3d0",
+          "fork_head_before": 258383
+        },
+        {
+          "predicted_success": true,
+          "extrinsic_id": "258396-1",
+          "tx_hash": "0x330cb5b27045f5a948a088594aae9ecf3308cbc270f482ed375445e00a39d625",
+          "fork_head_before": 258395
+        },
+        {
+          "predicted_success": true,
+          "extrinsic_id": "258407-1",
+          "tx_hash": "0x72aa251b40b31ab93a6cd6c64276a9c93d1ddd15891c9fd50c16e1cb74788363",
+          "fork_head_before": 258406
+        },
+        {
+          "predicted_success": true,
+          "extrinsic_id": "258418-1",
+          "tx_hash": "0x4b7b56d5934bed0001e842592cce7003a8ee4b851dccbfb1a912b56a4fc1b5f9",
+          "fork_head_before": 258417
+        },
+        {
+          "predicted_success": true,
+          "extrinsic_id": "258429-1",
+          "tx_hash": "0x85e9095faeca1141a03ac696dd6805c8b22b7fcc2ced540f10366049d9c0381b",
+          "fork_head_before": 258428
+        },
+        {
+          "predicted_success": true,
+          "extrinsic_id": "258440-1",
+          "tx_hash": "0x537d51fd1f0483049ed6f28acbec90bbd15ea0a7f069c82ffca03c638b7b7013",
+          "fork_head_before": 258439
+        }
+      ],
+      "runs": 7,
+      "p50_s": 38.86,
+      "p95_s": 40.93,
+      "min_s": 36.88,
+      "max_s": 41.05
+    },
+    "replay-v3": {
+      "command": "forklift replay 118621-1",
+      "against": "V3, temporary fork",
+      "runs_all": 7,
+      "runs_ok": 7,
+      "wall_s": [
+        13.38,
+        15.04,
+        12.47,
+        12.91,
+        13.06,
+        14.6,
+        14.24
+      ],
+      "exit_codes": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "load_avg_1m_before": 4.42,
+      "load_avg_1m_after": 17.65,
+      "per_run": [
+        {
+          "extrinsic_id": "118621-1",
+          "fields": 14,
+          "differs": 0,
+          "match": true
+        },
+        {
+          "extrinsic_id": "118621-1",
+          "fields": 14,
+          "differs": 0,
+          "match": true
+        },
+        {
+          "extrinsic_id": "118621-1",
+          "fields": 14,
+          "differs": 0,
+          "match": true
+        },
+        {
+          "extrinsic_id": "118621-1",
+          "fields": 14,
+          "differs": 0,
+          "match": true
+        },
+        {
+          "extrinsic_id": "118621-1",
+          "fields": 14,
+          "differs": 0,
+          "match": true
+        },
+        {
+          "extrinsic_id": "118621-1",
+          "fields": 14,
+          "differs": 0,
+          "match": true
+        },
+        {
+          "extrinsic_id": "118621-1",
+          "fields": 14,
+          "differs": 0,
+          "match": true
+        }
+      ],
+      "runs": 7,
+      "p50_s": 13.38,
+      "p95_s": 14.91,
+      "min_s": 12.47,
+      "max_s": 15.04
+    },
+    "replay-1002": {
+      "command": "forklift replay 2700013:1",
+      "against": "mainnet 1002 (read-only), temporary fork",
+      "runs_all": 7,
+      "runs_ok": 7,
+      "wall_s": [
+        7.6,
+        8.23,
+        7.37,
+        8.38,
+        9.82,
+        9.97,
+        7.74
+      ],
+      "exit_codes": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "load_avg_1m_before": 17.65,
+      "load_avg_1m_after": 16.12,
+      "per_run": [
+        {
+          "extrinsic_id": "2700013:1",
+          "fields": 24,
+          "differs": 0,
+          "match": true
+        },
+        {
+          "extrinsic_id": "2700013:1",
+          "fields": 24,
+          "differs": 0,
+          "match": true
+        },
+        {
+          "extrinsic_id": "2700013:1",
+          "fields": 24,
+          "differs": 0,
+          "match": true
+        },
+        {
+          "extrinsic_id": "2700013:1",
+          "fields": 24,
+          "differs": 0,
+          "match": true
+        },
+        {
+          "extrinsic_id": "2700013:1",
+          "fields": 24,
+          "differs": 0,
+          "match": true
+        },
+        {
+          "extrinsic_id": "2700013:1",
+          "fields": 24,
+          "differs": 0,
+          "match": true
+        },
+        {
+          "extrinsic_id": "2700013:1",
+          "fields": 24,
+          "differs": 0,
+          "match": true
+        }
+      ],
+      "runs": 7,
+      "p50_s": 8.23,
+      "p95_s": 9.92,
+      "min_s": 7.37,
+      "max_s": 9.97
+    }
+  }
+}

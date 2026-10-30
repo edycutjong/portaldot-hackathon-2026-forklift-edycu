@@ -180,7 +180,19 @@ What changed (read on the fork before the call and at the block that included it
 
 Evidence: `evidence/txs-2725953.json`, `evidence/refetch-2725953.json`
 
-## Bench (stub: one run per file)
+## Bench (p50 / p95 over 7 fresh-process runs)
+
+Recorded 2026-10-30T22:23:31+00:00 on Apple M1 Max; full tables in [`docs/BENCHMARKS.md`](BENCHMARKS.md).
+
+| Command | Against | Runs ok / all | p50 s | p95 s | Evidence |
+|---|---|---|---|---|---|
+| `forklift lift --at 2725953` | mainnet 1002 (read-only) | 7 / 7 | 23.96 | 24.33 | `evidence/bench-runs-2026-10-30.json` |
+| `forklift verify --sample 200` | fork-v3 vs live V3 | 7 / 7 | 20.27 | 26.86 | `evidence/bench-runs-2026-10-30.json` |
+| `forklift rehearse System.remark` | fresh fork-v3, prediction only | 7 / 7 | 38.86 | 40.93 | `evidence/bench-runs-2026-10-30.json` |
+| `forklift replay 118621-1` | V3, temporary fork | 7 / 7 | 13.38 | 14.91 | `evidence/bench-runs-2026-10-30.json` |
+| `forklift replay 2700013:1` | mainnet 1002 (read-only), temporary fork | 7 / 7 | 8.23 | 9.92 | `evidence/bench-runs-2026-10-30.json` |
+
+## Bench, earlier single lift run (2026-10-14)
 
 | Date (UTC) | Pin block | Keys | keys s | values s | total s | Host | Evidence |
 |---|---|---|---|---|---|---|---|

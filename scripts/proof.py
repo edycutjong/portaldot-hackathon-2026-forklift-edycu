@@ -194,6 +194,7 @@ def render() -> str:
     lifts = sorted(_load("lift-[0-9]*.json"), key=lambda d: d["pin"]["block_number"])
     complete = {d["pin"]["block_number"]: d for d in _load("lift-completeness-*.json")}
     benches = _load("bench-lift-*.json")
+    bench_runs = _load("bench-runs-*.json")
     out = [
         "# PROOF",
         "",
@@ -385,10 +386,24 @@ def render() -> str:
                 f"#{d['finalizing']['finalized_before']:,} → #{d['finalizing']['finalized_after']:,} | "
                 f"{d['peers']} | {'yes' if d['pass'] else '**NO**'} | `{d['_file']}` |"
             )
+    if bench_runs:
+        b = bench_runs[-1]
+        out += [
+            "",
+            f"## Bench (p50 / p95 over {max(s['runs_all'] for s in b['scenarios'].values())} fresh-process runs)",
+            "",
+            f"Recorded {b['recorded_utc']} on {b['host']['cpu']}; full tables in [`docs/BENCHMARKS.md`](BENCHMARKS.md).",
+            "",
+            "| Command | Against | Runs ok / all | p50 s | p95 s | Evidence |",
+            "|---|---|---|---|---|---|",
+        ]
+        for s in b["scenarios"].values():
+            out.append(f"| `{s['command']}` | {s['against']} | {s['runs_ok']} / {s['runs_all']} | "
+                       f"{s.get('p50_s', 'n/a')} | {s.get('p95_s', 'n/a')} | `{b['_file']}` |")
     if benches:
         out += [
             "",
-            "## Bench (stub: one run per file)",
+            "## Bench, earlier single lift run (2026-10-14)",
             "",
             "| Date (UTC) | Pin block | Keys | keys s | values s | total s | Host | Evidence |",
             "|---|---|---|---|---|---|---|---|",
