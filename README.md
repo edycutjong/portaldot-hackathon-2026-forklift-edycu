@@ -18,7 +18,7 @@
 
   ![status](https://img.shields.io/badge/status-check--in_slice-orange?style=flat)
   ![python](https://img.shields.io/badge/python-3.11%2B-blue?style=flat)
-  ![tests](https://img.shields.io/badge/tests-283_offline_%2B_7_live-brightgreen?style=flat)
+  ![tests](https://img.shields.io/badge/tests-299_offline_%2B_8_live-brightgreen?style=flat)
   [![CI](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/actions/workflows/ci.yml)
   [![Release](https://img.shields.io/github/v/release/edycutjong/portaldot-hackathon-2026-forklift-edycu?sort=semver)](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/releases/latest)
   ![license](https://img.shields.io/badge/license-MIT-lightgrey?style=flat)
@@ -93,13 +93,18 @@ Forklift is five steps.
   (sampled keys drawn on the live chain, plus the whole key set and every lifted value against the fork), and
   `rehearse` (predict on the fork, then `--send` the same bytes to V3; exit `7` when the chain differs), and `replay`
   (any V3 extrinsic on a fork of its parent block, compared field by field).
+- `up --runtime exact`: a Chopsticks fork of the mainnet pin on mainnet's own runtime `:code` (read at the pin), with
+  the fast fork's state overrides set on the next block; `verify` exits 0 on it at #2,725,953
+  ([`evidence/verify-1002-exact-2725953.json`](evidence/verify-1002-exact-2725953.json)).
+- `runtime-diff` (mainnet 1002 vs V3 3002: versions, pallets, calls, storage items, constants) and `runtime-compare`
+  (one call on a fast and an exact fork of the same pin) → [`docs/RUNTIME-DIFF.md`](docs/RUNTIME-DIFF.md).
 - An endpoint write-guard: nothing is ever submitted to mainnet, and a fork client refuses any non-loopback
   endpoint or a chain whose genesis is mainnet's (or V3's, unless it answers Chopsticks' `dev_*` methods). The one
   path to a real chain is `rehearse --send`: a testnet client that sends only `author_submitExtrinsic`, only to V3.
-- `--json` output and documented exit codes ([`docs/EXIT-CODES.md`](docs/EXIT-CODES.md)); 283 offline tests plus 7 live
+- `--json` output and documented exit codes ([`docs/EXIT-CODES.md`](docs/EXIT-CODES.md)); 299 offline tests plus 8 live
   tests.
 
-**Planned (not built, not claimed):** the ink! 5 / Revive Receipt on V3, an `exact` runtime profile (mainnet's wasm on the fork), a hosted fork, a PyPI package and a CI action.
+**Planned (not built, not claimed):** the ink! 5 / Revive Receipt on V3, a hosted fork, a PyPI package and a CI action.
 
 ### Blockchain Relevance
 
@@ -315,7 +320,7 @@ Per command, in [`docs/EXIT-CODES.md`](docs/EXIT-CODES.md).
 | V3 testnet: three transactions from `5EnCf9…Cejvg`, each predicted on a fork first, then sent | `System.remark` 118555-1, `Balances.transfer_keep_alive` (0.2 tPOT) 118621-1, `Utility.batch` (remark + 0.1 tPOT) 118669-1, all finalized · same tx hash, success and event sequence as predicted, recipient deltas exact · fees differ by 3,660–8,269 planck because each landed 3–9 blocks after the predicted height | `evidence/rehearse-v3.json`, [`docs/PROOF.md`](docs/PROOF.md) (block hashes + node-console links) |
 | V3 testnet: the same three replayed on forks of their parent blocks | 10/10, 14/14 and 16/16 fields equal to the chain, fees equal to the planck | `evidence/replay-v3.json` |
 | An unfunded signer | the fork's pool rejects it (`Invalid: Payment`), exit `5`, nothing sent | `evidence/rehearse-v3.json` |
-| Tests | 283 offline passed · 7 live tests (deselected offline; run with `pytest -m live`) | `pytest -q` |
+| Tests | 299 offline passed · 8 live tests (deselected offline; run with `pytest -m live`) | `pytest -q` |
 
 One benchmark run of the lift from a fresh process (a stub: one run per file; p50/p95 over several runs is planned): #2,725,953 in 19.85 s (keys 7.41 s, values 12.44 s), same `manifest_root` (`evidence/bench-lift-2026-10-14.json`).
 
@@ -348,7 +353,7 @@ pytest -q        # offline; CI runs the same, see [CONTRIBUTING.md](CONTRIBUTING
 **Next phase**
 
 - [x] Demo video (linked at the top of this README)
-- [ ] `--runtime exact`: mainnet's own wasm on the fork, and a generated runtime-difference report
+- [x] `--runtime exact`: mainnet's own wasm on a Chopsticks fork of the pin (`verify` exit 0), and a generated runtime-difference report ([`docs/RUNTIME-DIFF.md`](docs/RUNTIME-DIFF.md))
 - [x] `forklift replay <block>:<index>`: a mainnet extrinsic re-run on a fork of its parent block (3 mainnet replays field-equal, [`evidence/replay-1002.json`](evidence/replay-1002.json))
 - [ ] Benchmarks with p50/p95 over several runs
 - [ ] A hosted fork, a PyPI package and a CI action
