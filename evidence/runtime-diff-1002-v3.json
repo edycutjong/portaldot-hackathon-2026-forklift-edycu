@@ -1769,8 +1769,8 @@
         "differ": [
           {
             "constant": "MaxSignatories",
-            "mainnet": "100",
-            "v3": "100"
+            "mainnet": "100 (u16)",
+            "v3": "100 (u32)"
           }
         ],
         "only_mainnet": [],

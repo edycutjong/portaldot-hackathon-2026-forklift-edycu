@@ -224,7 +224,7 @@ added. Storage: on both / removed / added. Constants: same / different.
 | `Bounties.MaximumReasonLength` | 16,384 | 300 |
 | `Contracts.Schedule` | 0x0400000000020000…00000000 (668 B) | 0x0400000010000000…eb040000 (36 B) |
 | `Identity.BasicDeposit` | 1,000,000,000,000,000 | 117,000,000,000,000 |
-| `Multisig.MaxSignatories` | 100 | 100 |
+| `Multisig.MaxSignatories` | 100 (u16) | 100 (u32) |
 | `Staking.BondingDuration` | 60 | 672 |
 | `Staking.SlashDeferDuration` | 15 | 168 |
 | `System.BlockLength` | 0x00003c000000500000005000 | 0x0000e4000000f0000000f00000 |
@@ -239,8 +239,10 @@ added. Storage: on both / removed / added. Constants: same / different.
 `forklift runtime-compare` ran `Balances.transfer` as `5DvRSgerqB5KHPqWGGnCtRJgJokj91XyGLm3aZ5DKH1rMndf` (through `Sudo.sudo_as`, signed by the
 fork's sudo key) on two forks of the same mainnet pin #2,725,953, recorded
 2026-10-30T20:56:32+00:00 in `evidence/runtime-rehearse-2725953.json`. Both forks carry the same
-state overrides (sudo key, era policy, the dev key's balance, issuance); `fast` boots portaldot_dev on the
-dev runtime wasm, `exact` runs mainnet's own wasm under Chopsticks.
+four state keys (sudo key, era policy, the dev key's account with 50,000 POT free, issuance); the fast fork's
+dev-key account also keeps the dev genesis's staking lock (30,000 POT frozen, 3 consumers), and only fast
+overrides `:code`: it boots portaldot_dev on the dev runtime wasm, while `exact` runs mainnet's own wasm under
+Chopsticks. Why `exact` bypasses the pool: [`evidence/chopsticks-1002-2725953.json`](../evidence/chopsticks-1002-2725953.json).
 
 | | fast | exact |
 |---|---|---|
@@ -262,7 +264,7 @@ dev runtime wasm, `exact` runs mainnet's own wasm under Chopsticks.
 | dispatch_weight | 323,278,000 | 323,278,000 | yes |  |
 | timestamp_step_ms | 6,000 | 60,000 | **no** | the block's timestamp step: each runtime's slot duration (see the constants below) |
 | block_number | 5 | 2,725,955 | **no** | fast starts a new chain on its own genesis (block numbers restart at 1); exact builds on mainnet's own history (pin + 1 carries the overrides, the call lands after it) |
-| tx_hash | `0xb0dd467c75824b27…` | `0x9e4ebbad82aa016c…` | **no** | the sudo key signs for each chain's genesis hash and its own nonce there |
+| tx_hash | `0xb0dd467c75824b27…` | `0x9e4ebbad82aa016c…` | **no** | the sudo key signs over each chain's genesis hash (immortal era), and the two genesis hashes differ |
 
 The two 1002 runtimes: 57 constants with the same bytes, 12 different; calls 154 same, 1 changed; pallets only in exact 0, only in fast 0.
 
