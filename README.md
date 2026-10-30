@@ -43,7 +43,7 @@ Portaldot Hacker House 2026 · Track: Node Operations & Tooling
 that starts from **mainnet's real state** instead of an empty dev chain.
 
 > **Status: final build.** Everything described as shipped below is in this repository and was measured on
-> 2026-10-14 (mainnet path), 2026-10-20 (V3 path) and 2026-10-31 (exact runtime, replays, receipt v2, benchmarks) (measured numbers come from [`docs/PROOF.md`](docs/PROOF.md), generated from [`evidence/`](evidence); test counts from `pytest -q`; the contract size from `wc -c forklift/contracts/receipt.wasm`). Everything
+> 2026-10-14 (mainnet path), 2026-10-20 (V3 path) and 2026-10-30/31 (exact runtime, replays, receipt v2, benchmarks) (measured numbers come from [`docs/PROOF.md`](docs/PROOF.md), generated from [`evidence/`](evidence); test counts from `pytest -q`; the contract size from `wc -c forklift/contracts/receipt.wasm`). Everything
 > else is marked **planned**. Forklift has two targets, always labelled: **`fork-v3`**, a fork of the live
 > **Portaldot V3 testnet** run by Chopsticks with V3's own runtime, and **`fork-1002-fast`**, a local fork of
 > Portaldot mainnet state (spec 1002) on the `portaldot_dev` dev runtime, which is not V3 (see *V3 status*).
@@ -372,7 +372,7 @@ there is no frontend.
 ## 🎬 Demo
 
 - **Video:** demo: https://youtu.be/iVvEXQvfTYY
-- **Pitch deck:** [`docs/pitch-deck.pdf`](docs/pitch-deck.pdf) (10 slides, check-in; source [`deck/index.html`](deck/index.html)). Its figures are the rows of [`docs/PROOF.md`](docs/PROOF.md).
+- **Pitch deck:** [`docs/pitch-deck.pdf`](docs/pitch-deck.pdf) (10 slides, final build; source [`deck/index.html`](deck/index.html)). Its figures are the rows of [`docs/PROOF.md`](docs/PROOF.md).
 - **Live demo:** none; Forklift is a CLI and its fork is local. The Installation steps reproduce the lift, fork, verify, fund / as and Receipt rows (extrinsic ids, hashes and timings differ per run); completeness, re-read and bench are `scripts/completeness.py`, `scripts/refetch.py` and `scripts/bench.py` (p50/p95 over 7 runs, [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md)).
 - **Test accounts / test data:** none to create. The whale `5DvRSg…Mndf` (200,000,000 POT at the pin; 1 POT = 10^14 planck, a convention because spec 1002's `system_properties` is empty) and the nominator
   `5Cf8KJ…jchW` are real mainnet accounts that `forklift as` acts as on the fork; `5F1Kbj…rMcE` is the demo account

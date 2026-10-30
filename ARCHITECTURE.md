@@ -42,6 +42,8 @@ flowchart TB
       TX["tx.py\nextrinsic envelope, signing,\nevent + result decoding"]
       ACT["act.py\nSudo.set_balance,\nSudo.sudo_as"]
       REC["receipt.py\n+ contracts/receipt.wat\nattest, rent check"]
+      RPL["replay.py\nre-apply a recorded extrinsic\non a fork of its parent block"]
+      MIG["migrate.py + runtimediff.py\nmigrate-report, runtime-diff"]
       RHS["rehearse.py\npredict on fork, --send to V3,\ncompare field by field"]
       RVR["revive_receipt.py\n+ contracts/ForkReceipt.yul\nReceipt v2 on V3 Revive"]
     end
@@ -58,8 +60,13 @@ flowchart TB
     C_REC --> REC --> TX
     C_TX --> TX
     C_V3 --> RHS
+    C_V3 --> RPL
+    RPL --> RHS
+    RPL --> RPC
+    C_RPT --> MIG
+    MIG --> RPC
+    UP -- "target v3 / exact" --> CHOP
     C_V3 --> RVR
-    C_RPT --> RPC
     RHS --> RPC
     RHS -- "predict" --> CHOP
     RHS -- "author_submitExtrinsic" --> V3
@@ -106,7 +113,6 @@ transaction by extrinsic id from a separate process).
 | `verify.py` | Draws keys **from mainnet** at the pin inside storage maps (weighted by per-item counts), reads each on mainnet at the pin and on the fork at genesis, classifies it (identical, dev-kept, override, reset, mismatch), and runs whole-fork checks: genesis key-set hash, issuance, the five overrides on both sides, both runtime code hashes. Exit 0 only when nothing is unexplained. |
 | `tx.py`, `act.py` | Build the version-4 extrinsic envelope explicitly (the seven signed extensions of spec 1002; any other list is refused), sign with the fork's dev key, submit through the fork client, find the extrinsic by block scan, await finalization, decode events and the dispatch result. `fund` = `Sudo.sudo(Balances.set_balance)`; `as` = `Sudo.sudo_as(<call>)` with the call composed from metadata and the account's storage read before and after. |
 | `receipt.py`, `contracts/receipt.wat` | A hand-written WAT contract for the rent-era Contracts pallet (`seal0` host functions only, plus the `env` memory import). `attest` emits `mainnet_block_hash ‖ manifest_root ‖ keys_lifted` (72 bytes) as `Contracts.ContractEmitted`; `forklift receipt` instantiates it on a fork's first run, tops its balance up so it pays no rent, attests, decodes the event and compares it with the manifest. |
-
 | `rehearse.py` | V3 path: predicts a signed extrinsic on a Chopsticks fork of V3, then (`--send`) sends the same bytes to the live V3 testnet through a testnet client and compares field by field. |
 | `revive_receipt.py`, `contracts/ForkReceipt.yul` | Fork Receipt v2 on the live V3 testnet's Revive pallet (EVM bytecode, interface `IForkReceipt.sol`): `ReviveApi` dry runs before each send, then `Revive.instantiate_with_code` / `Revive.call` through a testnet client; the emitted event and the stored `receipt()` are compared with the manifest. |
 
@@ -129,7 +135,7 @@ transaction by extrinsic id from a separate process).
 
 ## Exit codes and evidence
 
-Exit codes `0/1/2/3/4/5/6/64` are documented per command in [`docs/EXIT-CODES.md`](docs/EXIT-CODES.md). Every measured
+Exit codes `0/1/2/3/4/5/6/7/64` are documented per command in [`docs/EXIT-CODES.md`](docs/EXIT-CODES.md). Every measured
 number in the README's evidence table comes from [`docs/PROOF.md`](docs/PROOF.md), which `scripts/proof.py` regenerates from
 [`evidence/`](evidence).
 
@@ -142,4 +148,4 @@ standard library. The `portaldot_dev` binary is downloaded at run time and is no
 ## Planned (not built)
 
 - A hosted fork and a browser verify page.
-- A PyPI package and a CI action.
+- A PyPI upload (the package builds and passes `twine check`; the upload waits for the pending publisher).

@@ -589,17 +589,17 @@ ul.since{list-style:none;margin:0;padding:0;display:grid;gap:12px}ul.since li{pa
  <section class="band" id="since" aria-labelledby="since-h">
   <div class="wrap">
    <div class="head">
-    <span class="label"><i></i>Bay 5 · Since the check-in, 2026-10-31</span>
+    <span class="label"><i></i>Bay 3 · Since the check-in, 2026-10-31</span>
     <h2 id="since-h">Six more things on the bench.</h2>
     <p>Each line is generated or recorded in the repository; the file is named beside it.</p>
    </div>
    <ul class="since">
-    <li><b>Receipt v2 on V3.</b> A Revive contract at <code>0x52f0…abc7</code> holds the V3 #118,061 lift manifest: deploy <code>257997-1</code>, attest <code>258000-1</code>, both finalized (<a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/PROOF.md">PROOF.md</a>).</li>
+    <li><b>Receipt v2 on V3.</b> A Revive contract at <code>0x52f0…abc7</code> stores the manifest root and key count of the V3 #118,061 lift: deploy <code>257997-1</code>, attest <code>258000-1</code>, both finalized (<a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/PROOF.md">PROOF.md</a>).</li>
     <li><b>Mainnet replays.</b> Three mainnet extrinsics re-run on a fork of their parent block, field-equal: 2700013:1 (24/24), 2701111:1 (25/25), 2701435:1 (24/24) (<a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/evidence/replay-1002.json">replay-1002.json</a>).</li>
     <li><b>Exact runtime.</b> <code>up --runtime exact</code> boots Chopsticks on mainnet's own wasm at #2,725,953; verify exit 0, 16,324 = 16,324 keys. <code>runtime-diff</code> writes the V3-versus-mainnet report (<a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/RUNTIME-DIFF.md">RUNTIME-DIFF.md</a>).</li>
     <li><b>Migration report.</b> Mainnet #2,725,953 against V3 #118,061: 10,499 of 16,324 keys carry over, 5,443 need re-encoding, 382 have no home (<a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/MIGRATION-1002-V3.md">MIGRATION-1002-V3.md</a>).</li>
     <li><b>Benchmarks.</b> 7 fresh-process runs per command: <code>lift</code> p50 23.96 s / p95 24.33 s; <code>replay 118621-1</code> p50 13.38 s / p95 14.91 s (<a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/BENCHMARKS.md">BENCHMARKS.md</a>).</li>
-    <li><b>CI action and Codespaces.</b> A composite <code>action.yml</code> gates a job on <code>verify</code>; a devcontainer opens a fork in GitHub Codespaces. The PyPI package is not published yet.</li>
+    <li><b>CI action and Codespaces.</b> A composite <code>action.yml</code> gates a job on <code>verify</code>; a devcontainer is set up for GitHub Codespaces (run locally on Linux arm64, not yet on Codespaces itself). The PyPI package is not published yet.</li>
    </ul>
   </div>
  </section>
