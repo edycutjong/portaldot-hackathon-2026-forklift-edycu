@@ -10,7 +10,7 @@ from pathlib import Path
 import click
 
 from forklift import __version__
-from forklift.rpc import DEFAULT_MAINNET, RpcClient
+from forklift.rpc import DEFAULT_MAINNET, RpcClient, RpcError, RpcUnavailable
 
 
 def _parse_at(value: str | None) -> str | int | None:
@@ -1036,6 +1036,47 @@ def replay_cmd(extrinsic_id: str, name: str, ws_port: int | None, evidence_dir: 
             + ("" if c["match"] else " · DIFFERS: " + ", ".join(c["differs"])),
         ]))
     sys.exit(code)
+
+
+@main.command("migrate-report")
+@click.option("--mainnet-evidence", type=click.Path(path_type=Path, exists=True, dir_okay=False), required=True,
+              help="The lift's evidence JSON for the mainnet pin (evidence/lift-<block>.json).")
+@click.option("--v3-evidence", type=click.Path(path_type=Path, exists=True, dir_okay=False), required=True,
+              help="The lift's evidence JSON for the V3 pin (evidence/lift-v3-<block>.json).")
+@click.option("--from", "mainnet_endpoint", default=DEFAULT_MAINNET, show_default=True, help="Mainnet archive node (read-only).")
+@click.option("--v3-endpoint", default="wss://test-node-v3.portaldot.dev", show_default=True, help="V3 testnet node (read-only here).")
+@click.option("--out", "out_md", type=click.Path(path_type=Path), default=None, help="Write the Markdown report here.")
+@click.option("--json-out", "out_json", type=click.Path(path_type=Path), default=None, help="Write the JSON report here.")
+def migrate_report_cmd(mainnet_evidence: Path, v3_evidence: Path, mainnet_endpoint: str, v3_endpoint: str,
+                       out_md: Path | None, out_json: Path | None) -> None:
+    """Which lifted mainnet (1002) state carries over to V3, needs re-encoding, or has no home there.
+
+    Reads the two runtimes' metadata and a sample of lifted values at the two pinned blocks of the given lift
+    evidence files; mainnet is read-only. The output holds no timestamps: the same pins give the same bytes.
+    """
+    from forklift import migrate
+
+    try:
+        report = migrate.generate(mainnet_evidence=json.loads(mainnet_evidence.read_text()),
+                                  v3_evidence=json.loads(v3_evidence.read_text()),
+                                  mainnet_endpoint=mainnet_endpoint, v3_endpoint=v3_endpoint)
+    except (ValueError, OSError, KeyError, RpcError, RpcUnavailable) as exc:
+        click.echo(f"migrate-report could not run: {exc}", err=True)
+        sys.exit(1)
+    md, js = migrate.render_markdown(report), migrate.render_json(report)
+    for path, text in ((out_md, md), (out_json, js)):
+        if path is not None:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text)
+    t = report["totals"]
+    click.echo("\n".join([
+        f"migrate  mainnet #{report['mainnet']['block_number']:,} (spec {report['mainnet']['spec']}) → "
+        f"V3 #{report['v3']['block_number']:,} (spec {report['v3']['spec']})",
+        *(f"{name:<18} {t[c]['items']:>3} items · {t[c]['keys_lifted']:>6,} of {report['keys_lifted_total']:,} lifted keys"
+          for name, c in (("carries over", migrate.CARRIES), ("needs re-encoding", migrate.REENCODE),
+                          ("no home on V3", migrate.NO_HOME))),
+        *([f"wrote    {out_md}"] if out_md else []), *([f"wrote    {out_json}"] if out_json else []),
+    ]))
 
 
 def record_rehearse(r: dict, evidence_dir: Path) -> Path:
