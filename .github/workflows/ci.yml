@@ -52,3 +52,18 @@ jobs:
       - run: pip install build
       - run: python -m build
       - run: pip install dist/*.whl && forklift --help
+
+  # Runs this repo's own composite action (action.yml) against the live V3 testnet: fork at head, verify 20 keys.
+  # The job fails with `forklift verify`'s exit code if the fork disagrees with the chain.
+  action-smoke:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - id: fork
+        uses: ./
+        with:
+          command: verify
+          sample: "20"
+      - name: Show what the action reported
+        run: 'echo "forked V3 at #${{ steps.fork.outputs.fork-block }}, forklift verify exit ${{ steps.fork.outputs.exit-code }}"'
