@@ -116,11 +116,11 @@ Forklift is five steps.
 ### Blockchain Relevance
 
 Forklift is node-operations and developer tooling for Portaldot. On V3 it reads the live testnet
-(`wss://test-node-v3.portaldot.dev`, `portaldot-v3`/3002), forks it locally, and sends real transactions to it only after
-predicting them on the fork. On the mainnet path it reads real chain state through the public node
+(`wss://test-node-v3.portaldot.dev`, `portaldot-v3`/3002), forks it locally, and sends real transactions to it: `rehearse --send` only after
+predicting them on the fork, `receipt --target v3` (the Fork Receipt v2 contract) after `ReviveApi` dry runs. On the mainnet path it reads real chain state through the public node
 (`wss://mainnet.portaldot.io`), runs it on the `portaldot_dev` 2.0.0 node, uses Portaldot's historical-state
 RPC (`state_getKeysPaged`, `state_queryStorageAt` at a block hash), the Sudo pallet to act as accounts on the fork, and
-the Contracts pallet for the receipt. Every fork is labelled with the spec of the state it carries and its runtime mode (`fast` = the dev runtime wasm), so
+the Contracts pallet for the v1 receipt. Every fork is labelled with the spec of the state it carries and its runtime mode (`fast` = the dev runtime wasm), so
 nobody mistakes it for a testnet or for V3.
 
 ### Boundaries (read before trusting a fork)
@@ -144,8 +144,8 @@ nobody mistakes it for a testnet or for V3.
   (exit `7`); it never adjusts a prediction after the fact.
 - **Top trie only.** Child tries are not lifted (the manifest reports a `child_trie_roots_not_lifted` count; it is not recorded in `evidence/`).
 - **Mainnet-path evidence is local.** The V3 transactions in *Demo* are on the public V3 testnet (node-console links in
-  [`docs/PROOF.md`](docs/PROOF.md)). The contract address and the mainnet-path transaction hashes live on a local fork, not on a public
-  explorer; `forklift tx <block-index>` re-reads any of them from the author's running fork (a fresh fork gives new
+  [`docs/PROOF.md`](docs/PROOF.md)). The v1 Receipt's contract address and the mainnet-path transaction hashes live on a local fork, not on a
+  public explorer (Receipt v2 and its transactions are public on V3); `forklift tx <block-index>` re-reads any of them from the author's running fork (a fresh fork gives new
   hashes; the recorded rows are in `evidence/txs-2725953.json` and `evidence/refetch-2725953.json`).
 
 <a id="technical-architecture"></a>
@@ -237,9 +237,9 @@ the event is anonymous (no 33-byte signature topic), value transfers are not ref
 range-checked on chain (Forklift encodes a u64 and refuses anything larger before signing).
 
 **Trust model.** Anyone may attest, and a later attest overwrites the stored receipt for a block hash. The two slots of
-an attested hash `h` are `h` (root) and `not(h)` (key count), so an attest for the complement `not(h)` also overwrites
-`h`'s key count, and `receipt(not(h))` returns `h`'s two values swapped. The stored receipt is therefore a convenience
-read; the record to trust is the `Attested` event from a known attester (the funder's H160 above), which is kept for
+an attested hash `h` are `h` (root) and `not(h)` (key count), so an attest for the complement `not(h)` overwrites both of
+`h`'s slots (its root slot receives a key count, its key slot a root), and `receipt(not(h))` returns `h`'s two values swapped. The stored receipt is therefore a convenience
+read; the record to trust is the `Attested` event from a known attester (the funder's H160 `0x2c85e86717368d596e379155a3ec4ad1e46ebe7a`), which is kept for
 every attest and which `forklift tx <id> --target v3` decodes.
 
 **v1: the fork's Contracts pallet** (`forklift/contracts/receipt.wat`, compiled `receipt.wasm`, 169 bytes). It is

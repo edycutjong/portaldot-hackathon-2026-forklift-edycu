@@ -9,7 +9,7 @@
 //     (0, 0) when nothing was attested for that block hash or for not(blockHash)
 //
 // Trust model: anyone may attest and a later attest overwrites. The slots of an attested h are h and not(h),
-// so attesting not(h) also overwrites h's key count. The stored receipt is a convenience read; the record to
+// so attesting not(h) overwrites both of h's slots. The stored receipt is a convenience read; the record to
 // trust is the event from a known attester, which every attest leaves.
 //
 // Written in Yul, not plain Solidity, because Revive holds a storage deposit per code byte (V3: 13.11 tPOT

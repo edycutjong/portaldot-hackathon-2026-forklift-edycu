@@ -240,7 +240,7 @@ class RpcClient:
             raise WriteGuardError(f"{self.endpoint} serves Portaldot mainnet's genesis: refusing writes (I3)")
         if genesis == V3.genesis_hash and not self._is_chopsticks():
             raise WriteGuardError(f"{self.endpoint} serves the live {V3.label}, not a fork of it: refusing fork "
-                                  "writes (a real V3 transaction goes through `forklift rehearse --send`)")
+                                  "writes (a real V3 transaction goes through `forklift rehearse --send` or `forklift receipt --target v3`)")
         self._fork_checked = True
 
     def _is_chopsticks(self) -> bool:
