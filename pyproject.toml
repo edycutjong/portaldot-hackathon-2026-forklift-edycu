@@ -6,10 +6,24 @@ build-backend = "hatchling.build"
 name = "portaldot-forklift"
 version = "0.1.0"
 description = "Lift Portaldot mainnet state at a pinned block onto a local fork on the portaldot_dev node"
-readme = "README.md"
+readme = "PYPI.md"
 license = "MIT"
 requires-python = ">=3.11"
 authors = [{ name = "Edy Cu" }]
+keywords = ["portaldot", "substrate", "polkadot", "chopsticks", "fork", "testnet", "devtools"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: MacOS",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Testing",
+  "Topic :: Software Development :: Debuggers",
+]
 dependencies = [
   "click>=8.1",
   "websockets>=12",
@@ -20,11 +34,21 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8"]
 
+[project.urls]
+Homepage = "https://forklift.edycu.dev/"
+Source = "https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu"
+Documentation = "https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu#readme"
+Issues = "https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/issues"
+Changelog = "https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/releases"
+
 [project.scripts]
 forklift = "forklift.cli:run"
 
 [tool.hatch.build.targets.wheel]
 packages = ["forklift"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/forklift", "/tests", "/LICENSE", "/PYPI.md", "/README.md", "/pyproject.toml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
