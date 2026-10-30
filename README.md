@@ -18,7 +18,7 @@
 
   ![status](https://img.shields.io/badge/status-check--in_slice-orange?style=flat)
   ![python](https://img.shields.io/badge/python-3.11%2B-blue?style=flat)
-  ![tests](https://img.shields.io/badge/tests-300_offline_%2B_8_live-brightgreen?style=flat)
+  ![tests](https://img.shields.io/badge/tests-320_offline_%2B_10_live-brightgreen?style=flat)
   [![CI](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/actions/workflows/ci.yml)
   [![Release](https://img.shields.io/github/v/release/edycutjong/portaldot-hackathon-2026-forklift-edycu?sort=semver)](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/releases/latest)
   ![license](https://img.shields.io/badge/license-MIT-lightgrey?style=flat)
@@ -90,6 +90,9 @@ Forklift is five steps.
 - The splice, node runner (tarball sha256-checked on download, binary sha256 recorded in the manifest, PID guard, no peers), `up` / `down`.
 - `verify` with exit codes `0` / `2` and a reproducible seed.
 - `fund`, `as`, `tx` (re-read any extrinsic by id), and the **Fork Receipt** contract with a rent check.
+- **Fork Receipt v2 on the V3 testnet**: `receipt --target v3` deploys a Revive contract and attests a lift manifest
+  (block hash, manifest root, key count stored on chain; every write dry-run through `ReviveApi` first);
+  `tx --target v3` re-reads the attest by extrinsic id and reads the stored receipt back.
 - The V3 target: chain profiles pinned by genesis and runtime `:code` hash (`forklift/chains.py`), V14 metadata names,
   `up --target v3` (Chopsticks fork that must serve V3's genesis, the pinned runtime and the lifted block), V3 `verify`
   (sampled keys drawn on the live chain, plus the whole key set and every lifted value against the fork), and
@@ -102,12 +105,13 @@ Forklift is five steps.
 - `runtime-diff` (mainnet 1002 vs V3 3002: versions, pallets, calls, storage items, constants) and `runtime-compare`
   (one call on a fast and an exact fork of the same pin) → [`docs/RUNTIME-DIFF.md`](docs/RUNTIME-DIFF.md).
 - An endpoint write-guard: nothing is ever submitted to mainnet, and a fork client refuses any non-loopback
-  endpoint or a chain whose genesis is mainnet's (or V3's, unless it answers Chopsticks' `dev_*` methods). The one
-  path to a real chain is `rehearse --send`: a testnet client that sends only `author_submitExtrinsic`, only to V3.
-- `--json` output and documented exit codes ([`docs/EXIT-CODES.md`](docs/EXIT-CODES.md)); 300 offline tests plus 8 live
+  endpoint or a chain whose genesis is mainnet's (or V3's, unless it answers Chopsticks' `dev_*` methods). The two
+  paths to a real chain are `rehearse --send` and `receipt --target v3`: a testnet client that sends only
+  `author_submitExtrinsic`, only to V3.
+- `--json` output and documented exit codes ([`docs/EXIT-CODES.md`](docs/EXIT-CODES.md)); 320 offline tests plus 10 live
   tests.
 
-**Planned (not built, not claimed):** the ink! 5 / Revive Receipt on V3, a hosted fork, a PyPI package and a CI action.
+**Planned (not built, not claimed):** a hosted fork, a PyPI package and a CI action.
 
 ### Blockchain Relevance
 
@@ -187,8 +191,8 @@ The full module-level diagram, the splice rules and the invariants the code enfo
 
 | Layer | Choice |
 |---|---|
-| Blockchain platform | **Portaldot V3 testnet** (`portaldot-v3`/3002, tPOT): lifted read-only, forked with Chopsticks (`fork-v3`), and written to only by `rehearse --send`. Control path: a local fork of **Portaldot mainnet state (spec 1002)** on the `portaldot_dev` 2.0.0 node with its dev runtime, labelled `fork-1002-fast`, which is not V3. |
-| Contract language | WAT (WebAssembly text), hand-written for the rent-era Contracts pallet of the dev runtime the fork runs (`seal0` host functions only, plus the `env` memory import), compiled with `wat2wasm` |
+| Blockchain platform | **Portaldot V3 testnet** (`portaldot-v3`/3002, tPOT): lifted read-only, forked with Chopsticks (`fork-v3`), and written to only by `rehearse --send` and `receipt --target v3`. Control path: a local fork of **Portaldot mainnet state (spec 1002)** on the `portaldot_dev` 2.0.0 node with its dev runtime, labelled `fork-1002-fast`, which is not V3. |
+| Contract language | Receipt v2 (V3 testnet): Yul, Solidity's assembly language, compiled with `solc` 0.8.30 to EVM bytecode, which V3's Revive pallet runs; ABI in `IForkReceipt.sol`. Receipt v1 (fork): WAT (WebAssembly text), hand-written for the rent-era Contracts pallet of the dev runtime the fork runs (`seal0` host functions only, plus the `env` memory import), compiled with `wat2wasm` |
 | Frontend | None. Forklift is a command-line tool. |
 | Other components | Chopsticks 1.5.2 via `npx` (V3 fork executor; Node.js 18+), Python 3.11+, `click` (CLI), `websockets` (raw JSON-RPC), `xxhash` (storage key hashing), `substrate-interface` (sr25519 keys and the SCALE type registry), `hashlib` blake2b. Tests use `pytest`. |
 
@@ -203,7 +207,36 @@ spec exists (organisers' Discord, not archived here), so a V3 fork runs on Chops
 
 ## 📜 Smart Contracts
 
-One contract, the **Fork Receipt** (`forklift/contracts/receipt.wat`, compiled `receipt.wasm`, 169 bytes). It is
+One contract, the **Fork Receipt**, in two versions: **v2** is public, on the Portaldot V3 testnet's Revive pallet;
+**v1** lives on a local fork's own Contracts pallet and goes away with the fork.
+
+**v2: Revive contract on the V3 testnet** (`forklift/contracts/ForkReceipt.yul`, interface `IForkReceipt.sol`,
+compiled `ForkReceipt.bin`, 84 bytes of init code, 74 bytes of runtime code). Deployed and attested by
+`forklift receipt --target v3` from the funder `5EnCf9…Cejvg`; full hashes, deposits and fees in [`docs/PROOF.md`](docs/PROOF.md):
+
+| What | Value |
+|---|---|
+| Contract address (H160) | `0x52f0edd92af9ff410ca63ccc83735552e1b2abc7` |
+| Deploy | `Revive.instantiate_with_code`, extrinsic `257997-1`, tx `0x54365766d8182b7ca54a1ac8a5abaecd9ac490bf4933ae039775f561f2c8480d`, finalized |
+| Attest | `Revive.call`, extrinsic `258000-1`, tx `0x8e1588a185686bd52ac764c3beffa5aa39ea985efb55745dc76e609be9d96710`, finalized |
+| What it attests | the V3 lift at #118,061: block hash `0xec57…d8ac`, manifest root `0xfe49…30a4`, 5,508 keys; the emitted event and the stored `receipt()` both equal the manifest |
+| Re-read | `forklift tx 258000-1 --target v3` (also a live test) |
+
+| Function | Input | What it does |
+|---|---|---|
+| `attest(bytes32 blockHash, bytes32 manifestRoot, uint64 keysLifted)` | ABI-encoded | Stores `manifestRoot` and `keysLifted` under `blockHash` (a later attest overwrites) and emits the anonymous event `Attested(blockHash, manifestRoot, keysLifted, attester)` as `Revive.ContractEmitted` |
+| `receipt(bytes32 blockHash)` (view) | ABI-encoded | Returns `(manifestRoot, keysLifted)`; `(0, 0)` when nothing was attested for that block hash |
+
+Why Yul and not a compiled Solidity contract: Revive holds a storage deposit per code byte and per storage slot. Measured
+on V3 with `ReviveApi_instantiate` dry runs (`scripts/revive_deposits.py` → `evidence/revive-deposits-v3.json`): 13.11 tPOT
+plus 0.078 tPOT per byte of runtime code, and 3.8415 tPOT per 32-byte slot written. The same Receipt in plain Solidity
+(`scripts/ForkReceiptSolidity.sol`, not deployed) compiled with `resolc` 1.5.0 to PolkaVM (7,851 bytes) needs a 625.488 tPOT
+deposit, and compiled with `solc` 0.8.30 to EVM bytecode (991 bytes) 88.224 tPOT; the funder held 29.527 tPOT.
+The Yul build deployed for an 18.882 tPOT deposit and the attest held 7.683 tPOT, both equal to their dry runs. To fit,
+the event is anonymous (no 33-byte signature topic), value transfers are not refused, and `keysLifted` is not
+range-checked on chain (Forklift encodes a u64 and refuses anything larger before signing).
+
+**v1: the fork's Contracts pallet** (`forklift/contracts/receipt.wat`, compiled `receipt.wasm`, 169 bytes). It is
 hand-written for the rent-era Contracts pallet of the dev runtime the fork runs (`fork-1002-fast`); it has not been run on mainnet's runtime wasm. It needs no Rust toolchain.
 
 | Function | Input | What it does |
@@ -226,8 +259,9 @@ itself is pallet-free: it only calls read RPC methods (`chain_getFinalizedHead`,
 `chain_getHeader`, `state_getRuntimeVersion`, `state_getKeysPaged`, `state_queryStorageAt`, `state_getStorage`,
 `state_getMetadata`).
 
-**Rebuild the contract:** `wat2wasm forklift/contracts/receipt.wat -o forklift/contracts/receipt.wasm`
-(`pytest` checks that the committed `.wasm` is exactly what `wat2wasm` builds from the `.wat`, when `wat2wasm` is installed).
+**Rebuild the contracts:** v2: `solc --strict-assembly --optimize --evm-version cancun --bin forklift/contracts/ForkReceipt.yul`
+(solc 0.8.30; the output is the hex in `ForkReceipt.bin`). v1: `wat2wasm forklift/contracts/receipt.wat -o forklift/contracts/receipt.wasm`.
+`pytest` checks that both committed builds are exactly what those commands produce, when `solc` 0.8.30 and `wat2wasm` are installed.
 
 <a id="installation--setup"></a>
 
@@ -271,6 +305,9 @@ forklift rehearse System.remark --args '{"remark": "0x666f726b6c696674"}' \
 forklift rehearse System.remark --args '{"remark": "0x666f726b6c696674"}' \
   --signer ~/.config/forklift/my-v3.seed --name v3 --send --evidence evidence   # predict, send to V3, compare
 forklift replay 118621-1                            # re-run a V3 extrinsic on a fork of its parent block, compare
+forklift receipt --target v3 --name v3 --signer ~/.config/forklift/my-v3.seed --evidence evidence
+                                                    # Fork Receipt v2: deploy once, attest this fork's manifest on V3
+forklift tx 258000-1 --target v3                    # re-read a Receipt attest on V3 by extrinsic id
 forklift down --name v3
 ```
 
@@ -291,8 +328,9 @@ which records a run for [`docs/PROOF.md`](docs/PROOF.md) (`python scripts/proof.
 `64` usage error.
 Per command, in [`docs/EXIT-CODES.md`](docs/EXIT-CODES.md).
 
-**Compile & deploy / launch frontend:** the contract is compiled with `wat2wasm` (command above; the compiled
-`receipt.wasm` is committed) and deployed by `forklift receipt`; there is no frontend.
+**Compile & deploy / launch frontend:** the contracts are compiled with `solc` (v2) and `wat2wasm` (v1) (commands above;
+both builds are committed) and deployed by `forklift receipt --target v3` (v2, on V3) and `forklift receipt` (v1, on a fork);
+there is no frontend.
 
 <a id="demo"></a>
 
@@ -323,7 +361,8 @@ Per command, in [`docs/EXIT-CODES.md`](docs/EXIT-CODES.md).
 | V3 testnet: three transactions from `5EnCf9…Cejvg`, each predicted on a fork first, then sent | `System.remark` 118555-1, `Balances.transfer_keep_alive` (0.2 tPOT) 118621-1, `Utility.batch` (remark + 0.1 tPOT) 118669-1, all finalized · same tx hash, success and event sequence as predicted, recipient deltas exact · fees differ by 3,660–8,269 planck because each landed 3–9 blocks after the predicted height | `evidence/rehearse-v3.json`, [`docs/PROOF.md`](docs/PROOF.md) (block hashes + node-console links) |
 | V3 testnet: the same three replayed on forks of their parent blocks | 10/10, 14/14 and 16/16 fields equal to the chain, fees equal to the planck | `evidence/replay-v3.json` |
 | An unfunded signer | the fork's pool rejects it (`Invalid: Payment`), exit `5`, nothing sent | `evidence/rehearse-v3.json` |
-| Tests | 300 offline passed · 8 live tests (deselected offline; run with `pytest -m live`) | `pytest -q` |
+| V3 testnet: Fork Receipt v2 (Revive contract) | `0x52f0edd92af9ff410ca63ccc83735552e1b2abc7`: deploy 257997-1, attest 258000-1, both finalized · emitted event and stored `receipt()` = the #118,061 manifest (root, 5,508 keys) · deposits 18.882 + 7.683 tPOT = the dry runs | `evidence/receipt-v3.json` |
+| Tests | 320 offline passed (+1 that runs only when `solc` 0.8.30 is installed) · 10 live tests (deselected offline; run with `pytest -m live`) | `pytest -q` |
 
 One benchmark run of the lift from a fresh process (a stub: one run per file; p50/p95 over several runs is planned): #2,725,953 in 19.85 s (keys 7.41 s, values 12.44 s), same `manifest_root` (`evidence/bench-lift-2026-10-14.json`).
 
@@ -360,7 +399,7 @@ pytest -q        # offline; CI runs the same, see [CONTRIBUTING.md](CONTRIBUTING
 - [x] `forklift replay <block>:<index>`: a mainnet extrinsic re-run on a fork of its parent block (3 mainnet replays field-equal, [`evidence/replay-1002.json`](evidence/replay-1002.json))
 - [ ] Benchmarks with p50/p95 over several runs
 - [ ] A hosted fork, a PyPI package and a CI action
-- [ ] The Fork Receipt as an ink! 5 or Revive contract on the V3 testnet
+- [x] The Fork Receipt as a Revive contract on the V3 testnet (`0x52f0…abc7`, deploy 257997-1, attest 258000-1)
 - [x] A mainnet (1002) → V3 report: which lifted keys carry over, which need re-encoding, which have no home on V3 ([`docs/MIGRATION-1002-V3.md`](docs/MIGRATION-1002-V3.md))
 
 <a id="team"></a>
