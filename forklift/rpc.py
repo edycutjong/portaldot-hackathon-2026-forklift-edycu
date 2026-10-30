@@ -12,9 +12,9 @@ read-only client (the default, used for mainnet) or as a fork client.
 - A fork client can only be created for a loopback endpoint that is not a
   known mainnet host, and before its first non-read call it checks that the
   node's genesis hash is not Portaldot mainnet's (a loopback port can still be
-  a tunnel to mainnet). A Chopsticks fork of the V3 testnet serves V3's own
-  genesis hash, so a V3 genesis is accepted only if the node also answers the
-  Chopsticks ``dev_*`` methods; the live V3 chain does not.
+  a tunnel to mainnet). A Chopsticks fork of the V3 testnet or of mainnet serves
+  the chain's own genesis hash, so a V3 or mainnet genesis is accepted only if
+  the node also answers the Chopsticks ``dev_*`` methods; the live chains do not.
 - A testnet client is the one path to a real chain: it may send only
   ``author_submitExtrinsic``, and only after the node's genesis is a chain
   pinned as writable (the V3 testnet), never mainnet.
@@ -234,7 +234,7 @@ class RpcClient:
         if self._fork_checked:
             return
         genesis = self._genesis()
-        if genesis == MAINNET_GENESIS:
+        if genesis == MAINNET_GENESIS and not self._is_chopsticks():
             raise WriteGuardError(f"{self.endpoint} serves Portaldot mainnet's genesis: refusing writes (I3)")
         if genesis == V3.genesis_hash and not self._is_chopsticks():
             raise WriteGuardError(f"{self.endpoint} serves the live {V3.label}, not a fork of it: refusing fork "

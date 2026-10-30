@@ -207,6 +207,28 @@ def test_chopsticks_fork_of_v3_accepts_fork_writes():
     assert sent[-1] == "dev_setStorage"
 
 
+def test_loopback_tunnel_to_live_mainnet_is_not_a_fork_even_if_it_lists_methods():
+    from forklift.rpc import MAINNET_GENESIS
+
+    handler, sent = _chain(MAINNET_GENESIS, ["chain_getHeader", "author_submitExtrinsic", "state_getStorage"])
+    c = client(handler, endpoint="ws://127.0.0.1:59944", fork=True)
+    with pytest.raises(WriteGuardError, match="mainnet"):
+        c.call("author_submitExtrinsic", ["0x00"])
+    assert "author_submitExtrinsic" not in sent
+
+
+def test_chopsticks_fork_of_mainnet_accepts_fork_writes_but_a_read_only_client_never_does():
+    from forklift.rpc import MAINNET_GENESIS
+
+    handler, sent = _chain(MAINNET_GENESIS, ["dev_newBlock", "dev_setStorage", "author_submitExtrinsic"])
+    c = client(handler, endpoint="ws://127.0.0.1:59944", fork=True)
+    c.call("author_submitExtrinsic", ["0x00"])
+    assert sent[-1] == "author_submitExtrinsic"
+    ro = client(handler, endpoint="wss://mainnet.portaldot.io")
+    with pytest.raises(WriteGuardError):
+        ro.call("author_submitExtrinsic", ["0x00"])
+
+
 def test_testnet_client_sends_only_submit_extrinsic_and_only_to_a_writable_chain():
     from forklift.chains import V3
 

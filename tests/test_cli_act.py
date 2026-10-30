@@ -122,6 +122,8 @@ def test_a_write_retried_on_a_new_connection_is_guarded_again():
         if method == "author_submitExtrinsic":
             seen["submits"] += 1
             raise OSError("connection reset")
+        if method == "rpc_methods":  # a tunnel to the live chain does not answer Chopsticks' dev_* methods
+            return {"methods": ["chain_getHeader", "author_submitExtrinsic"]}
         raise AssertionError(method)
 
     client = RpcClient("ws://127.0.0.1:59944", fork=True, connect=fake_connect(handler), sleep=lambda s: None)
