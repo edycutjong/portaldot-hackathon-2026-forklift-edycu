@@ -1,0 +1,3029 @@
+{
+  "about": "Which lifted Portaldot mainnet (spec 1002) state has a home on the V3 testnet; read at the two pinned blocks below, mainnet read-only",
+  "mainnet": {
+    "endpoint": "wss://mainnet.portaldot.io",
+    "block_number": 2725953,
+    "block_hash": "0xf9dc8fdc6c2c77e7ec3b46d80ee6943459ff70d61319176b6486d60c205c5432",
+    "spec": "portaldot 1002",
+    "code_hash": "0xc8e7e77fe84f1231787e75a751af48c52e68675ad55de062c81cc8df24066e55",
+    "items_described": 161,
+    "lift_manifest_root": "0xa430d6a9f16d631da45fd0d0cb5ae600db1854612218e21aabeb7f26d7ba002b",
+    "skipped_note": "the MerkleMountainRange range (~5,451,900 derived keys) was skipped by the lift and is not counted"
+  },
+  "v3": {
+    "endpoint": "wss://test-node-v3.portaldot.dev",
+    "block_number": 118061,
+    "block_hash": "0xec57106c405af29ab9a5a75f9281050bd1f2755c4592ba3b55e0d19d4603d8ac",
+    "spec": "portaldot-v3 3002",
+    "code_hash": "0xedc03c9dc81d39fea5c02893cc34cf2ec898d55d7ee8f8e89eb27597a724c7c2",
+    "items_described": 352,
+    "lift_manifest_root": "0xfe4962de728b8a17601f3e97dc884a4c21be38a981b8c36cef47f02248c430a4"
+  },
+  "sample_per_item": 20,
+  "totals": {
+    "carries_over": {
+      "items": 99,
+      "keys_lifted": 10499
+    },
+    "needs_re_encoding": {
+      "items": 68,
+      "keys_lifted": 5443
+    },
+    "no_home_on_v3": {
+      "items": 31,
+      "keys_lifted": 382
+    }
+  },
+  "keys_lifted_total": 16324,
+  "items_total": 198,
+  "reader_self_check": {
+    "items_sampled": 93,
+    "items_failing_on_1002": [
+      "Authorship.Uncles",
+      "Identity.IdentityOf",
+      "Session.NextKeys",
+      "Session.QueuedKeys",
+      "System.BlockWeight"
+    ]
+  },
+  "carried_but_sample_failed": [],
+  "rows": [
+    {
+      "item": ":code",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "no_home_on_v3",
+      "v3": null,
+      "layout_compatible": null,
+      "reason": "the runtime wasm is the chain's own: V3 runs portaldot-v3 3002, not 1002"
+    },
+    {
+      "item": ":grandpa_authorities",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "no_home_on_v3",
+      "v3": null,
+      "layout_compatible": null,
+      "reason": "V3 does not hold this key"
+    },
+    {
+      "item": "Assets.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "Assets.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "Assets.Account",
+      "kind": "DoubleMap",
+      "keys_lifted": 0,
+      "class": "needs_re_encoding",
+      "reason": "value fields: balance, is_frozen, is_sufficient → balance, status, reason, extra (removed is_frozen, is_sufficient; added status, reason, extra)",
+      "v3": "Assets.Account",
+      "layout_compatible": false
+    },
+    {
+      "item": "Assets.Approvals",
+      "kind": "NMap",
+      "keys_lifted": 0,
+      "class": "needs_re_encoding",
+      "reason": "value.amount: u64 → u128",
+      "v3": "Assets.Approvals",
+      "layout_compatible": false
+    },
+    {
+      "item": "Assets.Asset",
+      "kind": "Map",
+      "keys_lifted": 0,
+      "class": "needs_re_encoding",
+      "reason": "value fields: owner, issuer, admin, freezer, supply, deposit, min_nalance, is_sufficient, accounts, sufficients, approvals, is_frozen → owner, issuer, admin, freezer, supply, deposit, min_balance, is_sufficient, accounts, sufficients, approvals, status (removed min_nalance, is_frozen; added min_balance, status)",
+      "v3": "Assets.Asset",
+      "layout_compatible": false
+    },
+    {
+      "item": "Assets.Metadata",
+      "kind": "Map",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Assets.Metadata",
+      "layout_compatible": null
+    },
+    {
+      "item": "AuthorityDiscovery.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "AuthorityDiscovery.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "AuthorityDiscovery.Keys",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "1002 metadata does not describe this item; V3 has it; decided on the sample: V3's type parses 1/1 values",
+      "v3": "AuthorityDiscovery.Keys",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": null,
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "AuthorityDiscovery.NextKeys",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "1002 metadata does not describe this item; V3 has it; decided on the sample: V3's type parses 1/1 values",
+      "v3": "AuthorityDiscovery.NextKeys",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": null,
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Authorship.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "Authorship.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "Authorship.Author",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Authorship.Author",
+      "layout_compatible": null
+    },
+    {
+      "item": "Authorship.DidSetUncles",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "no_home_on_v3",
+      "reason": "V3 has Authorship but no item DidSetUncles",
+      "v3": null,
+      "layout_compatible": null
+    },
+    {
+      "item": "Authorship.Uncles",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "no_home_on_v3",
+      "reason": "V3 has Authorship but no item Uncles; caution: the SDK's 1002 type fails on 1/1 of mainnet's own values, so this difference may come from an incomplete 1002 type",
+      "v3": null,
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 0,
+          "failed": 1,
+          "not_checked": 0,
+          "first_error": "enum tag 61 not in 0..1"
+        },
+        "parse_v3": null
+      },
+      "type_unreliable": true
+    },
+    {
+      "item": "Babe.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "Babe.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "Babe.AuthorVrfRandomness",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Babe.AuthorVrfRandomness",
+      "layout_compatible": null
+    },
+    {
+      "item": "Babe.Authorities",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Babe.Authorities",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Babe.CurrentSlot",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Babe.CurrentSlot",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Babe.EpochConfig",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Babe.EpochConfig",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Babe.EpochIndex",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Babe.EpochIndex",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Babe.EpochStart",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Babe.EpochStart",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Babe.GenesisSlot",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Babe.GenesisSlot",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Babe.Initialized",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "needs_re_encoding",
+      "reason": "value.option: bytes32 → enum{Primary | SecondaryPlain | SecondaryVRF}",
+      "v3": "Babe.Initialized",
+      "layout_compatible": false
+    },
+    {
+      "item": "Babe.Lateness",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Babe.Lateness",
+      "layout_compatible": null
+    },
+    {
+      "item": "Babe.NextAuthorities",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Babe.NextAuthorities",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Babe.NextEpochConfig",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Babe.NextEpochConfig",
+      "layout_compatible": null
+    },
+    {
+      "item": "Babe.NextRandomness",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Babe.NextRandomness",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Babe.PendingEpochConfigChange",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "needs_re_encoding",
+      "reason": "value variants: V0, V1 → V1",
+      "v3": "Babe.PendingEpochConfigChange",
+      "layout_compatible": false
+    },
+    {
+      "item": "Babe.Randomness",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Babe.Randomness",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Babe.SegmentIndex",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Babe.SegmentIndex",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Babe.UnderConstruction",
+      "kind": "Map",
+      "keys_lifted": 2,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Babe.UnderConstruction",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 2,
+        "parse_1002": {
+          "parsed": 2,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 2,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Balances.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "Balances.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "Balances.Account",
+      "kind": "Map",
+      "keys_lifted": 0,
+      "class": "needs_re_encoding",
+      "reason": "value fields: free, reserved, misc_frozen, fee_frozen → free, reserved, frozen, flags (removed misc_frozen, fee_frozen; added frozen, flags)",
+      "v3": "Balances.Account",
+      "layout_compatible": true
+    },
+    {
+      "item": "Balances.Locks",
+      "kind": "Map",
+      "keys_lifted": 183,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Balances.Locks",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 20,
+        "parse_1002": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Balances.Reserves",
+      "kind": "Map",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Balances.Reserves",
+      "layout_compatible": null
+    },
+    {
+      "item": "Balances.StorageVersion",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "no_home_on_v3",
+      "reason": "V3 has Balances but no item StorageVersion",
+      "v3": null,
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": null
+      }
+    },
+    {
+      "item": "Balances.TotalIssuance",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Balances.TotalIssuance",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Bounties.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "Bounties.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "Contracts.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "Contracts.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "Contracts.AccountCounter",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "no_home_on_v3",
+      "reason": "V3 has Contracts but no item AccountCounter",
+      "v3": null,
+      "layout_compatible": null
+    },
+    {
+      "item": "Contracts.CodeStorage",
+      "kind": "Map",
+      "keys_lifted": 0,
+      "class": "no_home_on_v3",
+      "reason": "V3 has Contracts but no item CodeStorage",
+      "v3": null,
+      "layout_compatible": null
+    },
+    {
+      "item": "Contracts.ContractInfoOf",
+      "kind": "Map",
+      "keys_lifted": 0,
+      "class": "needs_re_encoding",
+      "reason": "value fields: trie_id, code_hash, _reserved → trie_id, code_hash, storage_bytes, storage_items, storage_byte_deposit, storage_item_deposit, storage_base_deposit, delegate_dependencies (removed _reserved; added storage_bytes, storage_items, storage_byte_deposit, storage_item_deposit, storage_base_deposit, delegate_dependencies)",
+      "v3": "Contracts.ContractInfoOf",
+      "layout_compatible": false
+    },
+    {
+      "item": "Contracts.DeletionQueue",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "needs_re_encoding",
+      "reason": "key hashers none → Twox64Concat; 0 key(s) → 1; value: vec<{pair_count: u32, trie_id: bytes}> → bytes",
+      "v3": "Contracts.DeletionQueue",
+      "layout_compatible": false
+    },
+    {
+      "item": "Contracts.PristineCode",
+      "kind": "Map",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Contracts.PristineCode",
+      "layout_compatible": null
+    },
+    {
+      "item": "ElectionProviderMultiPhase.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "ElectionProviderMultiPhase.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "ElectionProviderMultiPhase.CurrentPhase",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "reason": "value variants: Off, Signed, Unsigned → Off, Signed, Unsigned, Emergency",
+      "v3": "ElectionProviderMultiPhase.CurrentPhase",
+      "layout_compatible": false,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "ElectionProviderMultiPhase.DesiredTargets",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "ElectionProviderMultiPhase.DesiredTargets",
+      "layout_compatible": null
+    },
+    {
+      "item": "ElectionProviderMultiPhase.MinimumUntrustedScore",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "needs_re_encoding",
+      "reason": "value: [u128; 3] → {minimal_stake: u128, sum_stake: u128, sum_stake_squared: u128}",
+      "v3": "ElectionProviderMultiPhase.MinimumUntrustedScore",
+      "layout_compatible": false
+    },
+    {
+      "item": "ElectionProviderMultiPhase.QueuedSolution",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "needs_re_encoding",
+      "reason": "value.score: [u128; 3] → {minimal_stake: u128, sum_stake: u128, sum_stake_squared: u128}",
+      "v3": "ElectionProviderMultiPhase.QueuedSolution",
+      "layout_compatible": false
+    },
+    {
+      "item": "ElectionProviderMultiPhase.Round",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "ElectionProviderMultiPhase.Round",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "ElectionProviderMultiPhase.Snapshot",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "ElectionProviderMultiPhase.Snapshot",
+      "layout_compatible": null
+    },
+    {
+      "item": "ElectionProviderMultiPhase.SnapshotMetadata",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "ElectionProviderMultiPhase.SnapshotMetadata",
+      "layout_compatible": null
+    },
+    {
+      "item": "Gilt.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "no_home_on_v3",
+      "v3": null,
+      "layout_compatible": null,
+      "reason": "V3 has no storage under Gilt"
+    },
+    {
+      "item": "Gilt.Active",
+      "kind": "Map",
+      "keys_lifted": 0,
+      "class": "no_home_on_v3",
+      "reason": "V3 has no storage under Gilt",
+      "v3": null,
+      "layout_compatible": null
+    },
+    {
+      "item": "Gilt.ActiveTotal",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "no_home_on_v3",
+      "reason": "V3 has no storage under Gilt",
+      "v3": null,
+      "layout_compatible": null
+    },
+    {
+      "item": "Gilt.QueueTotals",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "no_home_on_v3",
+      "reason": "V3 has no storage under Gilt",
+      "v3": null,
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": null
+      }
+    },
+    {
+      "item": "Gilt.Queues",
+      "kind": "Map",
+      "keys_lifted": 0,
+      "class": "no_home_on_v3",
+      "reason": "V3 has no storage under Gilt",
+      "v3": null,
+      "layout_compatible": null
+    },
+    {
+      "item": "Grandpa.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "Grandpa.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "Grandpa.CurrentSetId",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Grandpa.CurrentSetId",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Grandpa.NextForced",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Grandpa.NextForced",
+      "layout_compatible": null
+    },
+    {
+      "item": "Grandpa.PendingChange",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "needs_re_encoding",
+      "reason": "value fields: scheduled_at, delay, next_authorities → scheduled_at, delay, next_authorities, forced (removed ; added forced)",
+      "v3": "Grandpa.PendingChange",
+      "layout_compatible": false
+    },
+    {
+      "item": "Grandpa.SetIdSession",
+      "kind": "Map",
+      "keys_lifted": 3896,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Grandpa.SetIdSession",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 20,
+        "parse_1002": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Grandpa.Stalled",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Grandpa.Stalled",
+      "layout_compatible": null
+    },
+    {
+      "item": "Grandpa.State",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Grandpa.State",
+      "layout_compatible": null
+    },
+    {
+      "item": "Historical.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "Historical.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "Identity.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "Identity.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "Identity.IdentityOf",
+      "kind": "Map",
+      "keys_lifted": 7,
+      "class": "needs_re_encoding",
+      "reason": "value.judgements.vec: {registrar_index: u32, judgement: enum{Unknown | FeePaid | Reasonable | KnownGood | OutOfDate | LowQuality | Erroneous}} → (u32, enum{Unknown | FeePaid | Reasonable | KnownGood | OutOfDate | LowQuality | Erroneous}); caution: the SDK's 1002 type fails on 7/7 of mainnet's own values, so this difference may come from an incomplete 1002 type",
+      "v3": "Identity.IdentityOf",
+      "layout_compatible": false,
+      "sample": {
+        "values_read": 7,
+        "parse_1002": {
+          "parsed": 0,
+          "failed": 7,
+          "not_checked": 0,
+          "first_error": "truncated bytes32"
+        },
+        "parse_v3": {
+          "parsed": 7,
+          "failed": 0,
+          "not_checked": 0
+        }
+      },
+      "type_unreliable": true
+    },
+    {
+      "item": "Identity.Registrars",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "needs_re_encoding",
+      "reason": "not claimed as carried over: the SDK registry cannot resolve 1002 type `v13:IdentityFields` to a shape",
+      "v3": "Identity.Registrars",
+      "layout_compatible": null
+    },
+    {
+      "item": "Identity.SubsOf",
+      "kind": "Map",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Identity.SubsOf",
+      "layout_compatible": null
+    },
+    {
+      "item": "Identity.SuperOf",
+      "kind": "Map",
+      "keys_lifted": 0,
+      "class": "needs_re_encoding",
+      "reason": "value.1 variants: None, Raw, BlakeTwo256, Sha256, Keccak256, ShaThree256 → None, Raw0, Raw1, Raw2, Raw3, Raw4, Raw5, Raw6, Raw7, Raw8, Raw9, Raw10, Raw11, Raw12, Raw13, Raw14, Raw15, Raw16, Raw17, Raw18, Raw19, Raw20, Raw21, Raw22, Raw23, Raw24, Raw25, Raw26, Raw27, Raw28, Raw29, Raw30, Raw31, Raw32, BlakeTwo256, Sha256, Keccak256, ShaThree256",
+      "v3": "Identity.SuperOf",
+      "layout_compatible": false
+    },
+    {
+      "item": "ImOnline.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "ImOnline.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "ImOnline.AuthoredBlocks",
+      "kind": "DoubleMap",
+      "keys_lifted": 11,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "ImOnline.AuthoredBlocks",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 11,
+        "parse_1002": {
+          "parsed": 11,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 11,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "ImOnline.HeartbeatAfter",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "ImOnline.HeartbeatAfter",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "ImOnline.Keys",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "ImOnline.Keys",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "ImOnline.ReceivedHeartbeats",
+      "kind": "DoubleMap",
+      "keys_lifted": 0,
+      "class": "needs_re_encoding",
+      "reason": "value: bytes → bool",
+      "v3": "ImOnline.ReceivedHeartbeats",
+      "layout_compatible": false
+    },
+    {
+      "item": "Indices.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "Indices.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "Indices.Accounts",
+      "kind": "Map",
+      "keys_lifted": 0,
+      "class": "needs_re_encoding",
+      "reason": "not claimed as carried over: the SDK registry cannot resolve 1002 type `v13:T::AccountIndex` to a shape",
+      "v3": "Indices.Accounts",
+      "layout_compatible": null
+    },
+    {
+      "item": "Lottery.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "Lottery.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "Lottery.CallIndices",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Lottery.CallIndices",
+      "layout_compatible": null
+    },
+    {
+      "item": "Lottery.Lottery",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Lottery.Lottery",
+      "layout_compatible": null
+    },
+    {
+      "item": "Lottery.LotteryIndex",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Lottery.LotteryIndex",
+      "layout_compatible": null
+    },
+    {
+      "item": "Lottery.Participants",
+      "kind": "Map",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Lottery.Participants",
+      "layout_compatible": null
+    },
+    {
+      "item": "Lottery.Tickets",
+      "kind": "Map",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Lottery.Tickets",
+      "layout_compatible": null
+    },
+    {
+      "item": "Lottery.TicketsCount",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Lottery.TicketsCount",
+      "layout_compatible": null
+    },
+    {
+      "item": "MerkleMountainRange.Nodes",
+      "kind": "Map",
+      "keys_lifted": 0,
+      "class": "needs_re_encoding",
+      "reason": "the key prefix changes (V3 keeps it as Mmr.Nodes)",
+      "v3": "Mmr.Nodes",
+      "layout_compatible": true,
+      "sample": {
+        "values_read": 20,
+        "parse_1002": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "MerkleMountainRange.NumberOfLeaves",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "needs_re_encoding",
+      "reason": "the key prefix changes (V3 keeps it as Mmr.NumberOfLeaves)",
+      "v3": "Mmr.NumberOfLeaves",
+      "layout_compatible": true,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "MerkleMountainRange.RootHash",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "needs_re_encoding",
+      "reason": "the key prefix changes (V3 keeps it as Mmr.RootHash)",
+      "v3": "Mmr.RootHash",
+      "layout_compatible": true,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Mmr.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "Mmr.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "Multisig.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "Multisig.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "Multisig.Calls",
+      "kind": "Map",
+      "keys_lifted": 0,
+      "class": "no_home_on_v3",
+      "reason": "V3 has Multisig but no item Calls",
+      "v3": null,
+      "layout_compatible": null
+    },
+    {
+      "item": "Multisig.Multisigs",
+      "kind": "DoubleMap",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Multisig.Multisigs",
+      "layout_compatible": null
+    },
+    {
+      "item": "Offences.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "Offences.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "Offences.ConcurrentReportsIndex",
+      "kind": "DoubleMap",
+      "keys_lifted": 331,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Offences.ConcurrentReportsIndex",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 20,
+        "parse_1002": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Offences.Reports",
+      "kind": "Map",
+      "keys_lifted": 414,
+      "class": "needs_re_encoding",
+      "reason": "value.offender: {validator_id: bytes32, exposure: {total: compact<u128>, own: compact<u128>, others: vec<{who: bytes32, value: compact<u128>}>}} → (bytes32, null)",
+      "v3": "Offences.Reports",
+      "layout_compatible": false,
+      "sample": {
+        "values_read": 20,
+        "parse_1002": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 0,
+          "failed": 20,
+          "not_checked": 0,
+          "first_error": "vec longer than the data"
+        }
+      }
+    },
+    {
+      "item": "Offences.ReportsByKindIndex",
+      "kind": "Map",
+      "keys_lifted": 2,
+      "class": "no_home_on_v3",
+      "reason": "V3 has Offences but no item ReportsByKindIndex",
+      "v3": null,
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 2,
+        "parse_1002": {
+          "parsed": 2,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": null
+      }
+    },
+    {
+      "item": "Proxy.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "Proxy.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "Proxy.Announcements",
+      "kind": "Map",
+      "keys_lifted": 0,
+      "class": "needs_re_encoding",
+      "reason": "not claimed as carried over: the SDK registry cannot resolve 1002 type `v13:Announcement<T::AccountId, CallHashOf<T>, T::BlockNumber>` to a shape",
+      "v3": "Proxy.Announcements",
+      "layout_compatible": null
+    },
+    {
+      "item": "Proxy.Proxies",
+      "kind": "Map",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Proxy.Proxies",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "RandomnessCollectiveFlip.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "no_home_on_v3",
+      "v3": null,
+      "layout_compatible": null,
+      "reason": "V3 has no storage under RandomnessCollectiveFlip"
+    },
+    {
+      "item": "RandomnessCollectiveFlip.RandomMaterial",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "no_home_on_v3",
+      "reason": "V3 has no storage under RandomnessCollectiveFlip",
+      "v3": null,
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": null
+      }
+    },
+    {
+      "item": "Scheduler.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "Scheduler.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "Scheduler.Agenda",
+      "kind": "Map",
+      "keys_lifted": 0,
+      "class": "needs_re_encoding",
+      "reason": "not claimed as carried over: the SDK registry cannot resolve 1002 type `v13:Call` to a shape",
+      "v3": "Scheduler.Agenda",
+      "layout_compatible": null
+    },
+    {
+      "item": "Scheduler.Lookup",
+      "kind": "Map",
+      "keys_lifted": 0,
+      "class": "needs_re_encoding",
+      "reason": "key1: bytes → bytes32; value: {block_number: u32, index: u32} → (u32, u32)",
+      "v3": "Scheduler.Lookup",
+      "layout_compatible": false
+    },
+    {
+      "item": "Scheduler.StorageVersion",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "no_home_on_v3",
+      "reason": "V3 has Scheduler but no item StorageVersion",
+      "v3": null,
+      "layout_compatible": null
+    },
+    {
+      "item": "Session.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "Session.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "Session.CurrentIndex",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Session.CurrentIndex",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Session.DisabledValidators",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "needs_re_encoding",
+      "reason": "value.vec: u32 → (u32, u32)",
+      "v3": "Session.DisabledValidators",
+      "layout_compatible": false
+    },
+    {
+      "item": "Session.HistoricalSessions",
+      "kind": "Map",
+      "keys_lifted": 363,
+      "class": "no_home_on_v3",
+      "reason": "V3 has Session but no item HistoricalSessions",
+      "v3": null,
+      "layout_compatible": null
+    },
+    {
+      "item": "Session.KeyOwner",
+      "kind": "Map",
+      "keys_lifted": 68,
+      "class": "needs_re_encoding",
+      "reason": "key1.0: u32 → [u8; 4]",
+      "v3": "Session.KeyOwner",
+      "layout_compatible": true,
+      "sample": {
+        "values_read": 20,
+        "parse_1002": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Session.NextKeys",
+      "kind": "Map",
+      "keys_lifted": 17,
+      "class": "needs_re_encoding",
+      "reason": "value fields: grandpa, babe, im_online → grandpa, babe, im_online, authority_discovery, mixnet, beefy (removed ; added authority_discovery, mixnet, beefy); caution: the SDK's 1002 type fails on 17/17 of mainnet's own values, so this difference may come from an incomplete 1002 type",
+      "v3": "Session.NextKeys",
+      "layout_compatible": false,
+      "sample": {
+        "values_read": 17,
+        "parse_1002": {
+          "parsed": 0,
+          "failed": 17,
+          "not_checked": 0,
+          "first_error": "32 trailing bytes"
+        },
+        "parse_v3": {
+          "parsed": 0,
+          "failed": 17,
+          "not_checked": 0,
+          "first_error": "truncated bytes32"
+        }
+      },
+      "type_unreliable": true
+    },
+    {
+      "item": "Session.QueuedChanged",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Session.QueuedChanged",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Session.QueuedKeys",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "reason": "value.vec.1 fields: grandpa, babe, im_online → grandpa, babe, im_online, authority_discovery, mixnet, beefy (removed ; added authority_discovery, mixnet, beefy); caution: the SDK's 1002 type fails on 1/1 of mainnet's own values, so this difference may come from an incomplete 1002 type",
+      "v3": "Session.QueuedKeys",
+      "layout_compatible": false,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 0,
+          "failed": 1,
+          "not_checked": 0,
+          "first_error": "320 trailing bytes"
+        },
+        "parse_v3": {
+          "parsed": 0,
+          "failed": 1,
+          "not_checked": 0,
+          "first_error": "truncated bytes32"
+        }
+      },
+      "type_unreliable": true
+    },
+    {
+      "item": "Session.StoredRange",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "no_home_on_v3",
+      "reason": "V3 has Session but no item StoredRange",
+      "v3": null,
+      "layout_compatible": null
+    },
+    {
+      "item": "Session.Validators",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Session.Validators",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "Staking.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "Staking.ActiveEra",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.ActiveEra",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.Bonded",
+      "kind": "Map",
+      "keys_lifted": 169,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.Bonded",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 20,
+        "parse_1002": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.BondedEras",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.BondedEras",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.CanceledSlashPayout",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.CanceledSlashPayout",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.CounterForNominators",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.CounterForNominators",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.CounterForValidators",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.CounterForValidators",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.CurrentEra",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.CurrentEra",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.CurrentPlannedSession",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.CurrentPlannedSession",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.EarliestUnappliedSlash",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "no_home_on_v3",
+      "reason": "V3 has Staking but no item EarliestUnappliedSlash",
+      "v3": null,
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": null
+      }
+    },
+    {
+      "item": "Staking.ErasRewardPoints",
+      "kind": "Map",
+      "keys_lifted": 85,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.ErasRewardPoints",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 20,
+        "parse_1002": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.ErasStakers",
+      "kind": "DoubleMap",
+      "keys_lifted": 922,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.ErasStakers",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 20,
+        "parse_1002": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.ErasStakersClipped",
+      "kind": "DoubleMap",
+      "keys_lifted": 922,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.ErasStakersClipped",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 20,
+        "parse_1002": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.ErasStartSessionIndex",
+      "kind": "Map",
+      "keys_lifted": 85,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.ErasStartSessionIndex",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 20,
+        "parse_1002": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.ErasTotalStake",
+      "kind": "Map",
+      "keys_lifted": 85,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.ErasTotalStake",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 20,
+        "parse_1002": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.ErasValidatorPrefs",
+      "kind": "DoubleMap",
+      "keys_lifted": 922,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.ErasValidatorPrefs",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 20,
+        "parse_1002": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.ErasValidatorReward",
+      "kind": "Map",
+      "keys_lifted": 84,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.ErasValidatorReward",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 20,
+        "parse_1002": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.ForceEra",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.ForceEra",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.HistoryDepth",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "no_home_on_v3",
+      "reason": "V3 has Staking but no item HistoryDepth",
+      "v3": null,
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": null
+      }
+    },
+    {
+      "item": "Staking.Invulnerables",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.Invulnerables",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.Ledger",
+      "kind": "Map",
+      "keys_lifted": 169,
+      "class": "needs_re_encoding",
+      "reason": "value fields: stash, total, active, unlocking, claimed_rewards → stash, total, active, unlocking, legacy_claimed_rewards (removed claimed_rewards; added legacy_claimed_rewards)",
+      "v3": "Staking.Ledger",
+      "layout_compatible": true,
+      "sample": {
+        "values_read": 20,
+        "parse_1002": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.MaxNominatorsCount",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.MaxNominatorsCount",
+      "layout_compatible": null
+    },
+    {
+      "item": "Staking.MaxValidatorBond",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "no_home_on_v3",
+      "reason": "V3 has Staking but no item MaxValidatorBond",
+      "v3": null,
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": null
+      }
+    },
+    {
+      "item": "Staking.MaxValidatorsCount",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.MaxValidatorsCount",
+      "layout_compatible": null
+    },
+    {
+      "item": "Staking.MinNominatorBond",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.MinNominatorBond",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.MinValidatorBond",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.MinValidatorBond",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.MinimumValidatorCount",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.MinimumValidatorCount",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.NominatorSlashInEra",
+      "kind": "DoubleMap",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.NominatorSlashInEra",
+      "layout_compatible": null
+    },
+    {
+      "item": "Staking.Nominators",
+      "kind": "Map",
+      "keys_lifted": 151,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.Nominators",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 20,
+        "parse_1002": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.Payee",
+      "kind": "Map",
+      "keys_lifted": 169,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.Payee",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 20,
+        "parse_1002": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.SlashRewardFraction",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.SlashRewardFraction",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.SlashingSpans",
+      "kind": "Map",
+      "keys_lifted": 11,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.SlashingSpans",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 11,
+        "parse_1002": {
+          "parsed": 11,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 11,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.SpanSlash",
+      "kind": "Map",
+      "keys_lifted": 13,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.SpanSlash",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 13,
+        "parse_1002": {
+          "parsed": 13,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 13,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.StorageVersion",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "no_home_on_v3",
+      "reason": "V3 has Staking but no item StorageVersion",
+      "v3": null,
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": null
+      }
+    },
+    {
+      "item": "Staking.UnappliedSlashes",
+      "kind": "Map",
+      "keys_lifted": 0,
+      "class": "needs_re_encoding",
+      "reason": "value.vec.others.vec: {account: bytes32, amount: u128} → (bytes32, u128)",
+      "v3": "Staking.UnappliedSlashes",
+      "layout_compatible": true
+    },
+    {
+      "item": "Staking.ValidatorCount",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.ValidatorCount",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Staking.ValidatorSlashInEra",
+      "kind": "DoubleMap",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.ValidatorSlashInEra",
+      "layout_compatible": null
+    },
+    {
+      "item": "Staking.Validators",
+      "kind": "Map",
+      "keys_lifted": 10,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Staking.Validators",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 10,
+        "parse_1002": {
+          "parsed": 10,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 10,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Sudo.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "Sudo.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "Sudo.Key",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Sudo.Key",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "System.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "System.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "System.Account",
+      "kind": "Map",
+      "keys_lifted": 4719,
+      "class": "needs_re_encoding",
+      "reason": "value.data fields: free, reserved, misc_frozen, fee_frozen → free, reserved, frozen, flags (removed misc_frozen, fee_frozen; added frozen, flags)",
+      "v3": "System.Account",
+      "layout_compatible": true,
+      "sample": {
+        "values_read": 20,
+        "parse_1002": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "System.AllExtrinsicsLen",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "no_home_on_v3",
+      "reason": "V3 has System but no item AllExtrinsicsLen",
+      "v3": null,
+      "layout_compatible": null
+    },
+    {
+      "item": "System.BlockHash",
+      "kind": "Map",
+      "keys_lifted": 2401,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "System.BlockHash",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 20,
+        "parse_1002": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 20,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "System.BlockWeight",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "reason": "value.normal fields: base_extrinsic, max_extrinsic, max_total, reserved → ref_time, proof_size (removed base_extrinsic, max_extrinsic, max_total, reserved; added ref_time, proof_size); caution: the SDK's 1002 type fails on 1/1 of mainnet's own values, so this difference may come from an incomplete 1002 type",
+      "v3": "System.BlockWeight",
+      "layout_compatible": false,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 0,
+          "failed": 1,
+          "not_checked": 0,
+          "first_error": "bad Option tag"
+        },
+        "parse_v3": {
+          "parsed": 0,
+          "failed": 1,
+          "not_checked": 0,
+          "first_error": "18 trailing bytes"
+        }
+      },
+      "type_unreliable": true
+    },
+    {
+      "item": "System.Digest",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "reason": "value.logs.vec variants: Other, AuthoritiesChange, ChangesTrieRoot, SealV0, Consensus, Seal, PreRuntime, ChangesTrieSignal, RuntimeEnvironmentUpdated → Other, Consensus, Seal, PreRuntime, RuntimeEnvironmentUpdated",
+      "v3": "System.Digest",
+      "layout_compatible": false,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "System.EventCount",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "System.EventCount",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "System.EventTopics",
+      "kind": "Map",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "System.EventTopics",
+      "layout_compatible": null
+    },
+    {
+      "item": "System.Events",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "reason": "not claimed as carried over: the SDK registry cannot resolve 1002 type `v13:Event` to a shape",
+      "v3": "System.Events",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 0,
+          "failed": 0,
+          "not_checked": 1
+        },
+        "parse_v3": {
+          "parsed": 0,
+          "failed": 1,
+          "not_checked": 0,
+          "first_error": "3 trailing bytes"
+        }
+      }
+    },
+    {
+      "item": "System.ExecutionPhase",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "System.ExecutionPhase",
+      "layout_compatible": null
+    },
+    {
+      "item": "System.ExtrinsicCount",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "System.ExtrinsicCount",
+      "layout_compatible": null
+    },
+    {
+      "item": "System.ExtrinsicData",
+      "kind": "Map",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "System.ExtrinsicData",
+      "layout_compatible": null
+    },
+    {
+      "item": "System.LastRuntimeUpgrade",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "reason": "value.spec_name: bytes → str",
+      "v3": "System.LastRuntimeUpgrade",
+      "layout_compatible": false,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "System.Number",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "System.Number",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "System.ParentHash",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "System.ParentHash",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "System.UpgradedToTripleRefCount",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "System.UpgradedToTripleRefCount",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "System.UpgradedToU32RefCount",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "System.UpgradedToU32RefCount",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Timestamp.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "Timestamp.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "Timestamp.DidUpdate",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Timestamp.DidUpdate",
+      "layout_compatible": null
+    },
+    {
+      "item": "Timestamp.Now",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Timestamp.Now",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "TransactionPayment.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "TransactionPayment.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "TransactionPayment.NextFeeMultiplier",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "TransactionPayment.NextFeeMultiplier",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "TransactionPayment.StorageVersion",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "needs_re_encoding",
+      "reason": "value variants: V1, V2, V3, V4, V5, V6, V7, V8, V9, V10 → V1Ancient, V2",
+      "v3": "TransactionPayment.StorageVersion",
+      "layout_compatible": false
+    },
+    {
+      "item": "TransactionStorage.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "TransactionStorage.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "TransactionStorage.BlockTransactions",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "TransactionStorage.BlockTransactions",
+      "layout_compatible": null
+    },
+    {
+      "item": "TransactionStorage.ByteFee",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "TransactionStorage.ByteFee",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "TransactionStorage.ChunkCount",
+      "kind": "Map",
+      "keys_lifted": 0,
+      "class": "no_home_on_v3",
+      "reason": "V3 has TransactionStorage but no item ChunkCount",
+      "v3": null,
+      "layout_compatible": null
+    },
+    {
+      "item": "TransactionStorage.EntryFee",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "TransactionStorage.EntryFee",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "TransactionStorage.MaxBlockTransactions",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "no_home_on_v3",
+      "reason": "V3 has TransactionStorage but no item MaxBlockTransactions",
+      "v3": null,
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": null
+      }
+    },
+    {
+      "item": "TransactionStorage.MaxTransactionSize",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "no_home_on_v3",
+      "reason": "V3 has TransactionStorage but no item MaxTransactionSize",
+      "v3": null,
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": null
+      }
+    },
+    {
+      "item": "TransactionStorage.ProofChecked",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "TransactionStorage.ProofChecked",
+      "layout_compatible": null
+    },
+    {
+      "item": "TransactionStorage.StoragePeriod",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "no_home_on_v3",
+      "reason": "V3 has TransactionStorage but no item StoragePeriod",
+      "v3": null,
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": null
+      }
+    },
+    {
+      "item": "TransactionStorage.Transactions",
+      "kind": "Map",
+      "keys_lifted": 0,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "TransactionStorage.Transactions",
+      "layout_compatible": null
+    },
+    {
+      "item": "Treasury.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "Treasury.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "Treasury.Approvals",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Treasury.Approvals",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Treasury.Bounties",
+      "kind": "Map",
+      "keys_lifted": 0,
+      "class": "no_home_on_v3",
+      "reason": "V3 has Treasury but no item Bounties",
+      "v3": null,
+      "layout_compatible": null
+    },
+    {
+      "item": "Treasury.BountyApprovals",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "reason": "the key prefix changes (V3 keeps it as Bounties.BountyApprovals)",
+      "v3": "Bounties.BountyApprovals",
+      "layout_compatible": true,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Treasury.BountyCount",
+      "kind": "Plain",
+      "keys_lifted": 0,
+      "class": "no_home_on_v3",
+      "reason": "V3 has Treasury but no item BountyCount",
+      "v3": null,
+      "layout_compatible": null
+    },
+    {
+      "item": "Treasury.BountyDescriptions",
+      "kind": "Map",
+      "keys_lifted": 0,
+      "class": "needs_re_encoding",
+      "reason": "the key prefix changes (V3 keeps it as Bounties.BountyDescriptions)",
+      "v3": "Bounties.BountyDescriptions",
+      "layout_compatible": true
+    },
+    {
+      "item": "Treasury.ProposalCount",
+      "kind": "Plain",
+      "keys_lifted": 1,
+      "class": "carries_over",
+      "reason": "same prefix, item, key hashers, key types and value type",
+      "v3": "Treasury.ProposalCount",
+      "layout_compatible": null,
+      "sample": {
+        "values_read": 1,
+        "parse_1002": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 1,
+          "failed": 0,
+          "not_checked": 0
+        }
+      }
+    },
+    {
+      "item": "Treasury.Proposals",
+      "kind": "Map",
+      "keys_lifted": 0,
+      "class": "needs_re_encoding",
+      "reason": "not claimed as carried over: the SDK registry cannot resolve 1002 type `v13:Proposal<T::AccountId, BalanceOf<T, I>>` to a shape",
+      "v3": "Treasury.Proposals",
+      "layout_compatible": null
+    },
+    {
+      "item": "Utility.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "no_home_on_v3",
+      "v3": null,
+      "layout_compatible": null,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "Vesting.:__PALLET_VERSION__:",
+      "kind": "Raw",
+      "keys_lifted": 1,
+      "class": "needs_re_encoding",
+      "v3": "Vesting.:__STORAGE_VERSION__:",
+      "layout_compatible": false,
+      "reason": "V3 holds this pallet's storage version under :__STORAGE_VERSION__: (key present in V3's lift)"
+    },
+    {
+      "item": "Vesting.Vesting",
+      "kind": "Map",
+      "keys_lifted": 14,
+      "class": "needs_re_encoding",
+      "reason": "value: {locked: u128, per_block: u128, starting_block: u32} → vec<{locked: u128, per_block: u128, starting_block: u32}>",
+      "v3": "Vesting.Vesting",
+      "layout_compatible": false,
+      "sample": {
+        "values_read": 14,
+        "parse_1002": {
+          "parsed": 14,
+          "failed": 0,
+          "not_checked": 0
+        },
+        "parse_v3": {
+          "parsed": 0,
+          "failed": 14,
+          "not_checked": 0,
+          "first_error": "35 trailing bytes"
+        }
+      }
+    }
+  ]
+}
