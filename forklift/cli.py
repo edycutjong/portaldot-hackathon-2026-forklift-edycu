@@ -1023,7 +1023,12 @@ def _receipt_v3(address: str | None, signer: Path | None, manifest_path: Path | 
                 click.echo(f"warning: the landed Receipt transactions were NOT recorded: {werr}", err=True)
         _could_not_run(exc, as_json, "receipt")
     if evidence_dir is not None:
-        _record_receipt_v3(r, evidence_dir)
+        try:
+            r["evidence"] = str(_record_receipt_v3(r, evidence_dir))
+        except (OSError, ValueError, TypeError) as werr:  # the transactions landed: warn, keep the real exit code
+            r["evidence"] = None
+            click.echo(f"warning: receipt finished (exit {r['exit_code']}) but was NOT recorded in {evidence_dir}: {werr}",
+                       err=True)
     click.echo(json.dumps(r, indent=2, default=str) if as_json else receipt_v3_plate(r))
     sys.exit(r["exit_code"])
 

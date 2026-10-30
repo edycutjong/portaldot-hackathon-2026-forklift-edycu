@@ -237,3 +237,24 @@ def test_plate_of_the_recorded_v3_run():
     assert "extrinsic 257997-1 · Ok · finalized" in plate and "extrinsic 258000-1 · Ok · finalized" in plate
     assert "deposit 18.882 tPOT (dry run)" in plate and "deposit 7.683 tPOT (dry run)" in plate
     assert plate.rstrip().endswith("(block hash, root, keys lifted)")
+
+
+def test_receipt_v3_warns_but_keeps_the_exit_code_when_evidence_cannot_be_written(monkeypatch, tmp_path):
+    import json
+    from pathlib import Path
+
+    run = json.loads((Path(__file__).parent.parent / "evidence" / "receipt-v3.json").read_text())["runs"][0]
+    signer = tmp_path / "s.seed"
+    signer.write_text("//Alice")
+    signer.chmod(0o600)
+    monkeypatch.setattr(rr, "run", lambda *a, **k: dict(run))
+    blocked = tmp_path / "file-not-dir"
+    blocked.write_text("x")
+    r = CliRunner().invoke(main, ["receipt", "--target", "v3", "--signer", str(signer), "--manifest",
+                                  str(tmp_path / "m.json"), "--evidence", str(blocked)])
+    assert "--manifest" in r.output  # no manifest file: usage error before anything runs
+    (tmp_path / "m.json").write_text(json.dumps(MANIFEST))
+    r = CliRunner().invoke(main, ["receipt", "--target", "v3", "--signer", str(signer), "--manifest",
+                                  str(tmp_path / "m.json"), "--evidence", str(blocked)])
+    assert r.exit_code == 0
+    assert "was NOT recorded" in r.output and "0x52f0edd92af9ff410ca63ccc83735552e1b2abc7" in r.output
