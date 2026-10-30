@@ -159,3 +159,11 @@ def test_report_totals_and_the_self_check_demotion():
     assert m.render_json(rep) == m.render_json(rep)
     assert "## Carries over (1 items)" in m.render_markdown({**rep, "mainnet": {"spec": "s", "block_number": 1, "block_hash": "0x", "code_hash": "0x", "items_described": 3},
                                                               "v3": {"spec": "s", "block_number": 1, "block_hash": "0x", "code_hash": "0x", "items_described": 2}})
+
+
+def test_first_difference_names_only_what_changed():
+    a = {"struct": [["x", "u8"]]}
+    assert m.first_difference(a, {"struct": [["x", "u8"], ["y", "u8"]]}) == "value fields: x → x, y (added y)"
+    assert m.first_difference({"struct": [["x", "u8"], ["y", "u8"]]}, a) == "value fields: x, y → x (removed y)"
+    assert m.first_difference({"struct": [["x", "u8"], ["y", "u8"]]}, {"struct": [["y", "u8"], ["x", "u8"]]}) \
+        == "value fields: x, y → y, x (reordered)"

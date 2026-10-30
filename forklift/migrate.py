@@ -257,8 +257,9 @@ def first_difference(a: Tree, b: Tree, path: str = "") -> str:
         na, nb = [n for n, _ in va], [n for n, _ in vb]
         if na != nb:
             gone, new = [n for n in na if n not in nb], [n for n in nb if n not in na]
-            return f"{here} fields: {', '.join(na)} → {', '.join(nb)}" + \
-                (f" (removed {', '.join(gone)}; added {', '.join(new)})" if gone or new else " (reordered)")
+            what = "; ".join(x for x in (f"removed {', '.join(gone)}" if gone else "",
+                                         f"added {', '.join(new)}" if new else "") if x)
+            return f"{here} fields: {', '.join(na)} → {', '.join(nb)} ({what or 'reordered'})"
         for (n, x), (_, y) in zip(va, vb):
             d = first_difference(x, y, f"{path}.{n}" if path else n)
             if d:
