@@ -340,7 +340,7 @@ runs `forklift up --target v3`, then `forklift verify` or `forklift rehearse`, s
 command's own exit code. This repo's CI runs it against the live V3 testnet (the `action-smoke` job, `sample: 20`).
 
 ```yaml
-- uses: edycutjong/portaldot-hackathon-2026-forklift-edycu@main
+- uses: edycutjong/portaldot-hackathon-2026-forklift-edycu@v0.6.0
   with:
     command: verify          # or: rehearse, with call / args / signer-file (prediction only, nothing is sent)
 ```

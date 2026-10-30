@@ -25,7 +25,7 @@ official `portaldot_dev` node binary and checks its sha256 first.
 ## Use it in CI
 
 ```yaml
-- uses: edycutjong/portaldot-hackathon-2026-forklift-edycu@main
+- uses: edycutjong/portaldot-hackathon-2026-forklift-edycu@v0.6.0
   with:
     command: verify        # or: rehearse (with call, args, signer-file)
 ```
