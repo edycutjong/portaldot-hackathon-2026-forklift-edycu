@@ -18,7 +18,7 @@
 
   ![status](https://img.shields.io/badge/status-check--in_slice-orange?style=flat)
   ![python](https://img.shields.io/badge/python-3.11%2B-blue?style=flat)
-  ![tests](https://img.shields.io/badge/tests-257_offline_%2B_6_live-brightgreen?style=flat)
+  ![tests](https://img.shields.io/badge/tests-283_offline_%2B_7_live-brightgreen?style=flat)
   [![CI](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/actions/workflows/ci.yml)
   [![Release](https://img.shields.io/github/v/release/edycutjong/portaldot-hackathon-2026-forklift-edycu?sort=semver)](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/releases/latest)
   ![license](https://img.shields.io/badge/license-MIT-lightgrey?style=flat)
@@ -96,11 +96,10 @@ Forklift is five steps.
 - An endpoint write-guard: nothing is ever submitted to mainnet, and a fork client refuses any non-loopback
   endpoint or a chain whose genesis is mainnet's (or V3's, unless it answers Chopsticks' `dev_*` methods). The one
   path to a real chain is `rehearse --send`: a testnet client that sends only `author_submitExtrinsic`, only to V3.
-- `--json` output and documented exit codes ([`docs/EXIT-CODES.md`](docs/EXIT-CODES.md)); 257 offline tests plus 6 live
+- `--json` output and documented exit codes ([`docs/EXIT-CODES.md`](docs/EXIT-CODES.md)); 283 offline tests plus 7 live
   tests.
 
-**Planned (not built, not claimed):** the ink! 5 / Revive Receipt on V3, a mainnet → V3 state-classification report, an `exact` runtime profile (mainnet's wasm on the fork), `replay` of a mainnet
-extrinsic on a fork of its parent block, a hosted fork, a PyPI package and a CI action.
+**Planned (not built, not claimed):** the ink! 5 / Revive Receipt on V3, an `exact` runtime profile (mainnet's wasm on the fork), a hosted fork, a PyPI package and a CI action.
 
 ### Blockchain Relevance
 
@@ -316,7 +315,7 @@ Per command, in [`docs/EXIT-CODES.md`](docs/EXIT-CODES.md).
 | V3 testnet: three transactions from `5EnCf9…Cejvg`, each predicted on a fork first, then sent | `System.remark` 118555-1, `Balances.transfer_keep_alive` (0.2 tPOT) 118621-1, `Utility.batch` (remark + 0.1 tPOT) 118669-1, all finalized · same tx hash, success and event sequence as predicted, recipient deltas exact · fees differ by 3,660–8,269 planck because each landed 3–9 blocks after the predicted height | `evidence/rehearse-v3.json`, [`docs/PROOF.md`](docs/PROOF.md) (block hashes + node-console links) |
 | V3 testnet: the same three replayed on forks of their parent blocks | 10/10, 14/14 and 16/16 fields equal to the chain, fees equal to the planck | `evidence/replay-v3.json` |
 | An unfunded signer | the fork's pool rejects it (`Invalid: Payment`), exit `5`, nothing sent | `evidence/rehearse-v3.json` |
-| Tests | 257 offline passed · 6 live tests (deselected offline; run with `pytest -m live`) | `pytest -q` |
+| Tests | 283 offline passed · 7 live tests (deselected offline; run with `pytest -m live`) | `pytest -q` |
 
 One benchmark run of the lift from a fresh process (a stub: one run per file; p50/p95 over several runs is planned): #2,725,953 in 19.85 s (keys 7.41 s, values 12.44 s), same `manifest_root` (`evidence/bench-lift-2026-10-14.json`).
 
@@ -348,7 +347,7 @@ pytest -q        # offline; CI runs the same, see [CONTRIBUTING.md](CONTRIBUTING
 
 **Next phase**
 
-- [x] Demo video (check-in cut, then the final v2 cut)
+- [x] Demo video (linked at the top of this README)
 - [ ] `--runtime exact`: mainnet's own wasm on the fork, and a generated runtime-difference report
 - [x] `forklift replay <block>:<index>`: a mainnet extrinsic re-run on a fork of its parent block (3 mainnet replays field-equal, [`evidence/replay-1002.json`](evidence/replay-1002.json))
 - [ ] Benchmarks with p50/p95 over several runs
