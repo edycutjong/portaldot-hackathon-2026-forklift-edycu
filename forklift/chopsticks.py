@@ -30,7 +30,7 @@ from forklift.rpc import RpcClient, RpcError, RpcUnavailable
 PACKAGE = "@acala-network/chopsticks@1.5.2"
 UNRESOLVED_IMPORT = "ext_statement_store_submit_statement_version_1"
 # Which host function each chain's runtime imports that Chopsticks 1.5.2 does not provide (why the flag is on).
-# Mainnet 1002, measured 2026-10-31 at #2,725,953: without the flag chain_getHeader fails on the rent-era
+# Mainnet 1002, measured 2026-10-31 WIB at #2,725,953 (evidence/chopsticks-1002-2725953.json): without the flag chain_getHeader fails on the rent-era
 # Contracts pallet's sandbox import and dev_newBlock builds nothing.
 UNRESOLVED_IMPORTS = {"v3": UNRESOLVED_IMPORT, "mainnet": "ext_sandbox_instance_teardown_version_1"}
 
