@@ -820,13 +820,18 @@ def as_cmd(who: str, call: str, args: str | None, name: str, endpoint: str | Non
 @click.argument("extrinsic_id")
 @click.option("--name", default="fork", show_default=True, help="Running fork to read from.")
 @click.option("--endpoint", default=None, help="Fork WebSocket endpoint [default: the running fork --name].")
+@click.option("--target", type=click.Choice(["fork", "v3"]), default="fork", show_default=True,
+              help="v3: read from the live V3 testnet; a Fork Receipt attest is decoded and its stored receipt re-read.")
 @click.option("--json", "as_json", is_flag=True, help="Print the extrinsic as JSON.")
-def tx_cmd(extrinsic_id: str, name: str, endpoint: str | None, as_json: bool) -> None:
-    """Re-read an extrinsic on the fork by its id BLOCK-INDEX: hash, call, events, outcome (read-only)."""
+def tx_cmd(extrinsic_id: str, name: str, endpoint: str | None, target: str, as_json: bool) -> None:
+    """Re-read an extrinsic on the fork (or V3) by its id BLOCK-INDEX: hash, call, events, outcome (read-only)."""
     from forklift import tx
 
     if not re.fullmatch(r"\d+-\d+", extrinsic_id):
         raise click.UsageError(f"extrinsic id must look like 123-1 (block-index), got {extrinsic_id!r}")
+    if target == "v3":
+        _tx_v3(extrinsic_id, as_json)
+        return
     endpoint, _ = _fork_endpoint(name, endpoint)
     try:
         with RpcClient(endpoint) as client:  # read-only client: this command never writes
@@ -841,6 +846,32 @@ def tx_cmd(extrinsic_id: str, name: str, endpoint: str | None, as_json: bool) ->
                    f"call      {got['call']['pallet']}.{got['call']['function']}  signed by {got['signer']}\n"
                    f"result    {'Ok' if got['success'] else 'Failed ' + str(got['error'])}\n"
                    + "\n".join(f"event     {e['event']}" for e in got["events"]))
+
+
+def _tx_v3(extrinsic_id: str, as_json: bool) -> None:
+    from forklift import revive_receipt as rr
+
+    try:
+        got = rr.read_back(extrinsic_id)
+    except (rr.ReviveReceiptError, *_act_errors()) as exc:
+        _could_not_run(exc, as_json, "tx")
+    if as_json:
+        click.echo(json.dumps(got, indent=2, default=str))
+        return
+    lines = [f"extrinsic {got['extrinsic_id']}  #{got['block_number']:,} {got['block_hash']}  ({got['chain']})",
+             f"tx        {got['tx_hash']}",
+             f"call      {got['call']}  signed by {got['signer']}",
+             f"result    {'Ok' if got['success'] else 'Failed'}"]
+    lines += [f"event     {e['pallet']}.{e['event']}" for e in got["events"]]
+    for e in got.get("emitted") or []:
+        d = e["decoded"]
+        if d:
+            lines.append(f"receipt   {got['contract']}: block {d['block_hash']}\n"
+                         f"          root {d['manifest_root']} · {d['keys_lifted']:,} keys · attester {d['attester']}")
+    now = got.get("stored_now")
+    if now:
+        lines.append(f"stored    root {now['manifest_root']} · {now['keys_lifted']:,} keys (receipt() at finalized {now['at']})")
+    click.echo("\n".join(lines))
 
 
 def receipt_plate(r, manifest: dict) -> str:
@@ -874,23 +905,40 @@ def receipt_plate(r, manifest: dict) -> str:
 
 
 @main.command("receipt")
-@click.option("--address", default=None, help="Receipt contract to attest to [default: the one this fork deployed].")
+@click.option("--address", default=None, help="Receipt contract to attest to [default: the one this fork deployed; "
+              "with --target v3: the one Forklift deployed on V3].")
 @click.option("--no-top-up", is_flag=True, help="Report the rent but do not top the contract up.")
+@click.option("--target", type=click.Choice(["fork", "v3"]), default="fork", show_default=True,
+              help="fork: v1 on the fork's Contracts pallet. v3: v2, a Revive contract on the live V3 testnet.")
+@click.option("--signer", type=click.Path(path_type=Path), default=None,
+              help="--target v3: seed file of the funded V3 account that deploys and attests (mode 600).")
+@click.option("--manifest", "manifest_path", type=click.Path(path_type=Path, dir_okay=False), default=None,
+              help="--target v3: the lift manifest to attest [default: the manifest of the fork --name].")
 @_act_options
-def receipt_cmd(address: str | None, no_top_up: bool, name: str, endpoint: str | None, evidence_dir: Path | None,
-                as_json: bool) -> None:
-    """Deploy the Fork Receipt contract (first run on a fork), keep it rent-free, and attest.
+def receipt_cmd(address: str | None, no_top_up: bool, target: str, signer: Path | None, manifest_path: Path | None,
+                name: str, endpoint: str | None, evidence_dir: Path | None, as_json: bool) -> None:
+    """Deploy the Fork Receipt contract (first run), and attest the fork's manifest.
 
-    attest emits mainnet_block_hash ‖ manifest_root ‖ keys_lifted from the fork's
-    manifest as Contracts.ContractEmitted; the event is decoded and compared with
-    the manifest. Exit 0 when it matches and the Receipt pays no rent, 2 when the
-    payload differs (or is missing, malformed, or emitted twice), 5 when a
-    transaction failed, 6 when rent is still charged after the top-up, 1 when it
-    could not run.
+    --target fork (v1): attest emits mainnet_block_hash ‖ manifest_root ‖ keys_lifted
+    from the fork's manifest as Contracts.ContractEmitted, and the Receipt is kept
+    rent-free. --target v3 (v2): a Revive contract on the live V3 testnet stores the
+    manifest root and key count under the block hash and emits all three; every
+    write is dry-run through ReviveApi first, and the stored receipt is read back.
+    Exit 0 when the emitted (and, on V3, stored) receipt equals the manifest and (v1)
+    the Receipt pays no rent, 2 when it differs (or is missing, malformed, or emitted
+    twice), 5 when a transaction failed, 6 (v1) when rent is still charged after the
+    top-up, 1 when it could not run.
     """
     from forklift import receipt, tx
     from forklift.act import EXIT_DISPATCH_FAILED
 
+    if target == "v3":
+        if endpoint is not None or no_top_up:
+            raise click.UsageError("--endpoint and --no-top-up go with --target fork (v3 writes to the pinned V3 endpoint)")
+        _receipt_v3(address, signer, manifest_path, name, evidence_dir, as_json)
+        return
+    if signer is not None or manifest_path is not None:
+        raise click.UsageError("--signer and --manifest go with --target v3 (v1 signs with the fork's dev key)")
     if address is not None:
         try:
             address = tx.public_to_ss58(tx.ss58_to_public(address))  # normalised to SS58 format 42
@@ -943,6 +991,80 @@ def receipt_cmd(address: str | None, no_top_up: bool, name: str, endpoint: str |
         out["evidence"] = recorded[-1] if recorded else None
     click.echo(json.dumps(out, indent=2, default=str) if as_json else receipt_plate(r, manifest))
     sys.exit(r.exit_code)
+
+
+def _receipt_v3(address: str | None, signer: Path | None, manifest_path: Path | None, name: str,
+                evidence_dir: Path | None, as_json: bool) -> None:
+    from forklift import revive_receipt as rr
+    from forklift.rehearse import RehearseError, load_signer
+
+    if signer is None:
+        raise click.UsageError("--target v3 needs --signer: the seed file of a funded V3 account")
+    if address is not None and not re.fullmatch(r"0x[0-9a-fA-F]{40}", address):
+        raise click.UsageError("--address on V3 is a 20-byte H160 (0x + 40 hex)")
+    if manifest_path is None:
+        _, manifest = _fork_endpoint(name, None)
+        if manifest is None:
+            raise click.UsageError(f"no manifest: pass --manifest, or start the fork {name!r} with `forklift up`")
+    else:
+        try:
+            manifest = json.loads(manifest_path.read_text())
+        except (OSError, ValueError) as exc:
+            raise click.UsageError(f"--manifest: {exc}") from None
+    try:
+        keypair = load_signer(signer)
+        r = rr.run(manifest, keypair, address=address.lower() if address else None)
+    except (rr.ReviveReceiptError, RehearseError, *_act_errors()) as exc:
+        _could_not_run(exc, as_json, "receipt")
+    if evidence_dir is not None:
+        _record_receipt_v3(r, evidence_dir)
+    click.echo(json.dumps(r, indent=2, default=str) if as_json else receipt_v3_plate(r))
+    sys.exit(r["exit_code"])
+
+
+def _record_receipt_v3(r: dict, evidence_dir: Path) -> Path:
+    """Append this run to <DIR>/receipt-v3.json (every run is kept; nothing is overwritten)."""
+    from datetime import datetime, timezone
+
+    path = evidence_dir / "receipt-v3.json"
+    try:
+        doc = json.loads(path.read_text())
+    except (OSError, ValueError):
+        doc = {"what": "Fork Receipt v2 (Revive contract) on the Portaldot V3 testnet: `forklift receipt --target v3`",
+               "runs": []}
+    doc["runs"].append({"recorded_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), **r})
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(doc, indent=2, default=str) + "\n")
+    return path
+
+
+def receipt_v3_plate(r: dict) -> str:
+    from forklift.chains import V3, units
+
+    def fmt_pot(planck: int) -> str:
+        return units(V3, planck)
+
+    m = r["manifest"]
+    lines = [f"receipt v2  {r.get('address')}  on {r['label']} (Revive)  attester {r['signer']} = {r['attester_h160']}"]
+    for kind in ("deploy", "attest"):
+        s = r.get(kind)
+        if s:
+            lines.append(f"{kind:<11} {s['call']}  extrinsic {s['extrinsic_id']} · {'Ok' if s['success'] else 'FAILED'}"
+                         f" · {'finalized' if s['finalized'] else 'NOT finalized'} · fee {fmt_pot(s['fee'] or 0)}"
+                         f" · deposit {fmt_pot(s['dry_run']['storage_deposit'])} (dry run)\n"
+                         f"            tx {s['tx_hash']}\n            {s['explorer']}")
+    if not r.get("deploy"):
+        lines.append(f"deploy      reused {r.get('address')}")
+    lines.append(f"manifest    {m['profile']} #{m['block_number']:,} {m['block_hash']}\n"
+                 f"            root {m['manifest_root']} · {m['keys_lifted']:,} keys")
+    st = r.get("stored")
+    if st:
+        lines.append(f"stored      root {st['manifest_root']} · {st['keys_lifted']:,} keys (receipt() at the attest block)")
+    if r.get("exit_code") == 0:
+        lines.append("OK          emitted event and stored receipt = the manifest (block hash, root, keys lifted)")
+    elif r.get("mismatch"):
+        lines.append(f"MISMATCH    {', '.join(r['mismatch'])} (exit 2)")
+    return "\n".join(lines)
 
 
 EXIT_USAGE = 64  # click's default (2) is reserved for "verify found a mismatch"
