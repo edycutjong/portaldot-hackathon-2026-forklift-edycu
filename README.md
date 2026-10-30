@@ -344,7 +344,7 @@ there is no frontend.
 
 - **Video:** demo: https://youtu.be/iVvEXQvfTYY
 - **Pitch deck:** [`docs/pitch-deck.pdf`](docs/pitch-deck.pdf) (10 slides, check-in; source [`deck/index.html`](deck/index.html)). Its figures are the rows of [`docs/PROOF.md`](docs/PROOF.md).
-- **Live demo:** none; Forklift is a CLI and its fork is local. The Installation steps reproduce the lift, fork, verify, fund / as and Receipt rows (extrinsic ids, hashes and timings differ per run); completeness, re-read and bench are `scripts/completeness.py`, `scripts/refetch.py` and `scripts/bench.py`.
+- **Live demo:** none; Forklift is a CLI and its fork is local. The Installation steps reproduce the lift, fork, verify, fund / as and Receipt rows (extrinsic ids, hashes and timings differ per run); completeness, re-read and bench are `scripts/completeness.py`, `scripts/refetch.py` and `scripts/bench.py` (p50/p95 over 7 runs, [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md)).
 - **Test accounts / test data:** none to create. The whale `5DvRSg…Mndf` (200,000,000 POT at the pin; 1 POT = 10^14 planck, a convention because spec 1002's `system_properties` is empty) and the nominator
   `5Cf8KJ…jchW` are real mainnet accounts that `forklift as` acts as on the fork; `5F1Kbj…rMcE` is the demo account
   `forklift fund` credits.
@@ -370,7 +370,7 @@ there is no frontend.
 | V3 testnet: Fork Receipt v2 (Revive contract) | `0x52f0edd92af9ff410ca63ccc83735552e1b2abc7`: deploy 257997-1, attest 258000-1, both finalized · emitted event and stored `receipt()` = the #118,061 manifest (root, 5,508 keys) · deposits 18.882 + 7.683 tPOT = the dry runs | `evidence/receipt-v3.json` |
 | Tests | 324 offline passed (+1 that runs only when `solc` 0.8.30 is installed) · 10 live tests (deselected offline; run with `pytest -m live`) | `pytest -q` |
 
-One benchmark run of the lift from a fresh process (a stub: one run per file; p50/p95 over several runs is planned): #2,725,953 in 19.85 s (keys 7.41 s, values 12.44 s), same `manifest_root` (`evidence/bench-lift-2026-10-14.json`).
+Benchmarks, 7 fresh-process runs of each command on one Apple M1 Max (not idle: load average 4-18 on 10 cores; the public nodes are shared): `lift` at #2,725,953 p50 23.96 s / p95 24.33 s, `verify --sample 200` on a V3 fork p50 20.27 s / p95 26.86 s, `rehearse` (prediction only, no `--send`) p50 38.86 s / p95 40.93 s, `replay 118621-1` (V3) p50 13.38 s / p95 14.91 s, `replay 2700013:1` (mainnet 1002) p50 8.23 s / p95 9.92 s; all 35 runs exit 0 and the lift `manifest_root` is the same every run. With 7 runs p95 is close to the slowest run. Tables, per-run seconds and the method are in [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) (`evidence/bench-runs-2026-10-30.json`, recorded 2026-10-30 22:23 UTC; reproduce with `python scripts/bench.py --runs 7`). The 2026-10-14 single lift run (19.85 s, `evidence/bench-lift-2026-10-14.json`) timed the lift's own clock only and is kept as history.
 
 <a id="development"></a>
 
@@ -403,7 +403,7 @@ pytest -q        # offline; CI runs the same, see [CONTRIBUTING.md](CONTRIBUTING
 - [x] Demo video (linked at the top of this README)
 - [x] `--runtime exact`: mainnet's own wasm on a Chopsticks fork of the pin (`verify` exit 0), and a generated runtime-difference report ([`docs/RUNTIME-DIFF.md`](docs/RUNTIME-DIFF.md))
 - [x] `forklift replay <block>:<index>`: a mainnet extrinsic re-run on a fork of its parent block (3 mainnet replays field-equal, [`evidence/replay-1002.json`](evidence/replay-1002.json))
-- [ ] Benchmarks with p50/p95 over several runs
+- [x] Benchmarks with p50/p95 over several runs ([`docs/BENCHMARKS.md`](docs/BENCHMARKS.md), 7 runs of lift, verify, rehearse and replay)
 - [ ] A hosted fork, a PyPI package and a CI action
 - [x] The Fork Receipt as a Revive contract on the V3 testnet (`0x52f0…abc7`, deploy 257997-1, attest 258000-1)
 - [x] A mainnet (1002) → V3 report: which lifted keys carry over, which need re-encoding, which have no home on V3 ([`docs/MIGRATION-1002-V3.md`](docs/MIGRATION-1002-V3.md))
