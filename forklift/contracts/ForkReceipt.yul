@@ -6,7 +6,11 @@
 //     stores manifestRoot at slot blockHash and keysLifted at slot not(blockHash), and emits the
 //     anonymous event Attested(bytes32 indexed blockHash, bytes32 manifestRoot, uint64 keysLifted, address attester)
 //   receipt(bytes32 blockHash) view returns (bytes32 manifestRoot, uint64 keysLifted)
-//     (0, 0) when nothing was attested for that block hash
+//     (0, 0) when nothing was attested for that block hash or for not(blockHash)
+//
+// Trust model: anyone may attest and a later attest overwrites. The slots of an attested h are h and not(h),
+// so attesting not(h) also overwrites h's key count. The stored receipt is a convenience read; the record to
+// trust is the event from a known attester, which every attest leaves.
 //
 // Written in Yul, not plain Solidity, because Revive holds a storage deposit per code byte (V3: 13.11 tPOT
 // + 0.078 tPOT per runtime byte, evidence/revive-deposits-v3.json): scripts/ForkReceiptSolidity.sol needs

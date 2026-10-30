@@ -12,6 +12,8 @@ interface IForkReceipt {
     /// @notice Store manifestRoot and keysLifted under blockHash (a later attest overwrites) and emit Attested.
     function attest(bytes32 blockHash, bytes32 manifestRoot, uint64 keysLifted) external;
 
-    /// @notice The stored receipt for blockHash; (0, 0) when nothing was attested for it.
+    /// @notice The stored receipt for blockHash; (0, 0) when nothing was attested for it or for its bitwise
+    ///         complement (the two storage slots of an attested h are h and not(h)). The event from a known
+    ///         attester is the record to trust: anyone may attest, and a later attest overwrites.
     function receipt(bytes32 blockHash) external view returns (bytes32 manifestRoot, uint64 keysLifted);
 }
