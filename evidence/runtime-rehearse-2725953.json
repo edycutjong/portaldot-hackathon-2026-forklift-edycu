@@ -1,0 +1,469 @@
+{
+  "runs": [
+    {
+      "recorded_utc": "2026-10-30T20:56:32+00:00",
+      "who": "5DvRSgerqB5KHPqWGGnCtRJgJokj91XyGLm3aZ5DKH1rMndf",
+      "call": "Balances.transfer",
+      "args": {
+        "dest": "5Gmi3tL5sUrUxXNzHmFhm7tsfs8xr2Ht89s4r3sA2pDKDAaE",
+        "value": 100000000000000000
+      },
+      "fast": {
+        "label": "fork-1002-fast",
+        "extrinsic_id": "5-1",
+        "block_hash": "0xe25ab7e2d76648613175c89c056bcfdfc08d42d3efeccddca52f918ab266f4f3",
+        "tx_hash": "0xb0dd467c75824b2762d36bad9c8dba3a433d6726202c7557a69a8748181949f8",
+        "success": true,
+        "dispatch": {
+          "ok": true,
+          "error": null
+        },
+        "submitted_via": "author_submitExtrinsic",
+        "genesis_hash": "0x916363cfdcdb0f705ca06fc0658c50bea72be2efea8fbf3e85712687cf3980ac",
+        "spec": [
+          "portaldot",
+          1002
+        ],
+        "impl_version": 0,
+        "code_hash": "0x8c0d4d9d638ad05e7d214e1496321cea00274698e4bcf5b2006c3eaf86b7fa80",
+        "events": [
+          {
+            "event": "System.NewAccount",
+            "attributes": [
+              {
+                "type": "AccountId",
+                "value": "5Gmi3tL5sUrUxXNzHmFhm7tsfs8xr2Ht89s4r3sA2pDKDAaE"
+              }
+            ]
+          },
+          {
+            "event": "Balances.Endowed",
+            "attributes": [
+              {
+                "type": "AccountId",
+                "value": "5Gmi3tL5sUrUxXNzHmFhm7tsfs8xr2Ht89s4r3sA2pDKDAaE"
+              },
+              {
+                "type": "Balance",
+                "value": 100000000000000000
+              }
+            ]
+          },
+          {
+            "event": "Balances.Transfer",
+            "attributes": [
+              {
+                "type": "AccountId",
+                "value": "5DvRSgerqB5KHPqWGGnCtRJgJokj91XyGLm3aZ5DKH1rMndf"
+              },
+              {
+                "type": "AccountId",
+                "value": "5Gmi3tL5sUrUxXNzHmFhm7tsfs8xr2Ht89s4r3sA2pDKDAaE"
+              },
+              {
+                "type": "Balance",
+                "value": 100000000000000000
+              }
+            ]
+          },
+          {
+            "event": "Sudo.SudoAsDone",
+            "attributes": [
+              {
+                "type": "DispatchResult",
+                "value": "Ok"
+              }
+            ]
+          },
+          {
+            "event": "System.ExtrinsicSuccess",
+            "attributes": [
+              {
+                "type": "DispatchInfo",
+                "value": {
+                  "weight": 323278000,
+                  "class": "Normal",
+                  "pays_fee": "Yes"
+                }
+              }
+            ]
+          }
+        ],
+        "inner_events": [
+          {
+            "event": "System.NewAccount",
+            "attributes": [
+              {
+                "type": "AccountId",
+                "value": "5Gmi3tL5sUrUxXNzHmFhm7tsfs8xr2Ht89s4r3sA2pDKDAaE"
+              }
+            ]
+          },
+          {
+            "event": "Balances.Endowed",
+            "attributes": [
+              {
+                "type": "AccountId",
+                "value": "5Gmi3tL5sUrUxXNzHmFhm7tsfs8xr2Ht89s4r3sA2pDKDAaE"
+              },
+              {
+                "type": "Balance",
+                "value": 100000000000000000
+              }
+            ]
+          },
+          {
+            "event": "Balances.Transfer",
+            "attributes": [
+              {
+                "type": "AccountId",
+                "value": "5DvRSgerqB5KHPqWGGnCtRJgJokj91XyGLm3aZ5DKH1rMndf"
+              },
+              {
+                "type": "AccountId",
+                "value": "5Gmi3tL5sUrUxXNzHmFhm7tsfs8xr2Ht89s4r3sA2pDKDAaE"
+              },
+              {
+                "type": "Balance",
+                "value": 100000000000000000
+              }
+            ]
+          }
+        ],
+        "deltas": {
+          "5DvRSgerqB5KHPqWGGnCtRJgJokj91XyGLm3aZ5DKH1rMndf": -100000000000000000,
+          "5Gmi3tL5sUrUxXNzHmFhm7tsfs8xr2Ht89s4r3sA2pDKDAaE": 100000000000000000
+        },
+        "sudo_key": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+        "sudo_key_fee": 0,
+        "dispatch_info": {
+          "weight": 323278000,
+          "class": "Normal",
+          "pays_fee": "Yes"
+        },
+        "timestamp_step_ms": 6000
+      },
+      "exact": {
+        "label": "fork-1002-exact",
+        "extrinsic_id": "2725955-1",
+        "block_hash": "0x5f5872572ad96e9749e385ac20daee3fdefb12764e829e8cd335fe8353e239fe",
+        "tx_hash": "0x9e4ebbad82aa016c8369087d3b28c094f81c6f6532e6cdfa14b19aca412e2a57",
+        "success": true,
+        "dispatch": {
+          "ok": true,
+          "error": null
+        },
+        "submitted_via": "dev_newBlock transactions: the spec-1002 runtime panics in the pool's validate_transaction under Chopsticks 1.5.2 ('Bad input data provided to validate_transaction: Codec error')",
+        "genesis_hash": "0x83b5212c69f85f3996f8696bb35bf913af51b176a5f53d0a74fd3a83dc0b8a54",
+        "spec": [
+          "portaldot",
+          1002
+        ],
+        "impl_version": 0,
+        "code_hash": "0xc8e7e77fe84f1231787e75a751af48c52e68675ad55de062c81cc8df24066e55",
+        "events": [
+          {
+            "event": "System.NewAccount",
+            "attributes": [
+              {
+                "type": "AccountId",
+                "value": "5Gmi3tL5sUrUxXNzHmFhm7tsfs8xr2Ht89s4r3sA2pDKDAaE"
+              }
+            ]
+          },
+          {
+            "event": "Balances.Endowed",
+            "attributes": [
+              {
+                "type": "AccountId",
+                "value": "5Gmi3tL5sUrUxXNzHmFhm7tsfs8xr2Ht89s4r3sA2pDKDAaE"
+              },
+              {
+                "type": "Balance",
+                "value": 100000000000000000
+              }
+            ]
+          },
+          {
+            "event": "Balances.Transfer",
+            "attributes": [
+              {
+                "type": "AccountId",
+                "value": "5DvRSgerqB5KHPqWGGnCtRJgJokj91XyGLm3aZ5DKH1rMndf"
+              },
+              {
+                "type": "AccountId",
+                "value": "5Gmi3tL5sUrUxXNzHmFhm7tsfs8xr2Ht89s4r3sA2pDKDAaE"
+              },
+              {
+                "type": "Balance",
+                "value": 100000000000000000
+              }
+            ]
+          },
+          {
+            "event": "Sudo.SudoAsDone",
+            "attributes": [
+              {
+                "type": "DispatchResult",
+                "value": "Ok"
+              }
+            ]
+          },
+          {
+            "event": "System.ExtrinsicSuccess",
+            "attributes": [
+              {
+                "type": "DispatchInfo",
+                "value": {
+                  "weight": 323278000,
+                  "class": "Normal",
+                  "pays_fee": "Yes"
+                }
+              }
+            ]
+          }
+        ],
+        "inner_events": [
+          {
+            "event": "System.NewAccount",
+            "attributes": [
+              {
+                "type": "AccountId",
+                "value": "5Gmi3tL5sUrUxXNzHmFhm7tsfs8xr2Ht89s4r3sA2pDKDAaE"
+              }
+            ]
+          },
+          {
+            "event": "Balances.Endowed",
+            "attributes": [
+              {
+                "type": "AccountId",
+                "value": "5Gmi3tL5sUrUxXNzHmFhm7tsfs8xr2Ht89s4r3sA2pDKDAaE"
+              },
+              {
+                "type": "Balance",
+                "value": 100000000000000000
+              }
+            ]
+          },
+          {
+            "event": "Balances.Transfer",
+            "attributes": [
+              {
+                "type": "AccountId",
+                "value": "5DvRSgerqB5KHPqWGGnCtRJgJokj91XyGLm3aZ5DKH1rMndf"
+              },
+              {
+                "type": "AccountId",
+                "value": "5Gmi3tL5sUrUxXNzHmFhm7tsfs8xr2Ht89s4r3sA2pDKDAaE"
+              },
+              {
+                "type": "Balance",
+                "value": 100000000000000000
+              }
+            ]
+          }
+        ],
+        "deltas": {
+          "5DvRSgerqB5KHPqWGGnCtRJgJokj91XyGLm3aZ5DKH1rMndf": -100000000000000000,
+          "5Gmi3tL5sUrUxXNzHmFhm7tsfs8xr2Ht89s4r3sA2pDKDAaE": 100000000000000000
+        },
+        "sudo_key": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+        "sudo_key_fee": 0,
+        "dispatch_info": {
+          "weight": 323278000,
+          "class": "Normal",
+          "pays_fee": "Yes"
+        },
+        "timestamp_step_ms": 60000
+      },
+      "compare": [
+        {
+          "field": "dispatch_ok",
+          "fast": true,
+          "exact": true,
+          "same": true
+        },
+        {
+          "field": "inner_events",
+          "fast": [
+            "System.NewAccount",
+            "Balances.Endowed",
+            "Balances.Transfer"
+          ],
+          "exact": [
+            "System.NewAccount",
+            "Balances.Endowed",
+            "Balances.Transfer"
+          ],
+          "same": true
+        },
+        {
+          "field": "inner_event_attributes",
+          "fast": [
+            "[{\"type\": \"AccountId\", \"value\": \"5Gmi3tL5sUrUxXNzHmFhm7tsfs8xr2Ht89s4r3sA2pDKDAaE\"}]",
+            "[{\"type\": \"AccountId\", \"value\": \"5Gmi3tL5sUrUxXNzHmFhm7tsfs8xr2Ht89s4r3sA2pDKDAaE\"}, {\"type\": \"Balance\", \"value\": 100000000000000000}]",
+            "[{\"type\": \"AccountId\", \"value\": \"5DvRSgerqB5KHPqWGGnCtRJgJokj91XyGLm3aZ5DKH1rMndf\"}, {\"type\": \"AccountId\", \"value\": \"5Gmi3tL5sUrUxXNzHmFhm7tsfs8xr2Ht89s4r3sA2pDKDAaE\"}, {\"type\": \"Balance\", \"value\": 100000000000000000}]"
+          ],
+          "exact": [
+            "[{\"type\": \"AccountId\", \"value\": \"5Gmi3tL5sUrUxXNzHmFhm7tsfs8xr2Ht89s4r3sA2pDKDAaE\"}]",
+            "[{\"type\": \"AccountId\", \"value\": \"5Gmi3tL5sUrUxXNzHmFhm7tsfs8xr2Ht89s4r3sA2pDKDAaE\"}, {\"type\": \"Balance\", \"value\": 100000000000000000}]",
+            "[{\"type\": \"AccountId\", \"value\": \"5DvRSgerqB5KHPqWGGnCtRJgJokj91XyGLm3aZ5DKH1rMndf\"}, {\"type\": \"AccountId\", \"value\": \"5Gmi3tL5sUrUxXNzHmFhm7tsfs8xr2Ht89s4r3sA2pDKDAaE\"}, {\"type\": \"Balance\", \"value\": 100000000000000000}]"
+          ],
+          "same": true
+        },
+        {
+          "field": "delta 5DvRSgerqB5KHPqWGGnCtRJgJokj91XyGLm3aZ5DKH1rMndf",
+          "fast": -100000000000000000,
+          "exact": -100000000000000000,
+          "same": true
+        },
+        {
+          "field": "delta 5Gmi3tL5sUrUxXNzHmFhm7tsfs8xr2Ht89s4r3sA2pDKDAaE",
+          "fast": 100000000000000000,
+          "exact": 100000000000000000,
+          "same": true
+        },
+        {
+          "field": "spec",
+          "fast": [
+            "portaldot",
+            1002
+          ],
+          "exact": [
+            "portaldot",
+            1002
+          ],
+          "same": true
+        },
+        {
+          "field": "impl_version",
+          "fast": 0,
+          "exact": 0,
+          "same": true
+        },
+        {
+          "field": "code_hash",
+          "fast": "0x8c0d4d9d638ad05e7d214e1496321cea00274698e4bcf5b2006c3eaf86b7fa80",
+          "exact": "0xc8e7e77fe84f1231787e75a751af48c52e68675ad55de062c81cc8df24066e55",
+          "same": false,
+          "why": "fast runs the dev runtime wasm; exact runs mainnet's wasm, the one at the pin"
+        },
+        {
+          "field": "sudo_key_fee",
+          "fast": 0,
+          "exact": 0,
+          "same": true
+        },
+        {
+          "field": "dispatch_weight",
+          "fast": 323278000,
+          "exact": 323278000,
+          "same": true
+        },
+        {
+          "field": "timestamp_step_ms",
+          "fast": 6000,
+          "exact": 60000,
+          "same": false,
+          "why": "the block's timestamp step: each runtime's slot duration (see the constants below)"
+        },
+        {
+          "field": "block_number",
+          "fast": 5,
+          "exact": 2725955,
+          "same": false,
+          "why": "fast starts a new chain on its own genesis (block numbers restart at 1); exact builds on mainnet's own history (pin + 1 carries the overrides, the call lands after it)"
+        },
+        {
+          "field": "tx_hash",
+          "fast": "0xb0dd467c75824b2762d36bad9c8dba3a433d6726202c7557a69a8748181949f8",
+          "exact": "0x9e4ebbad82aa016c8369087d3b28c094f81c6f6532e6cdfa14b19aca412e2a57",
+          "same": false,
+          "why": "the sudo key signs for each chain's genesis hash and its own nonce there"
+        }
+      ],
+      "constants": {
+        "constants_differ": [
+          {
+            "constant": "Babe.EpochDuration",
+            "exact": "120",
+            "fast": "1,200"
+          },
+          {
+            "constant": "Babe.ExpectedBlockTime",
+            "exact": "60,000",
+            "fast": "6,000"
+          },
+          {
+            "constant": "Bounties.BountyDepositPayoutDelay",
+            "exact": "1,440",
+            "fast": "14,400"
+          },
+          {
+            "constant": "Bounties.BountyUpdatePeriod",
+            "exact": "20,160",
+            "fast": "201,600"
+          },
+          {
+            "constant": "Contracts.DepositPerContract",
+            "exact": "687,000,000,000,000",
+            "fast": "735,000,000,000,000"
+          },
+          {
+            "constant": "Contracts.RentFraction",
+            "exact": "23,148",
+            "fast": "2,314"
+          },
+          {
+            "constant": "Contracts.TombstoneDeposit",
+            "exact": "687,000,000,000,000",
+            "fast": "735,000,000,000,000"
+          },
+          {
+            "constant": "ElectionProviderMultiPhase.SignedPhase",
+            "exact": "30",
+            "fast": "300"
+          },
+          {
+            "constant": "ElectionProviderMultiPhase.UnsignedPhase",
+            "exact": "30",
+            "fast": "300"
+          },
+          {
+            "constant": "Gilt.Period",
+            "exact": "43,200",
+            "fast": "432,000"
+          },
+          {
+            "constant": "Timestamp.MinimumPeriod",
+            "exact": "30,000",
+            "fast": "3,000"
+          },
+          {
+            "constant": "Treasury.SpendPeriod",
+            "exact": "43,200",
+            "fast": "432,000"
+          }
+        ],
+        "constants_same": 57,
+        "calls_changed_list": [
+          {
+            "call": "Staking.update_staking_limits",
+            "why": "arguments (min_nominator_bond, min_validator_bond, max_validator_bond, max_nominator_count, max_validator_count) \u2192 (min_nominator_bond, min_validator_bond, max_nominator_count, max_validator_count)"
+          }
+        ],
+        "pallets_only_exact": 0,
+        "pallets_only_fast": 0,
+        "calls_changed": 1,
+        "calls_same": 154
+      }
+    }
+  ],
+  "pin": {
+    "block_number": 2725953,
+    "block_hash": "0xf9dc8fdc6c2c77e7ec3b46d80ee6943459ff70d61319176b6486d60c205c5432"
+  },
+  "about": "forklift runtime-compare: one call through Sudo.sudo_as on fork-1002-fast (portaldot_dev, dev runtime wasm) and fork-1002-exact (Chopsticks, mainnet's wasm) of the same pin"
+}

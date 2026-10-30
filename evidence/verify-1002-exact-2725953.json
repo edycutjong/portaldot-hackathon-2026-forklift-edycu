@@ -1,0 +1,98 @@
+{
+  "pin": {
+    "block_number": 2725953,
+    "block_hash": "0xf9dc8fdc6c2c77e7ec3b46d80ee6943459ff70d61319176b6486d60c205c5432"
+  },
+  "source_endpoint": "wss://mainnet.portaldot.io",
+  "spec_version": 1002,
+  "keys_lifted": 16324,
+  "manifest_root": "0xa430d6a9f16d631da45fd0d0cb5ae600db1854612218e21aabeb7f26d7ba002b",
+  "accounting": null,
+  "overrides": [
+    {
+      "name": "Sudo.Key",
+      "reason": "root on the fork: the dev key 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY (//Alice) replaces mainnet's sudo key"
+    },
+    {
+      "name": "Staking.ForceEra",
+      "reason": "ForceNone: the same era policy as the fast fork, so no era rotates while rehearsing"
+    },
+    {
+      "name": "System.Account[dev key]",
+      "reason": "the dev key holds 5000000000000000000 planck free, as in the dev genesis, so the sudo key can pay fees"
+    },
+    {
+      "name": "Balances.TotalIssuance",
+      "reason": "mainnet issuance + 5000000000000000000 planck added with the dev key's account, so issuance = sum of balances"
+    }
+  ],
+  "executor": "@acala-network/chopsticks@1.5.2",
+  "reproduce": "forklift up --runtime exact --at <block>; forklift verify --sample <draws> --seed <seed> against a fork of this pin",
+  "runs": [
+    {
+      "recorded_utc": "2026-10-30T20:54:27+00:00",
+      "label": "fork-1002-exact",
+      "fork_genesis_hash": "0x83b5212c69f85f3996f8696bb35bf913af51b176a5f53d0a74fd3a83dc0b8a54",
+      "fork_endpoint": "ws://127.0.0.1:59945",
+      "seed": 7151967052555760168,
+      "draws": 200,
+      "unique_keys": 200,
+      "classes": {
+        "identical": 200
+      },
+      "mismatches": [],
+      "checks": {
+        "key_set": {
+          "fork": 16324,
+          "lift": 16324,
+          "added": 0,
+          "missing": 0,
+          "fork_set_hash": "0x5985bf1322cdeba0f529c7c68f5916520af21daa78d7021c0bfb384a797075d8",
+          "lift_set_hash": "0x5985bf1322cdeba0f529c7c68f5916520af21daa78d7021c0bfb384a797075d8",
+          "ok": true
+        },
+        "all_lifted_values": {
+          "compared": 16324,
+          "identical": 16324,
+          "child_root_not_served": 0,
+          "child_root_keys": [],
+          "ok": true
+        },
+        "runtime": {
+          "fork_code_hash": "0xc8e7e77fe84f1231787e75a751af48c52e68675ad55de062c81cc8df24066e55",
+          "pinned": "0xc8e7e77fe84f1231787e75a751af48c52e68675ad55de062c81cc8df24066e55",
+          "ok": true
+        },
+        "genesis": {
+          "fork": "0x83b5212c69f85f3996f8696bb35bf913af51b176a5f53d0a74fd3a83dc0b8a54",
+          "pinned": "0x83b5212c69f85f3996f8696bb35bf913af51b176a5f53d0a74fd3a83dc0b8a54",
+          "ok": true
+        },
+        "mmr_range": {
+          "source": {
+            "range_prefix": "0x434e2055f3154c54233a8dabeeb2839e",
+            "pallet": "MerkleMountainRange",
+            "leaves": 2725953,
+            "nodes_derived": 5451898,
+            "keys_in_range_derived": 5451900,
+            "derivation": "Nodes = 2*NumberOfLeaves - popcount(NumberOfLeaves); + RootHash, NumberOfLeaves"
+          },
+          "fork": {
+            "range_prefix": "0x434e2055f3154c54233a8dabeeb2839e",
+            "pallet": "MerkleMountainRange",
+            "leaves": 2725953,
+            "nodes_derived": 5451898,
+            "keys_in_range_derived": 5451900,
+            "derivation": "Nodes = 2*NumberOfLeaves - popcount(NumberOfLeaves); + RootHash, NumberOfLeaves"
+          },
+          "ok": true
+        }
+      },
+      "fork_head_at_verify": {
+        "number": 2725954,
+        "fork_block": "0xf9dc8fdc6c2c77e7ec3b46d80ee6943459ff70d61319176b6486d60c205c5432"
+      },
+      "exit_code": 0
+    }
+  ]
+}

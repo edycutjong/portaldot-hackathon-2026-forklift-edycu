@@ -1,0 +1,77 @@
+{
+  "recorded_utc": "2026-10-30T20:54:00+00:00",
+  "profile": "fork-1002-exact",
+  "label": "fork-1002-exact",
+  "pin": {
+    "block_number": 2725953,
+    "block_hash": "0xf9dc8fdc6c2c77e7ec3b46d80ee6943459ff70d61319176b6486d60c205c5432"
+  },
+  "source_endpoint": "wss://mainnet.portaldot.io",
+  "spec": [
+    "portaldot",
+    1002
+  ],
+  "source_code_hash": "0xc8e7e77fe84f1231787e75a751af48c52e68675ad55de062c81cc8df24066e55",
+  "keys_lifted": 16324,
+  "manifest_root": "0xa430d6a9f16d631da45fd0d0cb5ae600db1854612218e21aabeb7f26d7ba002b",
+  "fork": {
+    "executor": "@acala-network/chopsticks@1.5.2",
+    "executor_flags": {
+      "allow_unresolved_imports": true,
+      "mock_signature_host": true,
+      "build_block_mode": "Instant"
+    },
+    "unresolved_import_without_flag": "ext_sandbox_instance_teardown_version_1",
+    "genesis_hash": "0x83b5212c69f85f3996f8696bb35bf913af51b176a5f53d0a74fd3a83dc0b8a54",
+    "code_hash": "0xc8e7e77fe84f1231787e75a751af48c52e68675ad55de062c81cc8df24066e55",
+    "spec": [
+      "portaldot",
+      1002
+    ],
+    "fork_block": {
+      "number": 2725953,
+      "hash": "0xf9dc8fdc6c2c77e7ec3b46d80ee6943459ff70d61319176b6486d60c205c5432"
+    },
+    "code_hash_equals_source": true,
+    "overrides_at": {
+      "number": 2725954,
+      "hash": "0xd4f1d89a422710f5a5ec0d9e86b8598c60335d8283cf318a07dff52713939c42"
+    }
+  },
+  "overrides": [
+    {
+      "key": "0x5c0d1176a568c1f92944340dbfed9e9c530ebca703c85910e7164cb7d1c9e47b",
+      "name": "Sudo.Key",
+      "value": "0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d",
+      "mainnet_value": "0xecdbca89116f9f6ca40dd9a3f84bec7472b86ea0e26cac8caeb0c5164b1bf027",
+      "reason": "root on the fork: the dev key 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY (//Alice) replaces mainnet's sudo key"
+    },
+    {
+      "key": "0x5f3e4907f716ac89b6347d15ececedcaf7dad0317324aecae8744b87fc95f2f3",
+      "name": "Staking.ForceEra",
+      "value": "0x02",
+      "mainnet_value": "0x00",
+      "reason": "ForceNone: the same era policy as the fast fork, so no era rotates while rehearsing"
+    },
+    {
+      "key": "0x26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da9de1e86a9a8c739864cf3cc5ec2bea59fd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d",
+      "name": "System.Account[dev key]",
+      "value": "0x000000000000000001000000000000000000f444829163450000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "mainnet_value": null,
+      "reason": "the dev key holds 5000000000000000000 planck free, as in the dev genesis, so the sudo key can pay fees"
+    },
+    {
+      "key": "0xc2261276cc9d1f8598ea4b6a74b15c2f57c875e4cff74148e4628f264b974c80",
+      "name": "Balances.TotalIssuance",
+      "value": "0xef1c389b294331418815000000000000",
+      "mainnet_value": "0xef1c4456a7b1cdfb8715000000000000",
+      "reason": "mainnet issuance + 5000000000000000000 planck added with the dev key's account, so issuance = sum of balances"
+    }
+  ],
+  "timings": {
+    "lift_s": 0.4,
+    "lift_reused": true,
+    "ready_s": 3.41,
+    "total_s": 4.15
+  }
+}
