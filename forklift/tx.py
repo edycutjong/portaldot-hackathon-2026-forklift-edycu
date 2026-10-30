@@ -432,6 +432,42 @@ def _send(client: RpcClient, xt_hex: str, expected: str) -> str:
     return tx_hash
 
 
+POOL_BYPASS = ("dev_newBlock transactions: the spec-1002 runtime panics in the pool's validate_transaction under "
+               "Chopsticks 1.5.2 ('Bad input data provided to validate_transaction: Codec error')")
+
+
+def chopsticks_1002(client: RpcClient) -> bool:
+    """Is ``client`` a Chopsticks fork of mainnet (``--runtime exact``)? Asked once per client."""
+    cached = getattr(client, "_chopsticks_1002", None)
+    if cached is None:
+        from forklift.chains import MAINNET
+
+        # A spliced fast fork has its own genesis; only a Chopsticks fork serves mainnet's (I3 refuses mainnet itself).
+        cached = (client.call("chain_getBlockHash", [0]) == MAINNET.genesis_hash
+                  and "dev_newBlock" in (client.call("rpc_methods") or {}).get("methods", []))
+        client._chopsticks_1002 = cached
+    return cached
+
+
+def _submit_in_block(client: RpcClient, rt: Runtime, xt_hex: str, tx_hash: str, *, clock=time.monotonic) -> Inclusion:
+    """Apply ``xt_hex`` in a block Chopsticks builds on its head (the pool is bypassed: see POOL_BYPASS)."""
+    t0 = clock()
+    # A write on a loopback fork client (I3); no retry, a re-sent dev_newBlock would build a second block.
+    with RpcClient(client.endpoint, fork=True, timeout=300.0, retries=0, connect=client._connect) as slow:
+        block_hash = slow.call("dev_newBlock", [{"transactions": [xt_hex]}])
+    block = client.call("chain_getBlock", [block_hash])["block"]
+    if xt_hex not in block["extrinsics"]:
+        raise TxError(f"{tx_hash}: the fork built block {block_hash} without it (the runtime rejected it)")
+    number, index = int(block["header"]["number"], 16), block["extrinsics"].index(xt_hex)
+    mine = [e for e in events_at(client, rt, block_hash)
+            if e.phase == "ApplyExtrinsic" and e.extrinsic_index == index]
+    ok, err = _outcome(rt, mine)
+    fin = _header_number(client, client.call("chain_getFinalizedHead", []))
+    return Inclusion(tx_hash=tx_hash, block_number=number, block_hash=block_hash, index=index, events=mine,
+                     success=ok, error=err, seconds=round(clock() - t0, 1), finalized=fin >= number,
+                     extra={"submitted_via": POOL_BYPASS})
+
+
 def submit(client: RpcClient, rt: Runtime, xt: bytes, *, timeout: float = 90.0, finalized: bool = True,
            poll: float = 0.5, sleep=time.sleep, clock=time.monotonic) -> Inclusion:
     """Submit, wait for the block that includes it (and, by default, its finalization), decode the result.
@@ -442,6 +478,8 @@ def submit(client: RpcClient, rt: Runtime, xt: bytes, *, timeout: float = 90.0, 
     """
     xt_hex = "0x" + xt.hex()
     expected = "0x" + blake2_256(xt).hex()
+    if chopsticks_1002(client):
+        return _submit_in_block(client, rt, xt_hex, expected, clock=clock)
     scanned = _header_number(client)
     tip = client.call("chain_getBlockHash", [scanned])
     t0 = clock()

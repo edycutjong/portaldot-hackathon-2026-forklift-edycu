@@ -358,3 +358,45 @@ def test_fetch_extrinsic_reports_the_carried_dispatch_result(rt):
     assert got["dispatch"] == {"event": "Sudo.SudoAsDone", "ok": True, "error": None}
     got = tx.fetch_extrinsic(_fork_client(CapturedFork(126)), rt, "126-1")
     assert got["dispatch"] is None  # not a sudo call
+
+
+class ChopsticksMainnetFork(CapturedFork):
+    """The same captured block, served as a Chopsticks fork of mainnet: no pool, blocks via dev_newBlock."""
+
+    def __init__(self, n: int, *, include: bool = True):
+        super().__init__(n, include=include)
+        self.built: list[list[str]] = []
+
+    def __call__(self, method, params):
+        from forklift.chains import MAINNET
+
+        if method == "chain_getBlockHash" and params == [0]:
+            return MAINNET.genesis_hash
+        if method == "rpc_methods":
+            return {"methods": ["dev_newBlock", "dev_setStorage"]}
+        if method == "author_submitExtrinsic":
+            raise AssertionError("the 1002 runtime panics in the pool under Chopsticks: never submit there")
+        if method == "dev_newBlock":
+            self.built.append(params[0]["transactions"])
+            self.best = self.n
+            return self.block["hash"] if self.include else "0x" + "ee" * 32
+        if method == "chain_getBlock":
+            extrinsics = self.block["extrinsics"] if params[0] == self.block["hash"] else ["0x00"]
+            return {"block": {"header": {"number": hex(self.n)}, "extrinsics": extrinsics}}
+        return super().__call__(method, params)
+
+
+def test_submit_on_a_chopsticks_mainnet_fork_builds_the_block_with_the_extrinsic(rt):
+    chain = ChopsticksMainnetFork(62)
+    xt = bytes.fromhex(CAP["blocks"]["62"]["extrinsics"][1][2:])
+    inc = tx.submit(_fork_client(chain), rt, xt, sleep=lambda s: None)
+    assert chain.built == [["0x" + xt.hex()]] and not chain.submitted
+    assert inc.extrinsic_id == "62-1" and inc.success and inc.finalized
+    assert "Sudo.SudoAsDone" in {e.full_name for e in inc.events}
+    assert "validate_transaction" in inc.extra["submitted_via"]
+
+
+def test_submit_on_a_chopsticks_mainnet_fork_names_a_block_built_without_it(rt):
+    xt = bytes.fromhex(CAP["blocks"]["62"]["extrinsics"][1][2:])
+    with pytest.raises(tx.TxError, match="without it"):
+        tx.submit(_fork_client(ChopsticksMainnetFork(62, include=False)), rt, xt, sleep=lambda s: None)
