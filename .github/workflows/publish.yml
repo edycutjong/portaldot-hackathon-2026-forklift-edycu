@@ -1,0 +1,65 @@
+name: publish
+
+# PyPI Trusted Publishing (OIDC): no token is stored anywhere. Until the maintainer registers the pending publisher on
+# pypi.org (project portaldot-forklift, owner edycutjong, repo portaldot-hackathon-2026-forklift-edycu, workflow
+# publish.yml, environment pypi) the last job fails closed with a 403 from PyPI, and nothing is uploaded.
+#
+# Releases created by release.yml use GITHUB_TOKEN, and GitHub does not start `release: published` workflows for those,
+# so release.yml also dispatches this workflow (workflow_dispatch is exempt from that rule).
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish (e.g. v0.1.0)"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Stamp the release version (the tag is the source of truth)
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::tag '$TAG' is not vMAJOR.MINOR.PATCH"; exit 1; }
+          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" pyproject.toml
+          sed -i "s/^__version__ = \".*\"/__version__ = \"$VERSION\"/" forklift/__init__.py
+          grep -n '^version\|^__version__' pyproject.toml forklift/__init__.py
+      - run: pip install build twine
+      - run: python -m build
+      - run: twine check --strict dist/*
+      - name: Smoke-test the wheel
+        run: pip install dist/*.whl && forklift --version
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+
+  pypi:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/portaldot-forklift
+    permissions:
+      id-token: write        # the OIDC token PyPI exchanges for a short-lived upload credential
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
