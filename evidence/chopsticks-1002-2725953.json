@@ -5,18 +5,18 @@
     "block_hash": "0xf9dc8fdc6c2c77e7ec3b46d80ee6943459ff70d61319176b6486d60c205c5432"
   },
   "executor": "@acala-network/chopsticks@1.5.2",
-  "about": "Two executor boundaries of a Chopsticks fork of mainnet (spec 1002), copied verbatim from the Chopsticks logs of the runs",
+  "about": "Two executor boundaries of a Chopsticks fork of mainnet (spec 1002). The error and runtime_log strings were extracted with a regex from the Chopsticks log files of the runs (~/.cache/forklift, not committed); dev_newBlock was observed in the RPC response",
   "without_allow_unresolved_imports": {
     "flags": "--build-block-mode=Instant --mock-signature-host=true (no --allow-unresolved-imports)",
     "rpc": "chain_getHeader",
     "error": "Unresolved function `env`:`ext_sandbox_instance_teardown_version_1`",
-    "dev_newBlock": "returned the pin's own hash: no block was built",
-    "consequence": "forklift passes --allow-unresolved-imports=true (forklift/chopsticks.py UNRESOLVED_IMPORTS)"
+    "dev_newBlock": "the RPC response was the pin's own hash: no block was built (observed in the response, not in a log)",
+    "consequence": "forklift passes --allow-unresolved-imports=true (forklift/chopsticks.py chopsticks_args; UNRESOLVED_IMPORTS records which import each chain needs it for)"
   },
   "tx_pool": {
     "rpc": "author_submitExtrinsic (a sudo_as Balances.transfer signed by the dev key)",
     "error": "Error: wasm `unreachable` instruction executed",
     "runtime_log": "panicked at 'Bad input data provided to validate_transaction: Codec error'",
-    "consequence": "forklift applies extrinsics on an exact fork through dev_newBlock transactions (forklift/tx.py POOL_BYPASS)"
+    "consequence": "forklift applies extrinsics on an exact fork through dev_newBlock transactions (forklift/tx.py POOL_BYPASS); the cause of the panic (runtime vs the executor's call encoding) is not isolated"
   }
 }

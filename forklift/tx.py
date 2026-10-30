@@ -432,8 +432,8 @@ def _send(client: RpcClient, xt_hex: str, expected: str) -> str:
     return tx_hash
 
 
-POOL_BYPASS = ("dev_newBlock transactions: the spec-1002 runtime panics in the pool's validate_transaction under "
-               "Chopsticks 1.5.2 ('Bad input data provided to validate_transaction: Codec error')")
+POOL_BYPASS = ("dev_newBlock transactions: under Chopsticks 1.5.2 the spec-1002 runtime's validate_transaction panics "
+               "('Bad input data provided to validate_transaction: Codec error'; cause not isolated)")
 
 
 def chopsticks_1002(client: RpcClient) -> bool:
