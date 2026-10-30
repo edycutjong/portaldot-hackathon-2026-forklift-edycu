@@ -5,7 +5,7 @@
     "block_hash": "0xf9dc8fdc6c2c77e7ec3b46d80ee6943459ff70d61319176b6486d60c205c5432"
   },
   "executor": "@acala-network/chopsticks@1.5.2",
-  "about": "Two executor boundaries of a Chopsticks fork of mainnet (spec 1002). The error and runtime_log strings were extracted with a regex from the Chopsticks log files of the runs (~/.cache/forklift, not committed); dev_newBlock was observed in the RPC response",
+  "about": "Two executor boundaries of a Chopsticks fork of mainnet (spec 1002). The error and runtime_log strings were extracted with a regex from the Chopsticks logs of those runs (a probe log and the exact fork's log, not committed and since overwritten); the import name is also recorded as unresolved_import_without_flag in fork-1002-exact-2725953.json; dev_newBlock was observed in the RPC response",
   "without_allow_unresolved_imports": {
     "flags": "--build-block-mode=Instant --mock-signature-host=true (no --allow-unresolved-imports)",
     "rpc": "chain_getHeader",

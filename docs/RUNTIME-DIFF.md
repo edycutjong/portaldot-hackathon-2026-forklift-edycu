@@ -250,7 +250,7 @@ Chopsticks. Why `exact` bypasses the pool: [`evidence/chopsticks-1002-2725953.js
 | runtime `:code` | `0x8c0d4d9d638ad05e…` | `0xc8e7e77fe84f1231…` |
 | submitted via | `author_submitExtrinsic` | `dev_newBlock` (pool bypassed) |
 
-2 runs are recorded, each on freshly started forks. The fields that differ are the same in every run; the timestamp step was 5,996, 5,990 ms on fast and 60,000, 60,000 ms on exact. The table shows the last run.
+2 runs are recorded, each on a fast and an exact fork started for that run. The fields that differ are the same in every run; the timestamp step was 5,996, 5,990 ms on fast and 60,000, 60,000 ms on exact. The table shows the last run.
 
 | field | fast | exact | same? | why it differs |
 |---|---|---|---|---|
@@ -264,9 +264,9 @@ Chopsticks. Why `exact` bypasses the pool: [`evidence/chopsticks-1002-2725953.js
 | code_hash | `0x8c0d4d9d638ad05e…` | `0xc8e7e77fe84f1231…` | **no** | fast runs the dev runtime wasm; exact runs mainnet's wasm, the one at the pin |
 | sudo_key_fee | 0 | 0 | yes | measured: the sudo key's free balance did not move |
 | dispatch_weight | 323,278,000 | 323,278,000 | yes |  |
-| timestamp_step_ms | 5,990 | 60,000 | **no** | the block's timestamp step: each runtime's slot duration (see the constants below) |
+| timestamp_step_ms | 5,990 | 60,000 | **no** | the block's timestamp step follows each runtime's block time (6 s dev, 60 s mainnet: Babe.ExpectedBlockTime below); the fast node stamps wall-clock time, so its step is a few ms off 6,000 |
 | block_number | 4 | 2,725,955 | **no** | fast starts a new chain on its own genesis (block numbers restart at 1); exact builds on mainnet's own history (pin + 1 carries the overrides, the call lands after it) |
-| tx_hash | `0x197956cf095cddb4…` | `0x65e8cbdb33630c9a…` | **no** | sr25519 signatures are randomised, so no two signings give the same hash; the signed payload also differs: it covers each chain's genesis hash (immortal era) |
+| tx_hash | `0x197956cf095cddb4…` | `0x65e8cbdb33630c9a…` | **no** | sr25519 (schnorrkel) signing is randomised, and the recorded runs gave different hashes on the same chain; the signed payload also differs: it covers each chain's genesis hash (immortal era) |
 
 The two 1002 runtimes: 57 constants with the same bytes, 12 different; calls 154 same, 1 changed; pallets only in exact 0, only in fast 0.
 
