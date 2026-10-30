@@ -120,8 +120,6 @@ standard library. The `portaldot_dev` binary is downloaded at run time and is no
 
 ## Planned (not built)
 
-- `--runtime exact` (the mainnet runtime wasm on the fork) and a runtime-difference report.
-- `forklift replay <block>:<index>` (re-run a mainnet extrinsic on a fork of its parent block).
 - A hosted fork and a browser verify page.
 - A PyPI package and a CI action.
 - A V3 target. Per the organisers' Discord messages (not archived here) no V3 node binary or chain spec is public, so it
