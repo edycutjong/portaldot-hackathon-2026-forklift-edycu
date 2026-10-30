@@ -1015,6 +1015,12 @@ def _receipt_v3(address: str | None, signer: Path | None, manifest_path: Path | 
         keypair = load_signer(signer)
         r = rr.run(manifest, keypair, address=address.lower() if address else None)
     except (rr.ReviveReceiptError, RehearseError, *_act_errors()) as exc:
+        partial = getattr(exc, "partial", None)
+        if partial and evidence_dir is not None:  # a transaction landed before the failure: record it anyway
+            try:
+                _record_receipt_v3(partial, evidence_dir)
+            except (OSError, ValueError, TypeError) as werr:
+                click.echo(f"warning: the landed Receipt transactions were NOT recorded: {werr}", err=True)
         _could_not_run(exc, as_json, "receipt")
     if evidence_dir is not None:
         _record_receipt_v3(r, evidence_dir)

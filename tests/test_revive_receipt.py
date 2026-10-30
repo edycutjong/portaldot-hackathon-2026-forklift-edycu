@@ -183,3 +183,57 @@ def test_receipt_v3_refuses_a_substrate_address(tmp_path):
     r = CliRunner().invoke(main, ["receipt", "--target", "v3", "--signer", str(tmp_path / "s"),
                                   "--address", "5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg"])
     assert r.exit_code != 0 and "H160" in r.output
+
+
+class _FakeSI:
+    def __init__(self, *a, **k):
+        pass
+
+    def close(self):
+        pass
+
+
+def test_a_failure_after_a_landed_deploy_keeps_the_run(monkeypatch):
+    import substrateinterface
+
+    monkeypatch.setattr(substrateinterface, "SubstrateInterface", _FakeSI)
+
+    def deploy_then_fail(chain_si, manifest, keypair, address, chain, timeout, result):
+        result["deploy"] = {"extrinsic_id": "257997-1", "success": True}
+        raise RuntimeError("socket closed")
+
+    monkeypatch.setattr(rr, "_run", deploy_then_fail)
+    kp = type("K", (), {"ss58_address": "5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg", "public_key": bytes(32)})
+    with pytest.raises(rr.ReviveReceiptError) as err:
+        rr.run(MANIFEST, kp)
+    assert err.value.partial["deploy"]["extrinsic_id"] == "257997-1"
+    assert err.value.partial["exit_code"] == 1 and "socket closed" in err.value.partial["error"]
+
+
+def test_a_failure_before_any_transaction_is_raised_as_is(monkeypatch):
+    import substrateinterface
+
+    monkeypatch.setattr(substrateinterface, "SubstrateInterface", _FakeSI)
+
+    def fail(*a):
+        raise rr.ReviveReceiptError("the funder holds 0 planck")
+
+    monkeypatch.setattr(rr, "_run", fail)
+    kp = type("K", (), {"ss58_address": "5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg", "public_key": bytes(32)})
+    with pytest.raises(rr.ReviveReceiptError) as err:
+        rr.run(MANIFEST, kp)
+    assert err.value.partial is None
+
+
+def test_plate_of_the_recorded_v3_run():
+    import json
+    from pathlib import Path
+
+    from forklift.cli import receipt_v3_plate
+
+    run = json.loads((Path(__file__).parent.parent / "evidence" / "receipt-v3.json").read_text())["runs"][0]
+    plate = receipt_v3_plate(run)
+    assert "0x52f0edd92af9ff410ca63ccc83735552e1b2abc7" in plate
+    assert "extrinsic 257997-1 · Ok · finalized" in plate and "extrinsic 258000-1 · Ok · finalized" in plate
+    assert "deposit 18.882 tPOT (dry run)" in plate and "deposit 7.683 tPOT (dry run)" in plate
+    assert plate.rstrip().endswith("(block hash, root, keys lifted)")
