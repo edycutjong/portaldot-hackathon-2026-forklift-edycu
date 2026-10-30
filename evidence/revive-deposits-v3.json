@@ -1,0 +1,122 @@
+{
+  "what": "Revive deposits on the Portaldot V3 testnet, measured by ReviveApi_instantiate dry runs",
+  "recorded_utc": "2026-10-30T21:41:45Z",
+  "chain": "v3",
+  "endpoint": "wss://test-node-v3.portaldot.dev",
+  "at": {
+    "number": 258049,
+    "hash": "0x94202fabe67f612f0193912c2d9487aba41fe4a506eb37f353bb7668a013b748"
+  },
+  "origin": "Sudo.Key at the pinned block (dry runs only)",
+  "origin_public_key": "0x1660e96293ad7db90c1ba20770288c110419f2cb547baa238906378be816014a",
+  "code_size": [
+    {
+      "runtime_bytes": 1,
+      "ok": true,
+      "storage_deposit_planck": 1318800000000000,
+      "error": null,
+      "code_hash": "0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a",
+      "code_already_stored": false
+    },
+    {
+      "runtime_bytes": 100,
+      "ok": true,
+      "storage_deposit_planck": 2091000000000000,
+      "error": null,
+      "code_hash": "0x913fb9e1f6f1c6d910fd574a5cad8857aa43bfba24e401ada4f56090d4d997a7",
+      "code_already_stored": false
+    },
+    {
+      "runtime_bytes": 200,
+      "ok": true,
+      "storage_deposit_planck": 2871000000000000,
+      "error": null,
+      "code_hash": "0xe1bb54e1bc3af48d01e5dbfc81015c98152a574f6428c6948aa4837c9c0baad9",
+      "code_already_stored": false
+    },
+    {
+      "runtime_bytes": 400,
+      "ok": true,
+      "storage_deposit_planck": 4431000000000000,
+      "error": null,
+      "code_hash": "0x07ebe1c7118de342ceeb32f861c2971626b286f0a7c5b6c96857a1d1b37ab7b9",
+      "code_already_stored": false
+    }
+  ],
+  "code_size_fit": {
+    "fixed_planck": 1311000000000000,
+    "per_unit_planck": 7800000000000
+  },
+  "slots": [
+    {
+      "slots_written": 0,
+      "ok": true,
+      "storage_deposit_planck": 1318800000000000,
+      "error": null,
+      "code_hash": "0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a",
+      "code_already_stored": false
+    },
+    {
+      "slots_written": 1,
+      "ok": true,
+      "storage_deposit_planck": 1702950000000000,
+      "error": null,
+      "code_hash": "0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a",
+      "code_already_stored": false
+    },
+    {
+      "slots_written": 2,
+      "ok": true,
+      "storage_deposit_planck": 2087100000000000,
+      "error": null,
+      "code_hash": "0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a",
+      "code_already_stored": false
+    },
+    {
+      "slots_written": 3,
+      "ok": true,
+      "storage_deposit_planck": 2471250000000000,
+      "error": null,
+      "code_hash": "0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a",
+      "code_already_stored": false
+    }
+  ],
+  "slot_fit": {
+    "fixed_planck": 1318800000000000,
+    "per_unit_planck": 384150000000000
+  },
+  "builds": [
+    {
+      "label": "receipt-v2 (forklift/contracts/ForkReceipt.bin)",
+      "bytes": 84,
+      "sha256": "32a3274e9a7e23ff3920d71daade1d478ac5bfa3092f2c277c049b261c0f95de",
+      "ok": true,
+      "storage_deposit_planck": 1024200000000000,
+      "error": null,
+      "code_hash": "0x2b017cc3a3d426926d4614b32bd4dca3e6a0e5175410ce5f27bb780fd9d4797a",
+      "code_already_stored": true,
+      "stored_code_deposit_planck": 864000000000000
+    },
+    {
+      "label": "plain Solidity, resolc 1.5.0 (PolkaVM)",
+      "bytes": 7851,
+      "sha256": "110118f040daa2b853e95a535b61306dafea70a019396f67db0d1946026776cc",
+      "ok": true,
+      "storage_deposit_planck": 62548800000000000,
+      "error": null,
+      "code_hash": "0x4752449a2dcc70d95de775a3f29e64b9207f7c8bcb8d53a346c998bb098d3aec",
+      "code_already_stored": false
+    },
+    {
+      "label": "plain Solidity, solc 0.8.30 --optimize (EVM)",
+      "bytes": 991,
+      "sha256": "21febae9c8b77645d04ffecfb72a0edf154f586e576b97fecd56b993c79e06ae",
+      "ok": true,
+      "storage_deposit_planck": 8822400000000000,
+      "error": null,
+      "code_hash": "0xf9780b12965f61819817e1f2ae5ffeb55f18055917447418b2ec0d12ec068356",
+      "code_already_stored": false
+    }
+  ],
+  "reproduce": "python scripts/revive_deposits.py --build LABEL=PATH ... (same block: results are fixed while the node serves it)"
+}
