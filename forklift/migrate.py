@@ -170,10 +170,12 @@ def tree13(reg, ts: str, stack: tuple[str, ...] = ()) -> Tree:
         return "str"
     if issubclass(cls, st.Null):
         return "null"
-    if issubclass(cls, st.Option):
-        return {"option": tree13(reg, sub, stack)}
-    if issubclass(cls, st.Compact):
-        return {"compact": tree13(reg, sub, stack)}
+    if issubclass(cls, (st.Option, st.Compact)):
+        if sub is None and "<" in ts and ts.endswith(">"):  # a generic name (Compact<T::Balance>) the registry left unbound
+            sub = ts[ts.index("<") + 1:ts.rindex(">")]
+        if sub is None:
+            return {"opaque": f"v13:{ts}"}
+        return {"option" if issubclass(cls, st.Option) else "compact": tree13(reg, sub, stack)}
     if issubclass(cls, st.FixedLengthArray):
         return _array(cls.element_count, tree13(reg, sub, stack))
     if issubclass(cls, st.Vec):  # also BoundedVec, whose sub_type can still carry the bound: BoundedVec<T, N>
