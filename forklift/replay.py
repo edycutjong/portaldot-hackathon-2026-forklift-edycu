@@ -306,7 +306,7 @@ def replay_mainnet(extrinsic_id: str, *, ws_port: int, name: str = "replay") -> 
             if ident["head_hash"] != parent:
                 raise RehearseError("the replay fork does not start at the extrinsic's parent block")
             fork_before = {a: _account_1002(fc, rt, a, parent) for a in accounts}
-            # The spec-1002 runtime panics in the pool's validate_transaction under Chopsticks 1.5.2
+            # validate_transaction panics on the spec-1002 runtime under Chopsticks 1.5.2 (cause not isolated)
             # ('Bad input data … Codec error', measured 2026-10-13 and again here), so the bytes go in through
             # dev_newBlock's `transactions`, which applies them in a block built on the parent. A write: a
             # fork client only, and dev_newBlock answers once the block exists (no retry: it would build two).

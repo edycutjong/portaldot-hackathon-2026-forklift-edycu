@@ -407,13 +407,15 @@ def rehearse_on(client, label: str, who: str, pallet: str, function: str, raw_ar
 WHY = {
     "block_number": "fast starts a new chain on its own genesis (block numbers restart at 1); exact builds on "
                     "mainnet's own history (pin + 1 carries the overrides, the call lands after it)",
-    "tx_hash": "sr25519 signatures are randomised, so no two signings give the same hash; the signed payload also "
-               "differs: it covers each chain's genesis hash (immortal era)",
+    "tx_hash": "sr25519 (schnorrkel) signing is randomised, and the recorded runs gave different hashes on the same "
+               "chain; the signed payload also differs: it covers each chain's genesis hash (immortal era)",
     "code_hash": "fast runs the dev runtime wasm; exact runs mainnet's wasm, the one at the pin",
     "impl_version": "the dev runtime and mainnet's runtime are different builds of spec 1002",
     "sudo_key_fee": "the outer extrinsic's fee, computed by each runtime from its own weights and fee constants",
     "dispatch_weight": "each runtime's own benchmarked weight for the call",
-    "timestamp_step_ms": "the block's timestamp step: each runtime's slot duration (see the constants below)",
+    "timestamp_step_ms": "the block's timestamp step follows each runtime's block time (6 s dev, 60 s mainnet: "
+                         "Babe.ExpectedBlockTime below); the fast node stamps wall-clock time, so its step is a few ms "
+                         "off 6,000",
 }
 
 
@@ -485,7 +487,7 @@ def render_rehearsal(rh: dict) -> list[str]:
     differ = [tuple(x["field"] for x in r["compare"] if not x["same"]) for r in runs]
     if len(runs) > 1:
         steps = lambda side: ", ".join(f"{r[side]['timestamp_step_ms']:,}" for r in runs)  # noqa: E731
-        out[-2:-2] = [f"{len(runs)} runs are recorded, each on freshly started forks. The fields that differ are "
+        out[-2:-2] = [f"{len(runs)} runs are recorded, each on a fast and an exact fork started for that run. The fields that differ are "
                       + ("the same in every run" if len(set(differ)) == 1 else "NOT the same in every run")
                       + f"; the timestamp step was {steps('fast')} ms on fast and {steps('exact')} ms "
                       "on exact. The table shows the last run.", ""]
