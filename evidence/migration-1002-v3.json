@@ -848,7 +848,7 @@
       "kind": "Plain",
       "keys_lifted": 0,
       "class": "needs_re_encoding",
-      "reason": "value fields: scheduled_at, delay, next_authorities → scheduled_at, delay, next_authorities, forced (removed ; added forced)",
+      "reason": "value fields: scheduled_at, delay, next_authorities → scheduled_at, delay, next_authorities, forced (added forced)",
       "v3": "Grandpa.PendingChange",
       "layout_compatible": false
     },
@@ -1479,7 +1479,7 @@
       "kind": "Map",
       "keys_lifted": 17,
       "class": "needs_re_encoding",
-      "reason": "value fields: grandpa, babe, im_online → grandpa, babe, im_online, authority_discovery, mixnet, beefy (removed ; added authority_discovery, mixnet, beefy); caution: the SDK's 1002 type fails on 17/17 of mainnet's own values, so this difference may come from an incomplete 1002 type",
+      "reason": "value fields: grandpa, babe, im_online → grandpa, babe, im_online, authority_discovery, mixnet, beefy (added authority_discovery, mixnet, beefy); caution: the SDK's 1002 type fails on 17/17 of mainnet's own values, so this difference may come from an incomplete 1002 type",
       "v3": "Session.NextKeys",
       "layout_compatible": false,
       "sample": {
@@ -1526,7 +1526,7 @@
       "kind": "Plain",
       "keys_lifted": 1,
       "class": "needs_re_encoding",
-      "reason": "value.vec.1 fields: grandpa, babe, im_online → grandpa, babe, im_online, authority_discovery, mixnet, beefy (removed ; added authority_discovery, mixnet, beefy); caution: the SDK's 1002 type fails on 1/1 of mainnet's own values, so this difference may come from an incomplete 1002 type",
+      "reason": "value.vec.1 fields: grandpa, babe, im_online → grandpa, babe, im_online, authority_discovery, mixnet, beefy (added authority_discovery, mixnet, beefy); caution: the SDK's 1002 type fails on 1/1 of mainnet's own values, so this difference may come from an incomplete 1002 type",
       "v3": "Session.QueuedKeys",
       "layout_compatible": false,
       "sample": {
