@@ -987,10 +987,12 @@ def rehearse_cmd(call: str, args_json: str, signer: Path, name: str, send: bool,
 @click.option("--name", default="replay", show_default=True, help="Name of the temporary replay fork.")
 @click.option("--ws-port", type=int, default=None, help="Port of the temporary fork [env FORKLIFT_WS_PORT, default 9944].")
 @click.option("--evidence", "evidence_dir", type=click.Path(path_type=Path), default=None,
-              help="Also record this run in <DIR>/replay-v3.json.")
+              help="Also record this run in <DIR>/replay-v3.json (V3) or <DIR>/replay-1002.json (mainnet).")
 @click.option("--json", "as_json", is_flag=True, help="Print the result as JSON.")
 def replay_cmd(extrinsic_id: str, name: str, ws_port: int | None, evidence_dir: Path | None, as_json: bool) -> None:
-    """Re-run V3 testnet extrinsic <block>-<index> on a fork of its parent block and compare with the chain.
+    """Re-run a chain extrinsic on a fork of its parent block and compare with the chain.
+
+    <block>-<index> is a V3 testnet extrinsic; <block>:<index> a Portaldot mainnet (1002) one, read-only.
 
     Exit 0: the fork reproduced the chain's outcome field by field. Exit 7: a field differs
     (listed). Exit 1: could not run. Nothing is sent to the chain; the temporary fork is stopped.
@@ -1008,9 +1010,10 @@ def replay_cmd(extrinsic_id: str, name: str, ws_port: int | None, evidence_dir: 
     r["exit_code"] = code
     if evidence_dir is not None:
         try:
-            path = evidence_dir / "replay-v3.json"
+            path = evidence_dir / ("replay-1002.json" if ":" in extrinsic_id else "replay-v3.json")
             prior = json.loads(path.read_text()) if path.exists() else {"runs": []}
-            prior["about"] = ("forklift replay: a V3 testnet extrinsic's own bytes re-applied on a Chopsticks fork of "
+            prior["about"] = (f"forklift replay: a {'Portaldot mainnet (read-only)' if ':' in extrinsic_id else 'V3 testnet'} "
+                              "extrinsic's own bytes re-applied on a Chopsticks fork of "
                               "its parent block, compared field by field with what the chain recorded")
             prior["runs"] = [x for x in prior["runs"] if x.get("extrinsic_id") != extrinsic_id] + [r]
             _write_evidence(path, prior)
@@ -1019,14 +1022,16 @@ def replay_cmd(extrinsic_id: str, name: str, ws_port: int | None, evidence_dir: 
     if as_json:
         click.echo(json.dumps(r, indent=2, default=str))
     else:
-        from forklift.chains import V3, units
+        from forklift.chains import CHAINS, units
 
         a, p, c = r["actual"], r["replay"], r["compare"]
+        ch = CHAINS[r["chain"]]
+        what = f" {r['call']}" if r.get("call") else ""
         click.echo("\n".join([
-            f"replay   {extrinsic_id} on {r['label']} · signer {r['signer']}",
+            f"replay   {extrinsic_id}{what} on {r['label']} · signer {r['signer']}",
             f"fork     {r['executor']} at the parent block #{r['fork_parent']['number']:,} {r['fork_parent']['hash']}",
-            f"chain    {a['extrinsic_id']} {'ok' if a['success'] else 'FAILED'} · fee {units(V3, a['fee'] or 0)} · tx {a['tx_hash']}",
-            f"replay   {p['extrinsic_id']} {'ok' if p['success'] else 'FAILED'} · fee {units(V3, p['fee'] or 0)} · tx {p['tx_hash']}",
+            f"chain    {a['extrinsic_id']} {'ok' if a['success'] else 'FAILED'}{' (' + a['error'] + ')' if a.get('error') else ''} · fee {units(ch, a['fee'] or 0)} · tx {a['tx_hash']}",
+            f"replay   {p['extrinsic_id']} {'ok' if p['success'] else 'FAILED'}{' (' + p['error'] + ')' if p.get('error') else ''} · fee {units(ch, p['fee'] or 0)} · tx {p['tx_hash']}",
             f"compare  {c['fields'] - len(c['differs'])}/{c['fields']} fields match"
             + ("" if c["match"] else " · DIFFERS: " + ", ".join(c["differs"])),
         ]))
