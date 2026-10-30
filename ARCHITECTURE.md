@@ -122,4 +122,3 @@ standard library. The `portaldot_dev` binary is downloaded at run time and is no
 
 - A hosted fork and a browser verify page.
 - A PyPI package and a CI action.
-- The Fork Receipt as an ink! 5 / Revive contract on the V3 testnet.

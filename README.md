@@ -18,7 +18,7 @@
 
   ![status](https://img.shields.io/badge/status-check--in_slice-orange?style=flat)
   ![python](https://img.shields.io/badge/python-3.11%2B-blue?style=flat)
-  ![tests](https://img.shields.io/badge/tests-323_offline_%2B_10_live-brightgreen?style=flat)
+  ![tests](https://img.shields.io/badge/tests-324_offline_%2B_10_live-brightgreen?style=flat)
   [![CI](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/actions/workflows/ci.yml)
   [![Release](https://img.shields.io/github/v/release/edycutjong/portaldot-hackathon-2026-forklift-edycu?sort=semver)](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/releases/latest)
   ![license](https://img.shields.io/badge/license-MIT-lightgrey?style=flat)
@@ -108,7 +108,7 @@ Forklift is five steps.
   endpoint or a chain whose genesis is mainnet's (or V3's, unless it answers Chopsticks' `dev_*` methods). The two
   paths to a real chain are `rehearse --send` and `receipt --target v3`: a testnet client that sends only
   `author_submitExtrinsic`, only to V3.
-- `--json` output and documented exit codes ([`docs/EXIT-CODES.md`](docs/EXIT-CODES.md)); 323 offline tests plus 10 live
+- `--json` output and documented exit codes ([`docs/EXIT-CODES.md`](docs/EXIT-CODES.md)); 324 offline tests plus 10 live
   tests.
 
 **Planned (not built, not claimed):** a hosted fork, a PyPI package and a CI action.
@@ -154,7 +154,7 @@ nobody mistakes it for a testnet or for V3.
 
 ![Forklift architecture: V3 is lifted at a pinned block, forked with Chopsticks and checked against the chain; a transaction is predicted on the fork, sent to V3 with the same bytes and compared](docs/architecture.png)
 
-Forklift only reads the live chains on the left, except `rehearse --send`, which submits to V3; every other write goes to a local fork on the right.
+Forklift only reads the live chains on the left, except `rehearse --send` and `receipt --target v3`, which submit to V3; every other write goes to a local fork on the right.
 
 <details>
 <summary>Diagram as text (Mermaid)</summary>
@@ -225,16 +225,22 @@ compiled `ForkReceipt.bin`, 84 bytes of init code, 74 bytes of runtime code). De
 | Function | Input | What it does |
 |---|---|---|
 | `attest(bytes32 blockHash, bytes32 manifestRoot, uint64 keysLifted)` | ABI-encoded | Stores `manifestRoot` and `keysLifted` under `blockHash` (a later attest overwrites) and emits the anonymous event `Attested(blockHash, manifestRoot, keysLifted, attester)` as `Revive.ContractEmitted` |
-| `receipt(bytes32 blockHash)` (view) | ABI-encoded | Returns `(manifestRoot, keysLifted)`; `(0, 0)` when nothing was attested for that block hash |
+| `receipt(bytes32 blockHash)` (view) | ABI-encoded | Returns `(manifestRoot, keysLifted)`; `(0, 0)` when nothing was attested for that block hash or for its bitwise complement |
 
 Why Yul and not a compiled Solidity contract: Revive holds a storage deposit per code byte and per storage slot. Measured
 on V3 with `ReviveApi_instantiate` dry runs (`scripts/revive_deposits.py` → `evidence/revive-deposits-v3.json`): 13.11 tPOT
-plus 0.078 tPOT per byte of runtime code, and 3.8415 tPOT per 32-byte slot written. The same Receipt in plain Solidity
-(`scripts/ForkReceiptSolidity.sol`, not deployed) compiled with `resolc` 1.5.0 to PolkaVM (7,851 bytes) needs a 625.488 tPOT
+plus 0.078 tPOT per byte of runtime code, and 3.8415 tPOT per 32-byte slot written. A plain-Solidity Receipt with the same purpose
+(`scripts/ForkReceiptSolidity.sol`, not deployed; richer than v2: an append-only list with an id and the attest block number) compiled with `resolc` 1.5.0 to PolkaVM (7,851 bytes) needs a 625.488 tPOT
 deposit, and compiled with `solc` 0.8.30 to EVM bytecode (991 bytes) 88.224 tPOT; the funder held 29.527 tPOT.
 The Yul build deployed for an 18.882 tPOT deposit and the attest held 7.683 tPOT, both equal to their dry runs. To fit,
 the event is anonymous (no 33-byte signature topic), value transfers are not refused, and `keysLifted` is not
 range-checked on chain (Forklift encodes a u64 and refuses anything larger before signing).
+
+**Trust model.** Anyone may attest, and a later attest overwrites the stored receipt for a block hash. The two slots of
+an attested hash `h` are `h` (root) and `not(h)` (key count), so an attest for the complement `not(h)` also overwrites
+`h`'s key count, and `receipt(not(h))` returns `h`'s two values swapped. The stored receipt is therefore a convenience
+read; the record to trust is the `Attested` event from a known attester (the funder's H160 above), which is kept for
+every attest and which `forklift tx <id> --target v3` decodes.
 
 **v1: the fork's Contracts pallet** (`forklift/contracts/receipt.wat`, compiled `receipt.wasm`, 169 bytes). It is
 hand-written for the rent-era Contracts pallet of the dev runtime the fork runs (`fork-1002-fast`); it has not been run on mainnet's runtime wasm. It needs no Rust toolchain.
@@ -260,7 +266,7 @@ itself is pallet-free: it only calls read RPC methods (`chain_getFinalizedHead`,
 `state_getMetadata`).
 
 **Rebuild the contracts:** v2: `solc --strict-assembly --optimize --evm-version cancun --bin forklift/contracts/ForkReceipt.yul`
-(solc 0.8.30; the output is the hex in `ForkReceipt.bin`). v1: `wat2wasm forklift/contracts/receipt.wat -o forklift/contracts/receipt.wasm`.
+(solc 0.8.30; the last line of its output is the hex in `ForkReceipt.bin`, which adds a `0x` prefix). v1: `wat2wasm forklift/contracts/receipt.wat -o forklift/contracts/receipt.wasm`.
 `pytest` checks that both committed builds are exactly what those commands produce, when `solc` 0.8.30 and `wat2wasm` are installed.
 
 <a id="installation--setup"></a>
@@ -362,7 +368,7 @@ there is no frontend.
 | V3 testnet: the same three replayed on forks of their parent blocks | 10/10, 14/14 and 16/16 fields equal to the chain, fees equal to the planck | `evidence/replay-v3.json` |
 | An unfunded signer | the fork's pool rejects it (`Invalid: Payment`), exit `5`, nothing sent | `evidence/rehearse-v3.json` |
 | V3 testnet: Fork Receipt v2 (Revive contract) | `0x52f0edd92af9ff410ca63ccc83735552e1b2abc7`: deploy 257997-1, attest 258000-1, both finalized · emitted event and stored `receipt()` = the #118,061 manifest (root, 5,508 keys) · deposits 18.882 + 7.683 tPOT = the dry runs | `evidence/receipt-v3.json` |
-| Tests | 323 offline passed (+1 that runs only when `solc` 0.8.30 is installed) · 10 live tests (deselected offline; run with `pytest -m live`) | `pytest -q` |
+| Tests | 324 offline passed (+1 that runs only when `solc` 0.8.30 is installed) · 10 live tests (deselected offline; run with `pytest -m live`) | `pytest -q` |
 
 One benchmark run of the lift from a fresh process (a stub: one run per file; p50/p95 over several runs is planned): #2,725,953 in 19.85 s (keys 7.41 s, values 12.44 s), same `manifest_root` (`evidence/bench-lift-2026-10-14.json`).
 

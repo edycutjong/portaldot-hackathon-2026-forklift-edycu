@@ -15,7 +15,8 @@ read-only client (the default, used for mainnet) or as a fork client.
   a tunnel to mainnet). A Chopsticks fork of the V3 testnet or of mainnet serves
   the chain's own genesis hash, so a V3 or mainnet genesis is accepted only if
   the node also answers the Chopsticks ``dev_*`` methods; the live chains do not.
-- A testnet client is the one path to a real chain: it may send only
+- A testnet client is the one path to a real chain (``rehearse --send``,
+  ``receipt --target v3``): it may send only
   ``author_submitExtrinsic``, and only after the node's genesis is a chain
   pinned as writable (the V3 testnet), never mainnet.
 """
