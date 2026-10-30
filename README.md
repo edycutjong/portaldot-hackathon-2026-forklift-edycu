@@ -13,6 +13,7 @@
   [![Demo Video](https://img.shields.io/badge/🎬_Demo-Video-ef4444?style=for-the-badge)](https://youtu.be/iVvEXQvfTYY)
   [![DoraHacks BUIDL](https://img.shields.io/badge/DoraHacks-BUIDL_50248-3A3240?style=for-the-badge)](https://dorahacks.io/build/50248)
   [![Portaldot Hacker House 2026](https://img.shields.io/badge/🏆_Portaldot-Hacker_House_2026-8b5cf6?style=for-the-badge)](https://dorahacks.io/hackathon/portaldot-hacker-house-2026/detail)
+  [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/edycutjong/portaldot-hackathon-2026-forklift-edycu)
 
   <br/>
 
@@ -334,6 +335,25 @@ which records a run for [`docs/PROOF.md`](docs/PROOF.md) (`python scripts/proof.
 `64` usage error.
 Per command, in [`docs/EXIT-CODES.md`](docs/EXIT-CODES.md).
 
+**CI action, Codespaces, PyPI.** The repo root is a composite GitHub Action ([`action.yml`](action.yml)): it installs Forklift,
+runs `forklift up --target v3`, then `forklift verify` or `forklift rehearse`, stops the fork, and fails the job with the
+command's own exit code. This repo's CI runs it against the live V3 testnet (the `action-smoke` job, `sample: 20`).
+
+```yaml
+- uses: edycutjong/portaldot-hackathon-2026-forklift-edycu@main
+  with:
+    command: verify          # or: rehearse, with call / args / signer-file (prediction only, nothing is sent)
+```
+
+[`.devcontainer/devcontainer.json`](.devcontainer/devcontainer.json) opens the repo in GitHub Codespaces (Ubuntu 24.04,
+Python 3.12, Node 22; it installs Forklift and warms the pinned Chopsticks). Built and exercised locally with the
+devcontainer CLI on Linux arm64: `forklift up --target v3`, `verify --sample 20` exit 0, `down` (the Codespaces build
+itself has not been run). Debian 12 images do not work: Chopsticks' sqlite3 binary needs glibc 2.38. The package
+(`portaldot-forklift`, [`PYPI.md`](PYPI.md)) builds and passes `twine check --strict`;
+[`publish.yml`](.github/workflows/publish.yml) uploads it with PyPI Trusted Publishing (OIDC, no token) when a release is
+published. It is **not on PyPI yet**: the upload fails closed until the pending publisher is registered on pypi.org.
+Until then, install from this repository.
+
 **Compile & deploy / launch frontend:** the contracts are compiled with `solc` (v2) and `wat2wasm` (v1) (commands above;
 both builds are committed) and deployed by `forklift receipt --target v3` (v2, on V3) and `forklift receipt` (v1, on a fork);
 there is no frontend.
@@ -404,7 +424,8 @@ pytest -q        # offline; CI runs the same, see [CONTRIBUTING.md](CONTRIBUTING
 - [x] `--runtime exact`: mainnet's own wasm on a Chopsticks fork of the pin (`verify` exit 0), and a generated runtime-difference report ([`docs/RUNTIME-DIFF.md`](docs/RUNTIME-DIFF.md))
 - [x] `forklift replay <block>:<index>`: a mainnet extrinsic re-run on a fork of its parent block (3 mainnet replays field-equal, [`evidence/replay-1002.json`](evidence/replay-1002.json))
 - [x] Benchmarks with p50/p95 over several runs ([`docs/BENCHMARKS.md`](docs/BENCHMARKS.md), 7 runs of lift, verify, rehearse and replay)
-- [ ] A hosted fork, a PyPI package and a CI action
+- [x] A CI action ([`action.yml`](action.yml), smoke-tested by this repo's CI) and a Codespaces devcontainer in place of a paid hosted fork
+- [ ] A PyPI package: metadata, `twine check` and the Trusted Publishing workflow are done; the upload waits for the pending publisher to be registered on pypi.org
 - [x] The Fork Receipt as a Revive contract on the V3 testnet (`0x52f0…abc7`, deploy 257997-1, attest 258000-1)
 - [x] A mainnet (1002) → V3 report: which lifted keys carry over, which need re-encoding, which have no home on V3 ([`docs/MIGRATION-1002-V3.md`](docs/MIGRATION-1002-V3.md))
 
