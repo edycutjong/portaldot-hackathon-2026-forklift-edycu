@@ -336,6 +336,7 @@ footer .brand { color: var(--bg); font-size: 18px; }
   .bay-ground::before, .relift, .copy, .term .bar button { display: none; }
   .term .ln.hidden { display: inline; }
 }
+ul.since{list-style:none;margin:0;padding:0;display:grid;gap:12px}ul.since li{padding:14px 18px;border:2px solid currentColor;border-radius:6px;background:rgba(255,255,255,.55);line-height:1.5}ul.since a{text-decoration:underline}
 </style>
 </head>
 <body>
@@ -521,7 +522,7 @@ footer .brand { color: var(--bg); font-size: 18px; }
    <div class="head">
     <span class="label"><i></i>Bay 2 · The machine</span>
     <h2 id="machine-h">The V3 path, in five moves.</h2>
-    <p>Lift, verify, rehearse and replay are commands; Fork is what <code>forklift up</code> starts. Lift and verify read the live chain at a pinned block hash; only <code>rehearse --send</code> writes, and only to V3.</p>
+    <p>Lift, verify, rehearse and replay are commands; Fork is what <code>forklift up</code> starts. Lift and verify read the live chain at a pinned block hash; only <code>rehearse --send</code> and <code>receipt --target v3</code> write, and only to V3.</p>
    </div>
    <div class="bento">
     <article class="card w4">
@@ -560,7 +561,7 @@ footer .brand { color: var(--bg); font-size: 18px; }
     <article class="card w3 guard">
      <svg class="glyph" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4l16 6v12c0 11-7 18-16 22C15 40 8 33 8 22V10z" fill="none" stroke="#F5B300" stroke-width="3"/><path d="M17 24h14" stroke="#F5B300" stroke-width="4"/></svg>
      <h3>Write-guard</h3>
-     <p>Nothing is ever submitted to mainnet. A fork client refuses any non-loopback endpoint. <code>rehearse --send</code> is the one path to a real chain, and it sends only to V3.</p>
+     <p>Nothing is ever submitted to mainnet. A fork client refuses any non-loopback endpoint. <code>rehearse --send</code> and <code>receipt --target v3</code> are the only paths to a real chain, and they send only to V3.</p>
      <span class="chip">author_submitExtrinsic → V3 only</span>
     </article>
    </div>
@@ -575,13 +576,31 @@ footer .brand { color: var(--bg); font-size: 18px; }
     <dl>
      <div><dt>Rack</dt><dd>The live V3 testnet and mainnet, read at a pinned block hash.</dd></div>
      <div><dt>Forklift</dt><dd>One Python CLI. Every box in the middle names a file in <code>forklift/</code>.</dd></div>
-     <div><dt>Bench</dt><dd>Forks on loopback. Only <code>rehearse --send</code> writes to a live chain, and only to V3.</dd></div>
+     <div><dt>Bench</dt><dd>Forks on loopback. Only <code>rehearse --send</code> and <code>receipt --target v3</code> write to a live chain, and only to V3.</dd></div>
     </dl>
    </div>
    <figure>
     <div class="swipe"><img src="architecture.png" width="2560" height="2864" loading="lazy" alt="Forklift architecture: V3 is lifted at a pinned block, forked with Chopsticks and checked against the chain; a transaction is predicted on the fork, sent to V3 with the same bytes and compared"></div>
     <figcaption><span class="swipe-hint">Swipe the diagram sideways to read it.</span><span>Drawn from the code in <code>forklift/*.py</code>. Mainnet (spec 1002) is a read-only control path, labelled "not V3".</span><a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/architecture.png">Full size ↗</a></figcaption>
    </figure>
+  </div>
+ </section>
+
+ <section class="band" id="since" aria-labelledby="since-h">
+  <div class="wrap">
+   <div class="head">
+    <span class="label"><i></i>Bay 5 · Since the check-in, 2026-10-31</span>
+    <h2 id="since-h">Six more things on the bench.</h2>
+    <p>Each line is generated or recorded in the repository; the file is named beside it.</p>
+   </div>
+   <ul class="since">
+    <li><b>Receipt v2 on V3.</b> A Revive contract at <code>0x52f0…abc7</code> holds the V3 #118,061 lift manifest: deploy <code>257997-1</code>, attest <code>258000-1</code>, both finalized (<a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/PROOF.md">PROOF.md</a>).</li>
+    <li><b>Mainnet replays.</b> Three mainnet extrinsics re-run on a fork of their parent block, field-equal: 2700013:1 (24/24), 2701111:1 (25/25), 2701435:1 (24/24) (<a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/evidence/replay-1002.json">replay-1002.json</a>).</li>
+    <li><b>Exact runtime.</b> <code>up --runtime exact</code> boots Chopsticks on mainnet's own wasm at #2,725,953; verify exit 0, 16,324 = 16,324 keys. <code>runtime-diff</code> writes the V3-versus-mainnet report (<a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/RUNTIME-DIFF.md">RUNTIME-DIFF.md</a>).</li>
+    <li><b>Migration report.</b> Mainnet #2,725,953 against V3 #118,061: 10,499 of 16,324 keys carry over, 5,443 need re-encoding, 382 have no home (<a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/MIGRATION-1002-V3.md">MIGRATION-1002-V3.md</a>).</li>
+    <li><b>Benchmarks.</b> 7 fresh-process runs per command: <code>lift</code> p50 23.96 s / p95 24.33 s; <code>replay 118621-1</code> p50 13.38 s / p95 14.91 s (<a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/docs/BENCHMARKS.md">BENCHMARKS.md</a>).</li>
+    <li><b>CI action and Codespaces.</b> A composite <code>action.yml</code> gates a job on <code>verify</code>; a devcontainer opens a fork in GitHub Codespaces. The PyPI package is not published yet.</li>
+   </ul>
   </div>
  </section>
 
@@ -636,7 +655,7 @@ footer .brand { color: var(--bg); font-size: 18px; }
  <section class="final bay-ground" aria-labelledby="final-h">
   <div class="wrap">
    <h2 id="final-h">Rehearse on a fork.<br><mark>Then send.</mark></h2>
-   <p>MIT licensed. 257 offline tests and 6 live tests. Every figure on this page traces to <code>docs/PROOF.md</code>, a file in <code>evidence/</code>, or the README.</p>
+   <p>MIT licensed. 324 offline tests and 10 live tests. Every figure on this page traces to <code>docs/PROOF.md</code>, a file in <code>evidence/</code>, or the README.</p>
    <div class="cmd final-cmd"><span>$</span><code id="cmd-text">forklift up --target v3 --at head --name v3</code><button class="copy" type="button" data-copy="#cmd-text">Copy</button></div>
    <div class="cta">
     <a class="btn pri" href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu">View on GitHub</a>
@@ -658,17 +677,13 @@ footer .brand { color: var(--bg); font-size: 18px; }
    <li><a href="https://youtu.be/iVvEXQvfTYY">Demo video</a></li>
    <li><a href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/blob/main/LICENSE">MIT License</a></li>
   </ul>
-  <span><a data-rel href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/releases/latest">v0.1.0</a> · Portaldot Hacker House 2026 · DoraHacks</span>
+  <span><a data-rel href="https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/releases/latest">v0.6.0</a> · Portaldot Hacker House 2026 · DoraHacks</span>
  </div>
 </footer>
 
 <script>
 (() => {
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  // release version: baked text first, then the latest tag if the API answers
-  fetch('https://api.github.com/repos/edycutjong/portaldot-hackathon-2026-forklift-edycu/releases/latest').then(r => r.ok ? r.json() : null)
-    .then(j => { if (j && j.tag_name) document.querySelectorAll('[data-rel]').forEach(a => { a.textContent = j.tag_name; }); }).catch(() => {});
 
   // copy the run command
   document.querySelectorAll('[data-copy]').forEach(b => b.addEventListener('click', async () => {
@@ -747,6 +762,10 @@ footer .brand { color: var(--bg); font-size: 18px; }
   once(term, play);
   document.getElementById('replay-run').addEventListener('click', play);
 })();
+
+  // release version: baked text first, then the latest tag if the API answers
+  fetch('https://api.github.com/repos/edycutjong/portaldot-hackathon-2026-forklift-edycu/releases/latest').then(r => r.ok ? r.json() : null)
+    .then(j => { if (j && j.tag_name) document.querySelectorAll('[data-rel]').forEach(a => { a.textContent = j.tag_name; }); }).catch(() => {});
 </script>
 </body>
 </html>
