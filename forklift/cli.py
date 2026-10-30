@@ -1109,6 +1109,122 @@ def migrate_report_cmd(mainnet_evidence: Path, v3_evidence: Path, mainnet_endpoi
     ]))
 
 
+@main.command("runtime-diff")
+@click.option("--mainnet-evidence", type=click.Path(path_type=Path, exists=True, dir_okay=False), required=True,
+              help="The lift's evidence JSON for the mainnet pin (evidence/lift-<block>.json).")
+@click.option("--v3-evidence", type=click.Path(path_type=Path, exists=True, dir_okay=False), required=True,
+              help="The lift's evidence JSON for the V3 pin (evidence/lift-v3-<block>.json).")
+@click.option("--rehearsal", type=click.Path(path_type=Path, exists=True, dir_okay=False), default=None,
+              help="Add the fast-vs-exact section from a runtime-compare record (evidence/runtime-rehearse-<block>.json).")
+@click.option("--from", "mainnet_endpoint", default=DEFAULT_MAINNET, show_default=True, help="Mainnet archive node (read-only).")
+@click.option("--v3-endpoint", default="wss://test-node-v3.portaldot.dev", show_default=True, help="V3 testnet node (read-only here).")
+@click.option("--out", "out_md", type=click.Path(path_type=Path), default=None, help="Write the Markdown report here.")
+@click.option("--json-out", "out_json", type=click.Path(path_type=Path), default=None, help="Write the JSON report here.")
+def runtime_diff_cmd(mainnet_evidence: Path, v3_evidence: Path, rehearsal: Path | None, mainnet_endpoint: str,
+                     v3_endpoint: str, out_md: Path | None, out_json: Path | None) -> None:
+    """How the V3 runtime differs from mainnet's: versions, pallets, calls, storage items, constants.
+
+    Reads each runtime's metadata and version at the pinned block of the given lift evidence (mainnet read-only).
+    The output holds no timestamps: the same pins give the same bytes.
+    """
+    from forklift import runtimediff
+
+    try:
+        report = runtimediff.generate(mainnet_evidence=json.loads(mainnet_evidence.read_text()),
+                                      v3_evidence=json.loads(v3_evidence.read_text()),
+                                      mainnet_endpoint=mainnet_endpoint, v3_endpoint=v3_endpoint)
+        rh = json.loads(rehearsal.read_text()) if rehearsal else None
+    except (ValueError, OSError, KeyError, RpcError, RpcUnavailable) as exc:
+        click.echo(f"runtime-diff could not run: {exc}", err=True)
+        sys.exit(1)
+    md, js = runtimediff.render_markdown(report, rh), runtimediff.render_json(report)
+    for path, text in ((out_md, md), (out_json, js)):
+        if path is not None:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text)
+    t = report["totals"]
+    click.echo("\n".join([
+        f"runtime  mainnet #{report['mainnet']['block_number']:,} (spec 1002) vs V3 #{report['v3']['block_number']:,} (spec 3002)",
+        f"pallets  {t['pallets_both']} on both · {t['pallets_only_mainnet']} mainnet only · {t['pallets_only_v3']} V3 only",
+        f"calls    {t['calls_same']} same · {t['calls_changed']} changed · {t['calls_only_mainnet']} removed · "
+        f"{t['calls_only_v3']} added · {t['calls_index_moved']} index moved",
+        f"storage  {t['storage_both']} on both · {t['storage_only_mainnet']} removed · {t['storage_only_v3']} added",
+        f"consts   {t['constants_same']} same · {t['constants_differ']} differ",
+        *([f"wrote    {out_md}"] if out_md else []), *([f"wrote    {out_json}"] if out_json else []),
+    ]))
+
+
+@main.command("runtime-compare")
+@click.argument("who")
+@click.argument("call")
+@click.argument("args", required=False)
+@click.option("--fast", "fast_name", default="fast", show_default=True, help="Running fork-1002-fast to use.")
+@click.option("--exact", "exact_name", default="exact", show_default=True, help="Running fork-1002-exact to use.")
+@click.option("--evidence", "evidence_dir", type=click.Path(path_type=Path), default=None,
+              help="Also record the pair in <DIR>/runtime-rehearse-<block>.json.")
+@click.option("--json", "as_json", is_flag=True, help="Print the comparison as JSON.")
+def runtime_compare_cmd(who: str, call: str, args: str | None, fast_name: str, exact_name: str,
+                        evidence_dir: Path | None, as_json: bool) -> None:
+    """Rehearse CALL as WHO on a fast and an exact fork of the same pin and show where the runtimes differ.
+
+    Both forks must be running (forklift up --runtime fast / exact, same --at). The call goes through
+    Sudo.sudo_as on each, as `forklift as` does. Exit 0 when it ran on both, 1 otherwise.
+    """
+    import datetime as dt
+
+    from forklift import act, runtimediff, tx
+
+    try:
+        pallet, function = act.parse_call(call)
+        tx.ss58_to_public(who)
+    except ValueError as exc:
+        raise click.UsageError(str(exc)) from None
+    forks = {}
+    for role, name in (("fast", fast_name), ("exact", exact_name)):
+        endpoint, manifest = _fork_endpoint(name, None)
+        label = ((manifest or {}).get("fork") or {}).get("label", "")
+        if not label.endswith(f"-{role}"):
+            raise click.UsageError(f"fork {name!r} is {label or 'not a Forklift fork'}, not a {role} fork")
+        forks[role] = (endpoint, manifest)
+    pins = {r: m["source"]["block_hash"] for r, (_, m) in forks.items()}
+    if pins["fast"] != pins["exact"]:
+        raise click.UsageError(f"the forks are at different pins: fast {pins['fast']}, exact {pins['exact']}")
+    runs = {}
+    try:
+        for role, (endpoint, manifest) in forks.items():
+            with RpcClient(endpoint, fork=True) as client:
+                _bind_fork(client, manifest)
+                runs[role] = runtimediff.rehearse_on(client, manifest["fork"]["label"], who, pallet, function, args)
+        cons = runtimediff.constants_between(runs["fast"].pop("_metadata"), runs["fast"].pop("_registry"),
+                                             runs["exact"].pop("_metadata"), runs["exact"].pop("_registry"))
+    except click.UsageError:
+        raise
+    except _act_errors() as exc:
+        _could_not_run(exc, as_json, "runtime-compare")
+    compare = runtimediff.compare_rehearsals(runs["fast"], runs["exact"])
+    src = forks["exact"][1]["source"]
+    run = {"recorded_utc": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"), "who": who,
+           "call": f"{pallet}.{function}", "args": json.loads(args) if args else None,
+           "fast": runs["fast"], "exact": runs["exact"], "compare": compare, "constants": cons}
+    if evidence_dir is not None:
+        path = evidence_dir / f"runtime-rehearse-{src['block_number']}.json"
+        prior = json.loads(path.read_text()) if path.exists() else {"runs": []}
+        prior.update({"pin": {"block_number": src["block_number"], "block_hash": src["block_hash"]},
+                      "about": "forklift runtime-compare: one call through Sudo.sudo_as on fork-1002-fast (portaldot_dev, "
+                               "dev runtime wasm) and fork-1002-exact (Chopsticks, mainnet's wasm) of the same pin"})
+        prior["runs"].append(run)
+        _write_evidence(path, prior)
+    if as_json:
+        click.echo(json.dumps(run, indent=2))
+        return
+    click.echo(f"compare  {pallet}.{function} as {who} · fast {runs['fast']['extrinsic_id']} · "
+               f"exact {runs['exact']['extrinsic_id']} · pin #{src['block_number']:,}")
+    for row in compare:
+        mark = "same " if row["same"] else "DIFF "
+        click.echo(f"{mark}   {row['field']:<24} fast {runtimediff._short(row['fast'])}  ·  exact {runtimediff._short(row['exact'])}")
+    click.echo(f"consts   {cons['constants_same']} same · {len(cons['constants_differ'])} differ between the two 1002 runtimes")
+
+
 def record_rehearse(r: dict, evidence_dir: Path) -> Path:
     import datetime as dt
 
