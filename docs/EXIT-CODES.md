@@ -23,7 +23,7 @@ Click's own usage code (`2`) is remapped to `64` so that `2` always means a mism
 
 ## The write-guard (I3)
 
-`fund`, `as` and `receipt` sign with the fork's dev sudo key and submit, so they only ever
+`fund`, `as` and `receipt` (without `--target v3`) sign with the fork's dev sudo key and submit, so they only ever
 open a *fork client*: its endpoint must be loopback (`127.0.0.1`, `localhost`, `::1`) and never
 a known mainnet host, and before the first write the client reads the chain's genesis hash and
 refuses if it is Portaldot mainnet's (`0x83b5…8a54`); the check runs again on every new

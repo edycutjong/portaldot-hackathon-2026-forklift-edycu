@@ -26,6 +26,7 @@ Linux run.
 - Whether the **Linux** `portaldot_dev` binary behaves the same: it was not run in this window.
 - Whether the node's **log is block-buffered** off a TTY: not re-measured here. Forklift reads readiness over RPC
   (`chain_getHeader`, `chain_getFinalizedHead`) and never from the log either way.
-- Anything about the **V3 testnet** beyond rows 10 to 12: its first RPC host did not resolve in DNS on 2026-10-14 (rows 10 to 12
+- Anything about the **V3 testnet** beyond rows 10 to 12 and the Fork Receipt v2 run on V3 (deposits and transactions in
+  [`PROOF.md`](PROOF.md)): its first RPC host did not resolve in DNS on 2026-10-14 (rows 10 to 12
   were measured on its new endpoint on 2026-10-20), and no V3 node binary or chain spec is known to the author (organisers'
   Discord messages, not archived here).

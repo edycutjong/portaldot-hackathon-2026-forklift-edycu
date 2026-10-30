@@ -6,7 +6,8 @@ the fork. This page describes what the code in this repository does today; parts
 **planned**. It was written from the modules and their imports (`forklift/*.py`), not from a design document.
 
 A fork is a **local fork of Portaldot mainnet state (spec 1002) that runs the dev runtime wasm**, labelled `fork-1002-fast`. It is not the
-Portaldot V3 testnet and nothing here has run against V3 (see the README, *V3 status*).
+Portaldot V3 testnet. The V3 path (`up --target v3` on Chopsticks, `rehearse`, `replay`) is described in the README; Forklift
+writes to V3 only through `rehearse --send` and `receipt --target v3` (see the README, *V3 status* and *Smart Contracts*).
 
 ## Modules and commands
 
@@ -91,10 +92,15 @@ transaction by extrinsic id from a separate process).
 | `tx.py`, `act.py` | Build the version-4 extrinsic envelope explicitly (the seven signed extensions of spec 1002; any other list is refused), sign with the fork's dev key, submit through the fork client, find the extrinsic by block scan, await finalization, decode events and the dispatch result. `fund` = `Sudo.sudo(Balances.set_balance)`; `as` = `Sudo.sudo_as(<call>)` with the call composed from metadata and the account's storage read before and after. |
 | `receipt.py`, `contracts/receipt.wat` | A hand-written WAT contract for the rent-era Contracts pallet (`seal0` host functions only, plus the `env` memory import). `attest` emits `mainnet_block_hash ‖ manifest_root ‖ keys_lifted` (72 bytes) as `Contracts.ContractEmitted`; `forklift receipt` instantiates it on a fork's first run, tops its balance up so it pays no rent, attests, decodes the event and compares it with the manifest. |
 
+| `rehearse.py` | V3 path: predicts a signed extrinsic on a Chopsticks fork of V3, then (`--send`) sends the same bytes to the live V3 testnet through a testnet client and compares field by field. |
+| `revive_receipt.py`, `contracts/ForkReceipt.yul` | Fork Receipt v2 on the live V3 testnet's Revive pallet (EVM bytecode, interface `IForkReceipt.sol`): `ReviveApi` dry runs before each send, then `Revive.instantiate_with_code` / `Revive.call` through a testnet client; the emitted event and the stored `receipt()` are compared with the manifest. |
+
 ## Invariants the code enforces
 
-- **Mainnet is read-only.** Only allowlisted read methods can reach a mainnet client, and a write client refuses any
-  endpoint that is not loopback or whose genesis is mainnet's.
+- **Mainnet is read-only.** Only allowlisted read methods can reach a mainnet client, and a fork client refuses any
+  endpoint that is not loopback or whose genesis is mainnet's. The two exceptions to "writes go to a fork",
+  `rehearse --send` and `receipt --target v3`, use a testnet client that sends only `author_submitExtrinsic`, only to the
+  pinned V3 genesis.
 - **A complete lift is the whole key set.** Paging ends only on an empty page, the cursor checkpoint is verified, and
   `scripts/completeness.py` compares the lifted key *set* with a second, unskipped full listing at the same hash (same RPC) (minus the
   MMR range).
