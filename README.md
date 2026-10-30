@@ -275,7 +275,7 @@ itself is pallet-free: it only calls read RPC methods (`chain_getFinalizedHead`,
 ## 🚀 Installation & Setup
 
 **Requirements:** Python 3.11+; network access to `wss://mainnet.portaldot.io` (live lifts and `verify`; the unit tests
-are offline); measured on macOS arm64 only (the Linux download path exists but was not run); on Apple silicon, Rosetta (`softwareupdate --install-rosetta`), because the macOS `portaldot_dev` binary is
+are offline); benchmarks and the mainnet path measured on macOS arm64 only (the V3 path was also exercised once on Linux arm64, see *CI action, Codespaces, PyPI*; the Linux `portaldot_dev` download path exists but was not run); on Apple silicon, Rosetta (`softwareupdate --install-rosetta`), because the macOS `portaldot_dev` binary is
 x86_64 only. `forklift up` downloads the `portaldot_dev` 2.0.0 tarball (`portaldot-testnet-*.tar.gz` in the community repository
 `portaldotVolunteer/Portaldot-node`, not a GitHub Release) into `~/.cache/forklift/bin/` and checks its sha256 before
 unpacking it.

@@ -1,6 +1,6 @@
 {
   "what": "Local exercise of .devcontainer/devcontainer.json with the devcontainer CLI (npx @devcontainers/cli@latest up / exec) on Docker Desktop, Linux aarch64. Not a GitHub Codespaces run.",
-  "recorded": "2026-10-31 (WIB), forklift 0.1.0 source tree at 73d0e73's parent plus the P24 files",
+  "recorded": "2026-10-31 (WIB), source tree at commit 12a5c57 (the .devcontainer commit), forklift 0.1.0 in-tree; ubuntu-24.04 run before 73d0e73",
   "attempts": [
     {
       "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm (Debian 12, glibc 2.36)",

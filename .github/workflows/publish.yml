@@ -2,7 +2,7 @@ name: publish
 
 # PyPI Trusted Publishing (OIDC): no token is stored anywhere. Until the maintainer registers the pending publisher on
 # pypi.org (project portaldot-forklift, owner edycutjong, repo portaldot-hackathon-2026-forklift-edycu, workflow
-# publish.yml, environment pypi) the last job fails closed with a 403 from PyPI, and nothing is uploaded.
+# publish.yml, environment pypi) the last job fails closed with an `invalid-publisher` token-exchange error from PyPI, and nothing is uploaded.
 #
 # Releases created by release.yml use GITHUB_TOKEN, and GitHub does not start `release: published` workflows for those,
 # so release.yml also dispatches this workflow (workflow_dispatch is exempt from that rule).
