@@ -122,5 +122,4 @@ standard library. The `portaldot_dev` binary is downloaded at run time and is no
 
 - A hosted fork and a browser verify page.
 - A PyPI package and a CI action.
-- A V3 target. Per the organisers' Discord messages (not archived here) no V3 node binary or chain spec is public, so it
-  cannot be built or measured yet.
+- The Fork Receipt as an ink! 5 / Revive contract on the V3 testnet.

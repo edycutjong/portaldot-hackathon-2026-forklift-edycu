@@ -46,7 +46,7 @@ that starts from **mainnet's real state** instead of an empty dev chain.
 > else is marked **planned**. Forklift has two targets, always labelled: **`fork-v3`**, a fork of the live
 > **Portaldot V3 testnet** run by Chopsticks with V3's own runtime, and **`fork-1002-fast`**, a local fork of
 > Portaldot mainnet state (spec 1002) on the `portaldot_dev` dev runtime, which is not V3 (see *V3 status*).
-> Mainnet also has a **`fork-1002-exact`** profile (2026-10-31): Chopsticks on mainnet's own runtime at the pin,
+> Mainnet also has a **`fork-1002-exact`** profile (2026-10-31 WIB): Chopsticks on mainnet's own runtime at the pin,
 > also not V3.
 
 <a id="project-overview"></a>
