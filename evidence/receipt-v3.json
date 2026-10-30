@@ -1,0 +1,310 @@
+{
+  "what": "Fork Receipt v2 (Revive contract) on the Portaldot V3 testnet: `forklift receipt --target v3`",
+  "runs": [
+    {
+      "recorded_utc": "2026-10-30T21:36:32Z",
+      "chain": "v3",
+      "label": "Portaldot V3 testnet",
+      "signer": "5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg",
+      "manifest": {
+        "block_hash": "0xec57106c405af29ab9a5a75f9281050bd1f2755c4592ba3b55e0d19d4603d8ac",
+        "manifest_root": "0xfe4962de728b8a17601f3e97dc884a4c21be38a981b8c36cef47f02248c430a4",
+        "keys_lifted": 5508,
+        "block_number": 118061,
+        "profile": "v3-read (spec 3002)"
+      },
+      "deploy": {
+        "where": "chain",
+        "endpoint": "wss://test-node-v3.portaldot.dev",
+        "extrinsic_id": "257997-1",
+        "block_number": 257997,
+        "block_hash": "0xc2f6afd8e06b5a3479e289a9c111a1395f5bb232326f9dff279407e80560aa74",
+        "parent_hash": "0xe47f0c1619e45f36fa394890df09dfe05d1be24091ba0ad3484abab1b6413a4e",
+        "tx_hash": "0x54365766d8182b7ca54a1ac8a5abaecd9ac490bf4933ae039775f561f2c8480d",
+        "success": true,
+        "events": [
+          {
+            "pallet": "Balances",
+            "event": "Withdraw",
+            "attributes": {
+              "who": "5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg",
+              "amount": 2156098283852
+            }
+          },
+          {
+            "pallet": "System",
+            "event": "NewAccount",
+            "attributes": {
+              "account": "5DwTMX7mnRusXazS51oZETdobgfD7SKUnCpRZ31xXw8cHYpR"
+            }
+          },
+          {
+            "pallet": "Balances",
+            "event": "Endowed",
+            "attributes": {
+              "account": "5DwTMX7mnRusXazS51oZETdobgfD7SKUnCpRZ31xXw8cHYpR",
+              "free_balance": 10000000000000
+            }
+          },
+          {
+            "pallet": "Balances",
+            "event": "Minted",
+            "attributes": {
+              "who": "5DwTMX7mnRusXazS51oZETdobgfD7SKUnCpRZ31xXw8cHYpR",
+              "amount": 10000000000000
+            }
+          },
+          {
+            "pallet": "Balances",
+            "event": "TransferAndHold",
+            "attributes": {
+              "reason": {
+                "Revive": "CodeUploadDepositReserve"
+              },
+              "source": "5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg",
+              "dest": "5EYCAe5ijiYfhaAUBd6H9WGRTsvwFFc7GnhQkiHvBYxdvpbV",
+              "transferred": 864000000000000
+            }
+          },
+          {
+            "pallet": "Revive",
+            "event": "Instantiated",
+            "attributes": {
+              "deployer": "0x2c85e86717368d596e379155a3ec4ad1e46ebe7a",
+              "contract": "0x52f0edd92af9ff410ca63ccc83735552e1b2abc7"
+            }
+          },
+          {
+            "pallet": "Balances",
+            "event": "TransferAndHold",
+            "attributes": {
+              "reason": {
+                "Revive": "StorageDepositReserve"
+              },
+              "source": "5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg",
+              "dest": "5DwTMX7mnRusXazS51oZETdobgfD7SKUnCpRZ31xXw8cHYpR",
+              "transferred": 1024200000000000
+            }
+          },
+          {
+            "pallet": "Balances",
+            "event": "Deposit",
+            "attributes": {
+              "who": "5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg",
+              "amount": 5246501088
+            }
+          },
+          {
+            "pallet": "Balances",
+            "event": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 2150851782764
+            }
+          },
+          {
+            "pallet": "TransactionPayment",
+            "event": "TransactionFeePaid",
+            "attributes": {
+              "who": "5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg",
+              "actual_fee": 2150851782764,
+              "tip": 0
+            }
+          },
+          {
+            "pallet": "System",
+            "event": "ExtrinsicSuccess",
+            "attributes": {
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 1525437330,
+                  "proof_size": 15498
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ],
+        "fee": 2150851782764,
+        "deltas": {
+          "5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg": -1890350851782764
+        },
+        "before": {
+          "5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg": {
+            "nonce": 5,
+            "free": 2952707303875253,
+            "reserved": 0,
+            "frozen": 0
+          }
+        },
+        "after": {
+          "5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg": {
+            "nonce": 7,
+            "free": 1062356452092489,
+            "reserved": 0,
+            "frozen": 0
+          }
+        },
+        "finalized": true,
+        "wait_s": 16.83,
+        "call": "Revive.instantiate_with_code",
+        "explorer": "https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xc2f6afd8e06b5a3479e289a9c111a1395f5bb232326f9dff279407e80560aa74",
+        "dry_run": {
+          "storage_deposit": 1888200000000000,
+          "address": "0x52f0edd92af9ff410ca63ccc83735552e1b2abc7",
+          "weight_required": {
+            "ref_time": 665458,
+            "proof_size": 0
+          }
+        }
+      },
+      "attest": {
+        "where": "chain",
+        "endpoint": "wss://test-node-v3.portaldot.dev",
+        "extrinsic_id": "258000-1",
+        "block_number": 258000,
+        "block_hash": "0xd44873179ac7e0dcbc609de0816a4e5f888ba02ccd88cefee9e55f313ba3fd8a",
+        "parent_hash": "0x57a8af66754c6abf66d6713593be66a24c245b75c83331f58dafc0e5ba3b7d38",
+        "tx_hash": "0x8e1588a185686bd52ac764c3beffa5aa39ea985efb55745dc76e609be9d96710",
+        "success": true,
+        "events": [
+          {
+            "pallet": "Balances",
+            "event": "Withdraw",
+            "attributes": {
+              "who": "5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg",
+              "amount": 2495879081848
+            }
+          },
+          {
+            "pallet": "Revive",
+            "event": "ContractEmitted",
+            "attributes": {
+              "contract": "0x52f0edd92af9ff410ca63ccc83735552e1b2abc7",
+              "data": "0xfe4962de728b8a17601f3e97dc884a4c21be38a981b8c36cef47f02248c430a400000000000000000000000000000000000000000000000000000000000015840000000000000000000000002c85e86717368d596e379155a3ec4ad1e46ebe7a",
+              "topics": [
+                "0xec57106c405af29ab9a5a75f9281050bd1f2755c4592ba3b55e0d19d4603d8ac"
+              ]
+            }
+          },
+          {
+            "pallet": "Balances",
+            "event": "TransferAndHold",
+            "attributes": {
+              "reason": {
+                "Revive": "StorageDepositReserve"
+              },
+              "source": "5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg",
+              "dest": "5DwTMX7mnRusXazS51oZETdobgfD7SKUnCpRZ31xXw8cHYpR",
+              "transferred": 768300000000000
+            }
+          },
+          {
+            "pallet": "Balances",
+            "event": "Deposit",
+            "attributes": {
+              "who": "5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg",
+              "amount": 5051123827
+            }
+          },
+          {
+            "pallet": "Balances",
+            "event": "Deposit",
+            "attributes": {
+              "who": "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z",
+              "amount": 2490827958021
+            }
+          },
+          {
+            "pallet": "TransactionPayment",
+            "event": "TransactionFeePaid",
+            "attributes": {
+              "who": "5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg",
+              "actual_fee": 2490827958021,
+              "tip": 0
+            }
+          },
+          {
+            "pallet": "System",
+            "event": "ExtrinsicSuccess",
+            "attributes": {
+              "dispatch_info": {
+                "weight": {
+                  "ref_time": 1480039903,
+                  "proof_size": 36988
+                },
+                "class": "Normal",
+                "pays_fee": "Yes"
+              }
+            }
+          }
+        ],
+        "fee": 2490827958021,
+        "deltas": {
+          "5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg": -770790827958021
+        },
+        "before": {
+          "5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg": {
+            "nonce": 7,
+            "free": 1062356452092489,
+            "reserved": 0,
+            "frozen": 0
+          }
+        },
+        "after": {
+          "5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg": {
+            "nonce": 8,
+            "free": 291565624134468,
+            "reserved": 0,
+            "frozen": 0
+          }
+        },
+        "finalized": true,
+        "wait_s": 15.76,
+        "call": "Revive.call",
+        "explorer": "https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xd44873179ac7e0dcbc609de0816a4e5f888ba02ccd88cefee9e55f313ba3fd8a",
+        "dry_run": {
+          "storage_deposit": 768300000000000,
+          "weight_required": {
+            "ref_time": 372963903,
+            "proof_size": 21004
+          }
+        },
+        "emitted": [
+          {
+            "decoded": {
+              "block_hash": "0xec57106c405af29ab9a5a75f9281050bd1f2755c4592ba3b55e0d19d4603d8ac",
+              "manifest_root": "0xfe4962de728b8a17601f3e97dc884a4c21be38a981b8c36cef47f02248c430a4",
+              "keys_lifted": 5508,
+              "attester": "0x2c85e86717368d596e379155a3ec4ad1e46ebe7a"
+            },
+            "raw": {
+              "topics": [
+                "0xec57106c405af29ab9a5a75f9281050bd1f2755c4592ba3b55e0d19d4603d8ac"
+              ],
+              "data": "0xfe4962de728b8a17601f3e97dc884a4c21be38a981b8c36cef47f02248c430a400000000000000000000000000000000000000000000000000000000000015840000000000000000000000002c85e86717368d596e379155a3ec4ad1e46ebe7a"
+            }
+          }
+        ]
+      },
+      "attester_h160": "0x2c85e86717368d596e379155a3ec4ad1e46ebe7a",
+      "preflight": {
+        "free": 2952707303875253,
+        "deploy_deposit": 1888200000000000,
+        "deploy_weight_required": {
+          "ref_time": 665458,
+          "proof_size": 0
+        }
+      },
+      "address": "0x52f0edd92af9ff410ca63ccc83735552e1b2abc7",
+      "stored": {
+        "manifest_root": "0xfe4962de728b8a17601f3e97dc884a4c21be38a981b8c36cef47f02248c430a4",
+        "keys_lifted": 5508,
+        "at": "0xd44873179ac7e0dcbc609de0816a4e5f888ba02ccd88cefee9e55f313ba3fd8a"
+      },
+      "mismatch": [],
+      "exit_code": 0
+    }
+  ]
+}
