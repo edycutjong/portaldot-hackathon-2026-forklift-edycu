@@ -407,7 +407,8 @@ def rehearse_on(client, label: str, who: str, pallet: str, function: str, raw_ar
 WHY = {
     "block_number": "fast starts a new chain on its own genesis (block numbers restart at 1); exact builds on "
                     "mainnet's own history (pin + 1 carries the overrides, the call lands after it)",
-    "tx_hash": "the sudo key signs over each chain's genesis hash (immortal era), and the two genesis hashes differ",
+    "tx_hash": "sr25519 signatures are randomised, so no two signings give the same hash; the signed payload also "
+               "differs: it covers each chain's genesis hash (immortal era)",
     "code_hash": "fast runs the dev runtime wasm; exact runs mainnet's wasm, the one at the pin",
     "impl_version": "the dev runtime and mainnet's runtime are different builds of spec 1002",
     "sudo_key_fee": "the outer extrinsic's fee, computed by each runtime from its own weights and fee constants",
@@ -438,8 +439,7 @@ def compare_rehearsals(fast: dict, exact: dict) -> list[dict]:
         ("block_number", int(fast["extrinsic_id"].split("-")[0]), int(exact["extrinsic_id"].split("-")[0])),
         ("tx_hash", fast["tx_hash"], exact["tx_hash"]),
     ]
-    return [{"field": f, "fast": a, "exact": b, "same": a == b, **({} if a == b else {"why": WHY.get(f)})}
-            for f, a, b in rows]
+    return [{"field": f, "fast": a, "exact": b, "same": a == b} for f, a, b in rows]  # why-notes: WHY, at render
 
 
 def constants_between(fast_md: str, fast_reg, exact_md: str, exact_reg) -> dict:
@@ -481,6 +481,14 @@ def render_rehearsal(rh: dict) -> list[str]:
         "| field | fast | exact | same? | why it differs |",
         "|---|---|---|---|---|",
     ]
+    runs = rh["runs"]
+    differ = [tuple(x["field"] for x in r["compare"] if not x["same"]) for r in runs]
+    if len(runs) > 1:
+        steps = lambda side: ", ".join(f"{r[side]['timestamp_step_ms']:,}" for r in runs)  # noqa: E731
+        out[-2:-2] = [f"{len(runs)} runs are recorded, each on freshly started forks. The fields that differ are "
+                      + ("the same in every run" if len(set(differ)) == 1 else "NOT the same in every run")
+                      + f"; the timestamp step was {steps('fast')} ms on fast and {steps('exact')} ms "
+                      "on exact. The table shows the last run.", ""]
     for row in run["compare"]:
         fv, ev_ = row["fast"], row["exact"]
         if row["field"] == "inner_event_attributes":  # long JSON: say what was compared, the bytes are in the evidence

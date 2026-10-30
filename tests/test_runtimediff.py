@@ -90,7 +90,7 @@ def test_compare_rehearsals_marks_what_differs_and_says_why():
                                                          _run("fork-1002-exact", "2725955-1", "0xmain", 60000))}
     assert rows["delta 5W"]["same"] and rows["inner_events"]["same"] and rows["dispatch_weight"]["same"]
     for f in ("code_hash", "timestamp_step_ms", "block_number", "tx_hash"):
-        assert not rows[f]["same"] and rows[f]["why"]
+        assert not rows[f]["same"] and rd.WHY[f]
     assert (rows["block_number"]["fast"], rows["block_number"]["exact"]) == (5, 2725955)
 
 
