@@ -348,13 +348,13 @@ pytest -q        # offline; CI runs the same, see [CONTRIBUTING.md](CONTRIBUTING
 
 **Next phase**
 
-- [ ] Demo video (recorded by the author for the check-in)
+- [x] Demo video (check-in cut, then the final v2 cut)
 - [ ] `--runtime exact`: mainnet's own wasm on the fork, and a generated runtime-difference report
-- [ ] `forklift replay <block>:<index>`: a mainnet extrinsic re-run on a fork of its parent block
+- [x] `forklift replay <block>:<index>`: a mainnet extrinsic re-run on a fork of its parent block (3 mainnet replays field-equal, [`evidence/replay-1002.json`](evidence/replay-1002.json))
 - [ ] Benchmarks with p50/p95 over several runs
 - [ ] A hosted fork, a PyPI package and a CI action
 - [ ] The Fork Receipt as an ink! 5 or Revive contract on the V3 testnet
-- [ ] A mainnet (1002) → V3 report: which lifted keys carry over, which need re-encoding, which have no home on V3
+- [x] A mainnet (1002) → V3 report: which lifted keys carry over, which need re-encoding, which have no home on V3 ([`docs/MIGRATION-1002-V3.md`](docs/MIGRATION-1002-V3.md))
 
 <a id="team"></a>
 
