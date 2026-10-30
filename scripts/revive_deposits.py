@@ -11,6 +11,15 @@ moves nothing). Measured:
 - the deployed Receipt v2 (`forklift/contracts/ForkReceipt.bin`; once its code is on chain, a dry run no longer
   includes the code-upload deposit, and the row says so), and any `--build` given, e.g. the plain-Solidity
   comparison `scripts/ForkReceiptSolidity.sol` compiled with resolc (PolkaVM) and with solc (EVM bytecode).
+
+The two comparison builds in `evidence/revive-deposits-v3.json` were made with the npm builds (Node.js 18+),
+run inside `scripts/` (solc's metadata hash covers the source path, so the directory matters for its sha256):
+
+    cd scripts
+    npx -y @parity/resolc@1.5.0 --bin -o /tmp/out ForkReceiptSolidity.sol                 # .polkavm, 7,851 bytes
+    npx -y -p solc@0.8.30 solcjs --bin --optimize -o /tmp/out ForkReceiptSolidity.sol    # .bin (hex), 991 bytes
+    cd .. && python scripts/revive_deposits.py --build "plain Solidity, resolc 1.5.0 (PolkaVM)=/tmp/out/<f>.polkavm" \
+        --build "plain Solidity, solc 0.8.30 --optimize (EVM)=/tmp/out/<f>.bin"
 """
 
 from __future__ import annotations
@@ -56,7 +65,7 @@ def fit(points: list[tuple[int, int]]) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--build", action="append", default=[], metavar="LABEL=PATH",
-                    help="Also dry-run this init code / PolkaVM blob (raw bytes, or hex text).")
+                    help="Also dry-run this init code / PolkaVM blob (raw bytes; a .bin file is read as hex text).")
     ap.add_argument("--evidence", type=Path, default=None, help="Write <DIR>/revive-deposits-v3.json.")
     a = ap.parse_args()
 
@@ -89,8 +98,8 @@ def main() -> int:
         for label, path in [("receipt-v2 (forklift/contracts/ForkReceipt.bin)", None)] + [
                 tuple(b.split("=", 1)) for b in a.build]:
             code = rr.init_code() if path is None else Path(path).read_bytes()
-            if path is not None and code[:2] == b"0x":
-                code = bytes.fromhex(code.decode().strip()[2:])
+            if path is not None and path.endswith(".bin"):  # hex text (solc / solcjs --bin), with or without 0x
+                code = bytes.fromhex(code.decode().strip().removeprefix("0x"))
             builds.append({"label": label, "bytes": len(code), "sha256": hashlib.sha256(code).hexdigest(),
                            **dry(c, origin, code, at)})
     si.close()
