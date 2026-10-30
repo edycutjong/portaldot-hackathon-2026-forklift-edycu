@@ -242,7 +242,7 @@ def render(b: dict, evidence_name: str) -> str:
             f"{'yes' if lift.get('manifest_roots_identical') else '**NO**'} (`{lift.get('manifest_root')}`).",
         ]
     out += ["", "## Machine load", "", f"1-minute load average on {h['cores']} cores, read before the first and after the "
-            "last run of each command (six readings; they include the benchmark's own fork processes).", "", "| Command | Before | After |", "|---|---|---|"]
+            "last run of each command (ten readings; they include the benchmark's own fork processes).", "", "| Command | Before | After |", "|---|---|---|"]
     for s_ in b["scenarios"].values():
         out.append(f"| `{s_['command']}` | {s_['load_avg_1m_before']} | {s_['load_avg_1m_after']} |")
     out += ["", "## Per-run seconds", "", "| Command | Runs (s, in order) | Exit codes |", "|---|---|---|"]

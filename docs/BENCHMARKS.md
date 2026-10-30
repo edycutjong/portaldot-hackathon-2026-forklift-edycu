@@ -28,7 +28,7 @@ Each run is a **fresh `forklift` process**; a number is the wall-clock seconds f
 
 ## Machine load
 
-1-minute load average on 10 cores, read before the first and after the last run of each command (six readings; they include the benchmark's own fork processes).
+1-minute load average on 10 cores, read before the first and after the last run of each command (ten readings; they include the benchmark's own fork processes).
 
 | Command | Before | After |
 |---|---|---|
