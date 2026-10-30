@@ -193,8 +193,9 @@ def _port_options(f):
               help="mainnet = lift mainnet (spec 1002) into portaldot_dev; v3 = fork the V3 testnet with Chopsticks.")
 @click.option("--at", "at", default="head", show_default=True,
               help="Block to fork: a number, a 0x block hash, or 'head' (latest finalized).")
-@click.option("--runtime", type=click.Choice(["fast"]), default=None,
-              help="fast = the dev runtime wasm (6 s blocks) [mainnet target only; default fast].")
+@click.option("--runtime", type=click.Choice(["fast", "exact"]), default=None,
+              help="fast = splice into portaldot_dev, dev runtime wasm (6 s blocks); exact = Chopsticks on mainnet's "
+                   "own :code at the pin (60 s slots) [mainnet target only; default fast].")
 @click.option("--from", "endpoint", default=DEFAULT_MAINNET, show_default=True,
               help="Archive node to lift from (read-only).")
 @click.option("--name", default="fork", show_default=True, help="Name of this fork (PID file, fork directory).")
@@ -211,7 +212,9 @@ def up_cmd(target: str, at: str, runtime: str | None, endpoint: str, name: str, 
            evidence_dir: Path | None, as_json: bool) -> None:
     """Lift a chain at a pinned block and run a local fork of it.
 
-    mainnet: splice the lift into the dev chain spec and boot portaldot_dev on it.
+    mainnet: splice the lift into the dev chain spec and boot portaldot_dev on it
+    (--runtime fast), or fork mainnet at the pin with Chopsticks on mainnet's own
+    runtime and apply the same overrides on the next block (--runtime exact).
     v3: fork the V3 testnet at the lifted block with Chopsticks (V3's own runtime;
     there is no public V3 node binary), and check it serves that block.
 
@@ -227,12 +230,23 @@ def up_cmd(target: str, at: str, runtime: str | None, endpoint: str, name: str, 
     if target == "v3" and (runtime or base_path or node_bin or rpc_port or p2p_port or endpoint != DEFAULT_MAINNET):
         raise click.UsageError("--runtime/--base-path/--node-bin/--rpc-port/--p2p-port/--from apply to the mainnet "
                                "target: a V3 fork runs V3's own runtime under Chopsticks on --ws-port only")
+    exact = target == "mainnet" and runtime == "exact"
+    if exact and (base_path or node_bin or rpc_port or p2p_port):
+        raise click.UsageError("--base-path/--node-bin/--rpc-port/--p2p-port apply to --runtime fast: an exact fork "
+                               "runs mainnet's runtime under Chopsticks on --ws-port only")
     try:
         ports = resolve_ports(ws_port, rpc_port, p2p_port)
     except NodeError as exc:
         raise click.UsageError(str(exc)) from None
     try:
-        if target == "v3":
+        if exact:
+            import dataclasses
+
+            from forklift.chains import MAINNET
+
+            m = run_up_v3(_parse_at(at), name=name, ws_port=ports["ws"], relift=relift,
+                          chain=dataclasses.replace(MAINNET, endpoint=endpoint))
+        elif target == "v3":
             m = run_up_v3(_parse_at(at), name=name, ws_port=ports["ws"], relift=relift)
         else:
             m = run_up(endpoint, _parse_at(at), name=name, runtime=runtime or "fast", ports=ports,
@@ -248,20 +262,24 @@ def up_cmd(target: str, at: str, runtime: str | None, endpoint: str, name: str, 
         elif isinstance(exc, OSError):
             exc = NodeError(f"{type(exc).__name__}: {exc}")
         _node_failed(exc, as_json)
+    chopsticks_fork = target == "v3" or exact
     if evidence_dir is not None:
-        m["_paths"]["evidence"] = str((record_fork_v3 if target == "v3" else record_fork)(m, evidence_dir))
-    click.echo(json.dumps(m, indent=2) if as_json else (up_v3_plate if target == "v3" else up_plate)(m))
+        m["_paths"]["evidence"] = str((record_fork_v3 if chopsticks_fork else record_fork)(m, evidence_dir))
+    click.echo(json.dumps(m, indent=2) if as_json else (up_v3_plate if chopsticks_fork else up_plate)(m))
 
 
 def record_fork_v3(m: dict, evidence_dir: Path) -> Path:
-    """Write ``evidence/fork-v3-<block>.json``: the pin, the lift root and what the Chopsticks fork served."""
+    """Write ``evidence/fork-v3-<block>.json`` (or ``fork-1002-exact-<block>.json``): the pin, the lift root and
+    what the Chopsticks fork served."""
     import datetime as dt
 
     src = m["source"]
-    path = evidence_dir / f"fork-v3-{src['block_number']}.json"
+    exact = m["fork"].get("runtime") == "exact"
+    path = evidence_dir / (f"fork-{src['spec_version']}-exact-{src['block_number']}.json" if exact
+                           else f"fork-v3-{src['block_number']}.json")
     ev = {
         "recorded_utc": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
-        "profile": "v3",
+        "profile": m["fork"]["label"] if exact else "v3",
         "label": m["fork"]["label"],
         "pin": {"block_number": src["block_number"], "block_hash": src["block_hash"]},
         "source_endpoint": src["endpoint"],
@@ -270,7 +288,9 @@ def record_fork_v3(m: dict, evidence_dir: Path) -> Path:
         "keys_lifted": m["load"]["keys_lifted"],
         "manifest_root": m["manifest_root"],
         "fork": {k: m["fork"][k] for k in ("executor", "executor_flags", "unresolved_import_without_flag",
-                                           "genesis_hash", "code_hash", "spec", "fork_block")},
+                                           "genesis_hash", "code_hash", "spec", "fork_block",
+                                           "code_hash_equals_source", "overrides_at") if k in m["fork"]},
+        **({"overrides": m["overrides"]} if exact else {}),
         "timings": m["timings"],
     }
     _write_evidence(path, ev)
@@ -371,7 +391,8 @@ def record_verify(report, m: dict, evidence_dir: Path, endpoint: str, prefix: st
         "accounting": fork.get("accounting"),
         "overrides": [{"name": o["name"], "reason": o["reason"]} for o in m["overrides"]],
         "executor": fork.get("executor", "portaldot_dev (splice)"),
-        "reproduce": ("forklift up --target v3 --at <block>; " if fork.get("chain") == "v3" else "")
+        "reproduce": ("forklift up --target v3 --at <block>; " if fork.get("chain") == "v3" else
+                      "forklift up --runtime exact --at <block>; " if fork.get("runtime") == "exact" else "")
         + "forklift verify --sample <draws> --seed <seed> against a fork of this pin",
         "runs": runs,
     }
@@ -439,7 +460,7 @@ def verify_cmd(sample: int, seed: int | None, name: str, manifest_path: Path | N
     source = source or (m.get("source") or {}).get("endpoint")
     if not source:
         raise click.UsageError("the manifest has no source endpoint; pass --from")
-    if (m.get("fork") or {}).get("chain") == "v3":
+    if (m.get("fork") or {}).get("executor", "").startswith("@acala-network/chopsticks"):
         _verify_v3(m, endpoint, source, sample, seed, evidence_dir, as_json)
     node = m.get("node") or {}
     spec_path = (m.get("fork") or {}).get("chain_spec")
@@ -493,7 +514,9 @@ def _verify_v3(m: dict, endpoint: str, source: str, sample: int, seed: int | Non
         sys.exit(1)
     if evidence_dir is not None:
         try:
-            record_verify(report, m, evidence_dir, endpoint, prefix="verify-v3")
+            exact = m["fork"].get("runtime") == "exact"
+            record_verify(report, m, evidence_dir, endpoint,
+                          prefix=f"verify-{m['source']['spec_version']}-exact" if exact else "verify-v3")
         except (OSError, ValueError, KeyError, TypeError) as exc:
             click.echo(f"warning: verify finished (exit {report.exit_code}) but was NOT recorded in "
                        f"{evidence_dir}: {exc}", err=True)
@@ -515,10 +538,17 @@ def _verify_v3(m: dict, endpoint: str, source: str, sample: int, seed: int | Non
             f"(+{chk['key_set']['added']} / -{chk['key_set']['missing']}): {'ok' if chk['key_set']['ok'] else 'MISMATCH'}",
             f"values  {chk['all_lifted_values']['identical']:,} of {chk['all_lifted_values']['compared']:,} lifted "
             f"values identical on the fork: {'ok' if chk['all_lifted_values']['ok'] else 'MISMATCH'}",
-            f"        {chk['all_lifted_values']['child_root_not_served']} child-trie roots (Revive contract storage) "
-            "read null on the fork: Chopsticks does not serve them at the top trie (executor boundary)",
-            f"code    fork {chk['runtime']['fork_code_hash']}: {'ok (pinned V3 runtime)' if chk['runtime']['ok'] else 'MISMATCH'}",
+            *([f"        {chk['all_lifted_values']['child_root_not_served']} child-trie roots (contract storage) "
+               "read null on the fork: Chopsticks does not serve them at the top trie (executor boundary)"]
+              if chk['all_lifted_values']['child_root_not_served'] else []),
+            f"code    fork {chk['runtime']['fork_code_hash']}: "
+            + ("MISMATCH" if not chk['runtime']['ok'] else
+               "ok (mainnet's own runtime at the pin)" if m["fork"].get("runtime") == "exact" else "ok (pinned V3 runtime)"),
         ]
+        if "mmr_range" in chk:
+            mm_ = chk["mmr_range"]["source"] or {}
+            lines.append(f"mmr     skipped range: {mm_.get('leaves')} leaves, ~{mm_.get('keys_in_range_derived', 0):,} keys "
+                         f"derived, same on both sides: {'ok' if chk['mmr_range']['ok'] else 'MISMATCH'}")
         for mm in report.mismatches:
             lines.append(f"MISMATCH {mm['item']}  {mm['key']}  ({mm['why']})")
         lines.append(f"result  {'OK' if report.ok else 'MISMATCH'} (exit {report.exit_code})")

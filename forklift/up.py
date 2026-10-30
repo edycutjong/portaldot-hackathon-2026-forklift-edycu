@@ -182,24 +182,51 @@ def up_plate(m: dict) -> str:
     ])
 
 
+def apply_exact_overrides(endpoint: str, lifted: dict[str, str]) -> tuple[list, dict]:
+    """Build one block on the pin with mainnet's runtime, then set the ``exact`` overrides on it.
+
+    Chopsticks' ``dev_setStorage`` writes into the head block's state, so the pinned block keeps mainnet's
+    exact state (what ``verify`` reads) and the overrides start at pin + 1. Every value is read back.
+    """
+    from forklift.splice import exact_overrides
+
+    overrides = exact_overrides(lifted)
+    with RpcClient(endpoint, fork=True, timeout=300, retries=0) as c:  # loopback Chopsticks only (I3)
+        c.call("dev_newBlock", [{"count": 1}])
+        head = c.call("chain_getHeader")
+        number = int(head["number"], 16)
+        head_hash = c.call("chain_getBlockHash", [number])
+        c.call("dev_setStorage", [[[o.key, o.value] for o in overrides], head_hash])
+        wrong = [o.name for o in overrides if c.call("state_getStorage", [o.key, head_hash]) != o.value]
+    if wrong:
+        raise nodes.NodeError(f"the exact fork did not take the overrides: {', '.join(wrong)}")
+    return overrides, {"number": number, "hash": head_hash}
+
+
 def run_up_v3(at, *, name: str = "fork", ws_port: int, relift: bool = False, out_root: Path | None = None,
               chain=None) -> dict:
-    """Lift the V3 testnet at a pinned block, fork it there with Chopsticks, check what the fork serves.
+    """Lift a chain at a pinned block, fork it there with Chopsticks, check what the fork serves.
 
-    The fork must serve the pinned chain's genesis, the pinned runtime ``:code`` hash, and start at
-    exactly the lifted block; otherwise it is stopped and nothing is recorded as a V3 fork.
+    V3 (default): the pinned V3 runtime. Mainnet (``up --runtime exact``): mainnet's own ``:code`` at the pin,
+    read-only, so the fork runs the runtime mainnet ran at that block; the same state overrides as ``fast``
+    are then applied on a new block on top of the pin (never into it), so ``verify`` still reads the pin.
+
+    The fork must serve the pinned chain's genesis, the expected runtime ``:code`` hash, and start at
+    exactly the lifted block; otherwise it is stopped and nothing is recorded as a fork.
     """
     from forklift import chopsticks
     from forklift.chains import V3
 
     chain = chain or V3
+    exact = chain.id == "mainnet"
     cache = default_cache()
-    out_root = out_root or cache / "lifts" / chain.id
+    out_root = out_root or (cache / "lifts" if exact else cache / "lifts" / chain.id)
     t0 = time.monotonic()
-    lift_m, _storage, reused = obtain_lift(chain.endpoint, at, out_root, relift=relift)
+    lift_m, storage, reused = obtain_lift(chain.endpoint, at, out_root, relift=relift)
     t_lift = time.monotonic()
     src = lift_m["source"]
-    if src["code_hash"] != chain.code_hash or src["spec_name"] != chain.spec[0]:
+    expected_code = chain.code_hash or src["code_hash"]  # mainnet is not pinned to one runtime: its own at the pin
+    if src["code_hash"] != expected_code or src["spec_name"] != chain.spec[0]:
         raise nodes.NodeError(f"the lifted block runs {src['spec_name']}/{src['spec_version']} with :code "
                               f"{src['code_hash']}, not the pinned {chain.label} runtime {chain.code_hash}")
     fork_dir = cache / "forks" / name
@@ -211,14 +238,16 @@ def run_up_v3(at, *, name: str = "fork", ws_port: int, relift: bool = False, out
         problems = []
         if (ident["genesis_hash"] or "").lower() != chain.genesis_hash:
             problems.append(f"genesis {ident['genesis_hash']}")
-        if ident["code_hash"] != chain.code_hash:
+        if ident["code_hash"] != expected_code:
             problems.append(f":code {ident['code_hash']}")
         if ident["head_hash"] != src["block_hash"]:
             problems.append(f"head {ident['head_number']} {ident['head_hash']} is not the lifted block")
         if "dev_newBlock" not in ident["dev_methods"]:
             problems.append("no dev_newBlock: not a Chopsticks fork")
         if problems:
-            raise nodes.NodeError("the fork does not serve the lifted V3 block: " + "; ".join(problems))
+            raise nodes.NodeError(f"the fork does not serve the lifted {chain.label} block: " + "; ".join(problems))
+        overrides, applied_at = (apply_exact_overrides(rec["endpoint"], storage) if exact
+                                 else ([], None))
     except BaseException:
         try:
             chopsticks.stop(rec)
@@ -227,17 +256,25 @@ def run_up_v3(at, *, name: str = "fork", ws_port: int, relift: bool = False, out
         raise
     m = {k: v for k, v in lift_m.items() if k != "_paths"}
     m["lift_dir"] = lift_m["_paths"]["dir"]
+    label = fork_label(src["spec_version"], "exact") if exact else chopsticks.fork_label(chain)
+    m["profile"] = label if exact else m.get("profile")
+    if exact:
+        m["source"]["profile"] = lift_m["profile"]
+        m["overrides"] = [o.as_json() for o in overrides]
     m["fork"] = {
-        "label": chopsticks.fork_label(chain),
+        "label": label,
         "chain": chain.id,
+        "runtime": "exact" if exact else "pinned",
         "executor": chopsticks.PACKAGE,
         "executor_flags": {"allow_unresolved_imports": True, "mock_signature_host": True,
                            "build_block_mode": "Instant"},
-        "unresolved_import_without_flag": chopsticks.UNRESOLVED_IMPORT,
+        "unresolved_import_without_flag": chopsticks.UNRESOLVED_IMPORTS.get(chain.id),
         "genesis_hash": ident["genesis_hash"],
         "code_hash": ident["code_hash"],
         "spec": ident["spec"],
         "fork_block": {"number": ident["head_number"], "hash": ident["head_hash"]},
+        **({"code_hash_equals_source": ident["code_hash"] == src["code_hash"], "overrides_at": applied_at}
+           if exact else {}),
     }
     m["node"] = {"name": name, "endpoint": rec["endpoint"], "pid": rec["pid"], "executor": "chopsticks",
                  "db": rec["db"], "log": rec["log"]}
@@ -257,13 +294,22 @@ def run_up_v3(at, *, name: str = "fork", ws_port: int, relift: bool = False, out
 def up_v3_plate(m: dict) -> str:
     src, load, fork, node, t = m["source"], m["load"], m["fork"], m["node"], m["timings"]
     lifted = "reused the cached lift" if t["lift_reused"] else f"lifted in {t['lift_s']} s"
-    return "\n".join([
-        f"lift    {m['profile']} · #{src['block_number']:,}  {src['block_hash']}",
+    exact = fork.get("runtime") == "exact"
+    lines = [
+        f"lift    {m['source'].get('profile', m.get('profile'))} · #{src['block_number']:,}  {src['block_hash']}",
         f"        {load['keys_lifted']:,} keys · {lifted} · root {m['manifest_root']}",
-        f"fork    {fork['label']} · {fork['executor']} (allow-unresolved-imports: the V3 runtime imports "
-        f"{fork['unresolved_import_without_flag']})",
-        f"        genesis {fork['genesis_hash']} · :code {fork['code_hash'][:18]}… · {fork['spec'][0]}/{fork['spec'][1]}",
+        f"fork    {fork['label']} · {fork['executor']} (allow-unresolved-imports: the "
+        f"{'mainnet' if exact else 'V3'} runtime imports {fork['unresolved_import_without_flag']})",
+        f"        genesis {fork['genesis_hash']} · :code {fork['code_hash'][:18]}… · {fork['spec'][0]}/{fork['spec'][1]}"
+        + (" = mainnet's own runtime at the pin" if exact and fork.get("code_hash_equals_source") else ""),
         f"        starts at #{fork['fork_block']['number']:,} = the lifted block · ready in {t['ready_s']} s",
+    ]
+    if exact:
+        at = fork["overrides_at"]
+        lines.append(f"over    {len(m['overrides'])} overrides ({', '.join(o['name'] for o in m['overrides'])}) "
+                     f"set on #{at['number']:,}, read back; the pin keeps mainnet's state")
+    lines += [
         f"rpc     {node['endpoint']}  (PID {node['pid']}; stop with: forklift down --name {node['name']})",
         f"wrote   {m['_paths']['manifest']}",
-    ])
+    ]
+    return "\n".join(lines)

@@ -271,12 +271,16 @@ def _short(value: str | None) -> str | None:
 
 def verify_v3(manifest: dict, source: RpcClient, fork: RpcClient, lifted: dict[str, str], *, sample: int = 200,
               seed: int | None = None, index: StorageIndex | None = None) -> Report:
-    """A Chopsticks fork of the V3 testnet against the live chain at the pin and against Forklift's own lift.
+    """A Chopsticks fork (of the V3 testnet, or of mainnet for ``--runtime exact``) against the live chain at
+    the pin and against Forklift's own lift.
 
     - the fork's whole key set at its fork block equals the lifted key set (count and set hash);
     - every lifted value equals the fork's value at its fork block (all keys, not a sample);
     - ``sample`` keys drawn **on the live chain** (as on the mainnet path) are identical on the fork;
-    - genesis and runtime ``:code`` hash equal the V3 profile's.
+    - genesis and runtime ``:code`` hash equal the V3 profile's (exact: mainnet's own ``:code`` at the pin).
+
+    On mainnet the key set skips the MerkleMountainRange range, as the lift does (~5.4 M keys); its two
+    plain values are compared on both sides instead.
 
     There is no splice on this path, so there is no dev-kept, override or reset class. One executor
     boundary is named instead of hidden: Chopsticks 1.5.2 answers ``null`` for the top-trie value of a
@@ -284,14 +288,17 @@ def verify_v3(manifest: dict, source: RpcClient, fork: RpcClient, lifted: dict[s
     serves. Those keys are counted as ``child-root-not-served`` and listed; anything else that differs
     is a mismatch (exit 2), named by storage item.
     """
-    from forklift.chains import V3
+    from forklift.chains import CHAINS
+    from forklift.lift import mmr_summary, page_keys
 
     src, fk = manifest["source"], manifest["fork"]
+    chain = CHAINS[fk.get("chain", "v3")]
+    pinned_code = chain.code_hash or src["code_hash"]
     pin = src["block_hash"]
     fork_block = fk["fork_block"]["hash"]
     genesis = fork.call("chain_getBlockHash", [0])
-    if str(genesis).lower() != V3.genesis_hash or genesis != fk["genesis_hash"]:
-        raise VerifyError(f"{fork.endpoint} serves genesis {genesis}, not the V3 fork in this manifest")
+    if str(genesis).lower() != chain.genesis_hash or genesis != fk["genesis_hash"]:
+        raise VerifyError(f"{fork.endpoint} serves genesis {genesis}, not the {chain.label} fork in this manifest")
     if fork_block != pin:
         raise VerifyError(f"the manifest's fork block {fork_block} is not its pin {pin}")
     if seed is None:
@@ -316,7 +323,7 @@ def verify_v3(manifest: dict, source: RpcClient, fork: RpcClient, lifted: dict[s
             mismatches.append({"item": name, "key": key, "source": _short(on_source[key]),
                                "fork": _short(on_fork[key]), "why": "sampled key differs from the live chain"})
 
-    fork_set = fork_keys(fork, fork_block)
+    fork_set = page_keys(fork, fork_block).keys if chain.id == "mainnet" else fork_keys(fork, fork_block)
     lift_set = sorted(lifted)
     added = sorted(set(fork_set) - set(lift_set))
     missing = sorted(set(lift_set) - set(fork_set))
@@ -340,9 +347,12 @@ def verify_v3(manifest: dict, source: RpcClient, fork: RpcClient, lifted: dict[s
                               "identical": len(lift_set) - len(differs) - len(child_roots),
                               "child_root_not_served": len(child_roots), "child_root_keys": child_roots,
                               "ok": not differs},
-        "runtime": {"fork_code_hash": code_hash, "pinned": V3.code_hash, "ok": code_hash == V3.code_hash},
-        "genesis": {"fork": genesis, "pinned": V3.genesis_hash, "ok": True},
+        "runtime": {"fork_code_hash": code_hash, "pinned": pinned_code, "ok": code_hash == pinned_code},
+        "genesis": {"fork": genesis, "pinned": chain.genesis_hash, "ok": True},
     }
+    if chain.id == "mainnet":
+        on_chain, on_fork_mmr = mmr_summary(source, pin), mmr_summary(fork, fork_block)
+        checks["mmr_range"] = {"source": on_chain, "fork": on_fork_mmr, "ok": on_chain == on_fork_mmr}
     ok = not mismatches and all(c["ok"] for c in checks.values())
     head = fork.call("chain_getHeader")
     return Report(ok=ok, seed=seed, draws=len(draws), unique_keys=len(keys), classes=dict(classes),
