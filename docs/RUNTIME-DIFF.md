@@ -238,7 +238,7 @@ added. Storage: on both / removed / added. Constants: same / different.
 
 `forklift runtime-compare` ran `Balances.transfer` as `5DvRSgerqB5KHPqWGGnCtRJgJokj91XyGLm3aZ5DKH1rMndf` (through `Sudo.sudo_as`, signed by the
 fork's sudo key) on two forks of the same mainnet pin #2,725,953, recorded
-2026-10-30T20:56:32+00:00 in `evidence/runtime-rehearse-2725953.json`. Both forks carry the same
+2026-10-30T21:15:32+00:00 in `evidence/runtime-rehearse-2725953.json`. Both forks carry the same
 four state keys (sudo key, era policy, the dev key's account with 50,000 POT free, issuance); the fast fork's
 dev-key account also keeps the dev genesis's staking lock (30,000 POT frozen, 3 consumers), and only fast
 overrides `:code`: it boots portaldot_dev on the dev runtime wasm, while `exact` runs mainnet's own wasm under
@@ -246,9 +246,11 @@ Chopsticks. Why `exact` bypasses the pool: [`evidence/chopsticks-1002-2725953.js
 
 | | fast | exact |
 |---|---|---|
-| extrinsic | `5-1` | `2725955-1` |
+| extrinsic | `4-1` | `2725955-1` |
 | runtime `:code` | `0x8c0d4d9d638ad05e…` | `0xc8e7e77fe84f1231…` |
 | submitted via | `author_submitExtrinsic` | `dev_newBlock` (pool bypassed) |
+
+2 runs are recorded, each on freshly started forks. The fields that differ are the same in every run; the timestamp step was 5,996, 5,990 ms on fast and 60,000, 60,000 ms on exact. The table shows the last run.
 
 | field | fast | exact | same? | why it differs |
 |---|---|---|---|---|
@@ -262,9 +264,9 @@ Chopsticks. Why `exact` bypasses the pool: [`evidence/chopsticks-1002-2725953.js
 | code_hash | `0x8c0d4d9d638ad05e…` | `0xc8e7e77fe84f1231…` | **no** | fast runs the dev runtime wasm; exact runs mainnet's wasm, the one at the pin |
 | sudo_key_fee | 0 | 0 | yes | measured: the sudo key's free balance did not move |
 | dispatch_weight | 323,278,000 | 323,278,000 | yes |  |
-| timestamp_step_ms | 6,000 | 60,000 | **no** | the block's timestamp step: each runtime's slot duration (see the constants below) |
-| block_number | 5 | 2,725,955 | **no** | fast starts a new chain on its own genesis (block numbers restart at 1); exact builds on mainnet's own history (pin + 1 carries the overrides, the call lands after it) |
-| tx_hash | `0xb0dd467c75824b27…` | `0x9e4ebbad82aa016c…` | **no** | the sudo key signs over each chain's genesis hash (immortal era), and the two genesis hashes differ |
+| timestamp_step_ms | 5,990 | 60,000 | **no** | the block's timestamp step: each runtime's slot duration (see the constants below) |
+| block_number | 4 | 2,725,955 | **no** | fast starts a new chain on its own genesis (block numbers restart at 1); exact builds on mainnet's own history (pin + 1 carries the overrides, the call lands after it) |
+| tx_hash | `0x197956cf095cddb4…` | `0x65e8cbdb33630c9a…` | **no** | sr25519 signatures are randomised, so no two signings give the same hash; the signed payload also differs: it covers each chain's genesis hash (immortal era) |
 
 The two 1002 runtimes: 57 constants with the same bytes, 12 different; calls 154 same, 1 changed; pallets only in exact 0, only in fast 0.
 
