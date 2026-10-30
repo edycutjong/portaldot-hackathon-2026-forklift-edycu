@@ -18,7 +18,7 @@
 
   ![status](https://img.shields.io/badge/status-check--in_slice-orange?style=flat)
   ![python](https://img.shields.io/badge/python-3.11%2B-blue?style=flat)
-  ![tests](https://img.shields.io/badge/tests-320_offline_%2B_10_live-brightgreen?style=flat)
+  ![tests](https://img.shields.io/badge/tests-323_offline_%2B_10_live-brightgreen?style=flat)
   [![CI](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/actions/workflows/ci.yml)
   [![Release](https://img.shields.io/github/v/release/edycutjong/portaldot-hackathon-2026-forklift-edycu?sort=semver)](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/releases/latest)
   ![license](https://img.shields.io/badge/license-MIT-lightgrey?style=flat)
@@ -108,7 +108,7 @@ Forklift is five steps.
   endpoint or a chain whose genesis is mainnet's (or V3's, unless it answers Chopsticks' `dev_*` methods). The two
   paths to a real chain are `rehearse --send` and `receipt --target v3`: a testnet client that sends only
   `author_submitExtrinsic`, only to V3.
-- `--json` output and documented exit codes ([`docs/EXIT-CODES.md`](docs/EXIT-CODES.md)); 320 offline tests plus 10 live
+- `--json` output and documented exit codes ([`docs/EXIT-CODES.md`](docs/EXIT-CODES.md)); 323 offline tests plus 10 live
   tests.
 
 **Planned (not built, not claimed):** a hosted fork, a PyPI package and a CI action.
@@ -362,7 +362,7 @@ there is no frontend.
 | V3 testnet: the same three replayed on forks of their parent blocks | 10/10, 14/14 and 16/16 fields equal to the chain, fees equal to the planck | `evidence/replay-v3.json` |
 | An unfunded signer | the fork's pool rejects it (`Invalid: Payment`), exit `5`, nothing sent | `evidence/rehearse-v3.json` |
 | V3 testnet: Fork Receipt v2 (Revive contract) | `0x52f0edd92af9ff410ca63ccc83735552e1b2abc7`: deploy 257997-1, attest 258000-1, both finalized · emitted event and stored `receipt()` = the #118,061 manifest (root, 5,508 keys) · deposits 18.882 + 7.683 tPOT = the dry runs | `evidence/receipt-v3.json` |
-| Tests | 320 offline passed (+1 that runs only when `solc` 0.8.30 is installed) · 10 live tests (deselected offline; run with `pytest -m live`) | `pytest -q` |
+| Tests | 323 offline passed (+1 that runs only when `solc` 0.8.30 is installed) · 10 live tests (deselected offline; run with `pytest -m live`) | `pytest -q` |
 
 One benchmark run of the lift from a fresh process (a stub: one run per file; p50/p95 over several runs is planned): #2,725,953 in 19.85 s (keys 7.41 s, values 12.44 s), same `manifest_root` (`evidence/bench-lift-2026-10-14.json`).
 
