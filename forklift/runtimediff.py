@@ -119,6 +119,10 @@ def show_value(tree: Any, value_hex: str) -> str:
     return value_hex if len(value_hex) <= 34 else f"{value_hex[:18]}…{value_hex[-8:]} ({len(raw)} B)"
 
 
+def _type_name(tree: Any) -> str:
+    return tree if isinstance(tree, str) else next(iter(tree))
+
+
 def compare_call(a: Call, b: Call) -> str:
     """Empty when the two calls take the same arguments (names and layouts); else the first difference."""
     # A leading underscore marks an unused parameter in Rust (``_remark``): same position, same bytes.
@@ -153,7 +157,10 @@ def compare_runtimes(a: dict[str, PalletInfo], b: dict[str, PalletInfo]) -> dict
         for k in sorted(set(pa.constants) & set(pb.constants)):
             (ta, va), (tb, vb) = pa.constants[k], pb.constants[k]
             if va != vb:
-                consts.append({"constant": k, "mainnet": show_value(ta, va), "v3": show_value(tb, vb)})
+                sa, sb = show_value(ta, va), show_value(tb, vb)
+                if sa == sb:  # same number, other encoding width: say so instead of printing "100 → 100"
+                    sa, sb = f"{sa} ({_type_name(ta)})", f"{sb} ({_type_name(tb)})"
+                consts.append({"constant": k, "mainnet": sa, "v3": sb})
         row.update({
             "calls": {"same": same, "changed": changed, "only_mainnet": sorted(set(pa.calls) - set(pb.calls)),
                       "only_v3": sorted(set(pb.calls) - set(pa.calls)), "index_moved": moved},
@@ -400,7 +407,7 @@ def rehearse_on(client, label: str, who: str, pallet: str, function: str, raw_ar
 WHY = {
     "block_number": "fast starts a new chain on its own genesis (block numbers restart at 1); exact builds on "
                     "mainnet's own history (pin + 1 carries the overrides, the call lands after it)",
-    "tx_hash": "the sudo key signs for each chain's genesis hash and its own nonce there",
+    "tx_hash": "the sudo key signs over each chain's genesis hash (immortal era), and the two genesis hashes differ",
     "code_hash": "fast runs the dev runtime wasm; exact runs mainnet's wasm, the one at the pin",
     "impl_version": "the dev runtime and mainnet's runtime are different builds of spec 1002",
     "sudo_key_fee": "the outer extrinsic's fee, computed by each runtime from its own weights and fee constants",
@@ -459,8 +466,11 @@ def render_rehearsal(rh: dict) -> list[str]:
         f"`forklift runtime-compare` ran `{run['call']}` as `{run['who']}` (through `Sudo.sudo_as`, signed by the",
         f"fork's sudo key) on two forks of the same mainnet pin #{rh['pin']['block_number']:,}, recorded",
         f"{run['recorded_utc']} in `evidence/runtime-rehearse-{rh['pin']['block_number']}.json`. Both forks carry the same",
-        "state overrides (sudo key, era policy, the dev key's balance, issuance); `fast` boots portaldot_dev on the",
-        "dev runtime wasm, `exact` runs mainnet's own wasm under Chopsticks.",
+        "four state keys (sudo key, era policy, the dev key's account with 50,000 POT free, issuance); the fast fork's",
+        "dev-key account also keeps the dev genesis's staking lock (30,000 POT frozen, 3 consumers), and only fast",
+        "overrides `:code`: it boots portaldot_dev on the dev runtime wasm, while `exact` runs mainnet's own wasm under",
+        "Chopsticks. Why `exact` bypasses the pool: [`evidence/chopsticks-1002-2725953.json`]"
+        "(../evidence/chopsticks-1002-2725953.json).",
         "",
         "| | fast | exact |",
         "|---|---|---|",
@@ -475,7 +485,7 @@ def render_rehearsal(rh: dict) -> list[str]:
         fv, ev_ = row["fast"], row["exact"]
         if row["field"] == "inner_event_attributes":  # long JSON: say what was compared, the bytes are in the evidence
             fv = ev_ = f"{len(row['fast'])} events, every attribute"
-        note = row.get("why") or ("measured: the sudo key's free balance did not move"
+        note = (WHY.get(row["field"]) if not row["same"] else "") or ("measured: the sudo key's free balance did not move"
                                   if row["field"] == "sudo_key_fee" and row["fast"] == 0 else "")
         out.append(f"| {row['field']} | {_short(fv)} | {_short(ev_)} | {'yes' if row['same'] else '**no**'} | {note} |")
     out += ["", f"The two 1002 runtimes: {cons['constants_same']} constants with the same bytes, "

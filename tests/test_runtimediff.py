@@ -99,3 +99,8 @@ def test_runtime_call_arguments_are_one_leaf_and_constant_bytes_are_hex():
     assert not rd.is_runtime_call("T::Balance")
     assert rd._bytes_hex("0x2a00") == "0x2a00" and rd._bytes_hex("*\x00") == "0x2a00"
     assert rd.show_value("u32", "0x30750000") == "30,000"
+
+
+def test_a_constant_with_the_same_number_in_another_width_names_both_types():
+    row = next(k for k in _pallet("Multisig")["constants"]["differ"] if k["constant"] == "MaxSignatories")
+    assert (row["mainnet"], row["v3"]) == ("100 (u16)", "100 (u32)")
