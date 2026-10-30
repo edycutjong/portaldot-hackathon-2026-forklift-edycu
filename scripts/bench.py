@@ -242,7 +242,7 @@ def render(b: dict, evidence_name: str) -> str:
             f"{'yes' if lift.get('manifest_roots_identical') else '**NO**'} (`{lift.get('manifest_root')}`).",
         ]
     out += ["", "## Machine load", "", f"1-minute load average on {h['cores']} cores, read before the first and after the "
-            "last run of each command.", "", "| Command | Before | After |", "|---|---|---|"]
+            "last run of each command (six readings; they include the benchmark's own fork processes).", "", "| Command | Before | After |", "|---|---|---|"]
     for s_ in b["scenarios"].values():
         out.append(f"| `{s_['command']}` | {s_['load_avg_1m_before']} | {s_['load_avg_1m_after']} |")
     out += ["", "## Per-run seconds", "", "| Command | Runs (s, in order) | Exit codes |", "|---|---|---|"]
@@ -253,7 +253,9 @@ def render(b: dict, evidence_name: str) -> str:
     for name, s in b["scenarios"].items():
         d = s["per_run"][0] if s["per_run"] else {}
         if name == "verify":
-            out.append(f"- `verify`: every run drew 200 keys from live V3 with a new seed ("
+            u = [r.get("unique_keys", 0) for r in s["per_run"]]
+            out.append(f"- `verify`: every run made 200 draws ({min(u)} to {max(u)} distinct keys; draws are with "
+                       f"replacement) from live V3 with a new seed ("
                        f"{', '.join(str(r.get('seed')) for r in s['per_run'])}) against the fork at V3 "
                        f"#{d.get('pin', 0):,} and exited 0 with 0 mismatches.")
         elif name == "rehearse":
@@ -273,10 +275,12 @@ def render(b: dict, evidence_name: str) -> str:
         "",
         "```bash",
         "forklift up --target v3 --at head --name v3 --ws-port 59944   # the fork verify and rehearse run against",
-        "python scripts/bench.py --runs 7                              # about 17 minutes; then: forklift down --name v3",
+        "python scripts/bench.py --runs 7                              # roughly 15 to 17 minutes; then: forklift down --name v3",
         "```",
         "",
-        "Earlier single lift run (2026-10-14, 19.85 s, `evidence/bench-lift-2026-10-14.json`) is kept as history. "
+        "The earlier single lift run (2026-10-14, `evidence/bench-lift-2026-10-14.json`) reported 19.85 s on the lift's own "
+        "clock (compare the 'keys + values' row above) and 20.38 s in-process with the metadata and MMR reads, with no "
+        "process start-up; it is kept as history. "
         "Numbers differ per run, per machine and per load; the claim here is the spread measured, not a guarantee.",
         "",
     ]

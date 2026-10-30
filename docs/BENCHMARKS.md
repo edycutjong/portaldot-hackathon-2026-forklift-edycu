@@ -28,7 +28,7 @@ Each run is a **fresh `forklift` process**; a number is the wall-clock seconds f
 
 ## Machine load
 
-1-minute load average on 10 cores, read before the first and after the last run of each command.
+1-minute load average on 10 cores, read before the first and after the last run of each command (six readings; they include the benchmark's own fork processes).
 
 | Command | Before | After |
 |---|---|---|
@@ -51,7 +51,7 @@ Each run is a **fresh `forklift` process**; a number is the wall-clock seconds f
 ## What each run checked
 
 - `lift`: 16,324 keys, a new empty output directory and `--no-resume` every run, so no run reused a checkpoint or an earlier lift.
-- `verify`: every run drew 200 keys from live V3 with a new seed (20261031001, 20261031002, 20261031003, 20261031004, 20261031005, 20261031006, 20261031007) against the fork at V3 #258,306 and exited 0 with 0 mismatches.
+- `verify`: every run made 200 draws (194 to 198 distinct keys; draws are with replacement) from live V3 with a new seed (20261031001, 20261031002, 20261031003, 20261031004, 20261031005, 20261031006, 20261031007) against the fork at V3 #258,306 and exited 0 with 0 mismatches.
 - `rehearse`: one `System.remark` signed from the V3 funder, applied on the fork, predicted success each run; **no `--send`**, so nothing was written to V3. A rehearse leaves the signer's fee on the fork only, so each run started from a freshly lifted fork (`down` + `up --target v3`, setup, not in the seconds above).
 - `forklift replay 118621-1`: 14 fields compared with the chain, 0 differ, every run.
 - `forklift replay 2700013:1`: 24 fields compared with the chain, 0 differ, every run.
@@ -60,7 +60,7 @@ Each run is a **fresh `forklift` process**; a number is the wall-clock seconds f
 
 ```bash
 forklift up --target v3 --at head --name v3 --ws-port 59944   # the fork verify and rehearse run against
-python scripts/bench.py --runs 7                              # about 17 minutes; then: forklift down --name v3
+python scripts/bench.py --runs 7                              # roughly 15 to 17 minutes; then: forklift down --name v3
 ```
 
-Earlier single lift run (2026-10-14, 19.85 s, `evidence/bench-lift-2026-10-14.json`) is kept as history. Numbers differ per run, per machine and per load; the claim here is the spread measured, not a guarantee.
+The earlier single lift run (2026-10-14, `evidence/bench-lift-2026-10-14.json`) reported 19.85 s on the lift's own clock (compare the 'keys + values' row above) and 20.38 s in-process with the metadata and MMR reads, with no process start-up; it is kept as history. Numbers differ per run, per machine and per load; the claim here is the spread measured, not a guarantee.
