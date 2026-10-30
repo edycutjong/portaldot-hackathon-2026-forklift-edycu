@@ -16,6 +16,8 @@ flowchart TB
     MN[("Portaldot mainnet\nwss://mainnet.portaldot.io\nspec 1002, read-only")]
     BIN[["portaldot_dev 2.0.0\n(tarball sha256-checked\non download)"]]
     FORK[("local fork\nfork-1002-fast\nloopback ports, 0 peers")]
+    V3[("Portaldot V3 testnet\nportaldot-v3 / 3002\nread; writes only via\nrehearse --send, receipt --target v3")]
+    CHOP[["Chopsticks 1.5.2\nfork-v3, or fork-1002-exact\non mainnet's own :code"]]
 
     subgraph cli["cli.py: forklift ..."]
       C_LIFT["lift"]
@@ -24,6 +26,8 @@ flowchart TB
       C_ACT["fund / as"]
       C_REC["receipt"]
       C_TX["tx"]
+      C_V3["rehearse / replay /\nreceipt --target v3"]
+      C_RPT["runtime-diff /\nmigrate-report"]
     end
 
     subgraph engine["engine"]
@@ -38,6 +42,8 @@ flowchart TB
       TX["tx.py\nextrinsic envelope, signing,\nevent + result decoding"]
       ACT["act.py\nSudo.set_balance,\nSudo.sudo_as"]
       REC["receipt.py\n+ contracts/receipt.wat\nattest, rent check"]
+      RHS["rehearse.py\npredict on fork, --send to V3,\ncompare field by field"]
+      RVR["revive_receipt.py\n+ contracts/ForkReceipt.yul\nReceipt v2 on V3 Revive"]
     end
 
     EV[("evidence/*.json\nscripts/proof.py -> docs/PROOF.md")]
@@ -51,6 +57,14 @@ flowchart TB
     C_ACT --> ACT --> TX
     C_REC --> REC --> TX
     C_TX --> TX
+    C_V3 --> RHS
+    C_V3 --> RVR
+    C_RPT --> RPC
+    RHS --> RPC
+    RHS -- "predict" --> CHOP
+    RHS -- "author_submitExtrinsic" --> V3
+    RVR --> V3
+    RPC -- "reads" --> V3
     LIFT --> RPC
     VER --> RPC
     TX --> RPC
@@ -71,6 +85,7 @@ flowchart TB
     C_VER -.-> EV
     C_ACT -.-> EV
     C_REC -.-> EV
+    C_V3 -.-> EV
 ```
 
 Solid arrows are the main calls and data flow in the code (not every import). Dotted arrows are the optional `--evidence DIR` output of each command

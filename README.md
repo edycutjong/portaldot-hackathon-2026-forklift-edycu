@@ -17,7 +17,7 @@
 
   <br/>
 
-  ![status](https://img.shields.io/badge/status-check--in_slice-orange?style=flat)
+  ![status](https://img.shields.io/badge/status-final_build-orange?style=flat)
   ![python](https://img.shields.io/badge/python-3.11%2B-blue?style=flat)
   ![tests](https://img.shields.io/badge/tests-324_offline_%2B_10_live-brightgreen?style=flat)
   [![CI](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu/actions/workflows/ci.yml)
@@ -42,8 +42,8 @@ Portaldot Hacker House 2026 · Track: Node Operations & Tooling
 **Forklift** (`portaldot-forklift`, version 0.1.0): a command-line tool that gives a Portaldot developer a local chain
 that starts from **mainnet's real state** instead of an empty dev chain.
 
-> **Status: check-in slice.** Everything described as shipped below is in this repository and was measured on
-> 2026-10-14 (mainnet path) and 2026-10-20 (V3 path) (measured numbers come from [`docs/PROOF.md`](docs/PROOF.md), generated from [`evidence/`](evidence); test counts from `pytest -q`; the contract size from `wc -c forklift/contracts/receipt.wasm`). Everything
+> **Status: final build.** Everything described as shipped below is in this repository and was measured on
+> 2026-10-14 (mainnet path), 2026-10-20 (V3 path) and 2026-10-31 (exact runtime, replays, receipt v2, benchmarks) (measured numbers come from [`docs/PROOF.md`](docs/PROOF.md), generated from [`evidence/`](evidence); test counts from `pytest -q`; the contract size from `wc -c forklift/contracts/receipt.wasm`). Everything
 > else is marked **planned**. Forklift has two targets, always labelled: **`fork-v3`**, a fork of the live
 > **Portaldot V3 testnet** run by Chopsticks with V3's own runtime, and **`fork-1002-fast`**, a local fork of
 > Portaldot mainnet state (spec 1002) on the `portaldot_dev` dev runtime, which is not V3 (see *V3 status*).
@@ -170,8 +170,12 @@ flowchart LR
       NODE["node.py + up.py\nboot, RPC readiness"]
       VER["verify.py"]
       ACT["tx.py + act.py\nfund / as"]
-      REC["receipt.py\nFork Receipt contract"]
+      REC["receipt.py\nFork Receipt v1 (WAT)"]
+      RHS["rehearse.py\npredict, --send, compare"]
+      RVR["revive_receipt.py\nFork Receipt v2 (Revive)"]
     end
+    V3[("Portaldot V3 testnet\nread; writes only via\nrehearse --send, receipt --target v3")]
+    CHOP[["Chopsticks 1.5.2\nfork-v3"]]
     BIN[["portaldot_dev 2.0.0"]]
     F[("local fork\nfork-1002-fast")]
     EV[("evidence/*.json\n-> docs/PROOF.md")]
@@ -180,6 +184,10 @@ flowchart LR
     VER -- "read at genesis" --> F
     ACT --> F
     REC --> F
+    RPC -- "reads" --> V3
+    RHS -- "predict" --> CHOP
+    RHS -- "author_submitExtrinsic" --> V3
+    RVR --> V3
     tool -.-> EV
 ```
 
@@ -407,7 +415,7 @@ pytest -q        # offline; CI runs the same, see [CONTRIBUTING.md](CONTRIBUTING
 
 ## 🗺️ Roadmap
 
-**Completed (check-in slice, 2026-10-14)**
+**Completed (check-in slice, 2026-10-14, and the V3 target, 2026-10-20)**
 
 - [x] JSON-RPC client with retry/backoff and the endpoint write-guard
 - [x] Pinned lift with MMR cursor jump, checkpointing and exit code `4`; completeness check against a second, unskipped listing
