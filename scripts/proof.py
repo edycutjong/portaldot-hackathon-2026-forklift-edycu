@@ -53,7 +53,8 @@ def render_v3() -> list[str]:
     verifies = sorted(_load("verify-v3-*.json"), key=lambda d: d["pin"]["block_number"])
     rehearsals = [r for d in _load("rehearse-v3.json") for r in d["runs"]]
     replays = [r for d in _load("replay-v3.json") for r in d["runs"]]
-    if not (lifts or forks or verifies or rehearsals or replays):
+    receipts = [r for d in _load("receipt-v3.json") for r in d["runs"]]
+    if not (lifts or forks or verifies or rehearsals or replays or receipts):
         return []
     out = [
         "## Portaldot V3 testnet (profile `v3`)",
@@ -134,6 +135,37 @@ def render_v3() -> list[str]:
                        + ("" if c["match"] else " · differs: " + ", ".join(c["differs"]))
                        + f" | {r['exit_code']} | [node-console]({a['explorer']}) |")
         out.append("")
+    if receipts:
+        out += ["### Fork Receipt v2: a Revive contract on the V3 testnet (`forklift receipt --target v3`)", "",
+                "`forklift/contracts/ForkReceipt.yul` (interface `IForkReceipt.sol`), EVM bytecode run by V3's Revive pallet.",
+                "`attest` stores the manifest root and key count under the pinned block hash and emits all three plus the",
+                "attester. Each write was dry-run through `ReviveApi` first; the deposit column is the dry run, the funder",
+                "delta is what the chain charged (deposit held + fee). `stored` is `receipt(blockHash)` read at the attest block.", ""]
+        for r in receipts:
+            m = r["manifest"]
+            out += [f"Contract `{r.get('address')}` · attester `{r['signer']}` = `{r['attester_h160']}` · "
+                    f"recorded {r.get('recorded_utc')} · exit {r['exit_code']}"
+                    + ("" if not r.get("mismatch") else " · mismatch: " + ", ".join(r["mismatch"])), "",
+                    "| Step | Call | V3 testnet block (extrinsic) | Tx hash | Finalized | Deposit (dry run) | Fee | Funder delta | Explorer |",
+                    "|---|---|---|---|---|---|---|---|---|"]
+            for kind in ("deploy", "attest"):
+                st = r.get(kind)
+                if st:
+                    delta = st["deltas"].get(r["signer"])
+                    out.append(f"| {kind} | `{st['call']}` | #{st['block_number']:,} ({st['extrinsic_id']}) | `{st['tx_hash']}` | "
+                               f"{'yes' if st['finalized'] else 'no'} | {_tpot(st['dry_run']['storage_deposit'])} | "
+                               f"{_tpot(st['fee'])} | {_tpot(delta)} | [node-console]({st['explorer']}) |")
+            ev = (r.get("attest") or {}).get("emitted") or []
+            d = ev[0]["decoded"] if ev and ev[0].get("decoded") else {}
+            stored = r.get("stored") or {}
+            out += ["", "| Field | Manifest (`" + str(m.get("profile")) + f"` #{m['block_number']:,}) | Emitted event | Stored `receipt()` |",
+                    "|---|---|---|---|",
+                    f"| block hash | `{m['block_hash']}` | `{d.get('block_hash')}` | (the lookup key) |",
+                    f"| manifest root | `{m['manifest_root']}` | `{d.get('manifest_root')}` | `{stored.get('manifest_root')}` |",
+                    f"| keys lifted | {m['keys_lifted']:,} | {d.get('keys_lifted', 0):,} | {stored.get('keys_lifted', 0):,} |",
+                    f"| attester (H160) | `{r['attester_h160']}` | `{d.get('attester')}` | |", ""]
+        out += ["Re-read any of them by extrinsic id: `forklift tx <block>-<index> --target v3` (decodes the Receipt",
+                "event and reads `receipt()` at the finalized head).", ""]
     unsent = [r for r in rehearsals if not r.get("actual")]
     if unsent:
         out += ["### Predictions not sent", "", "| Call | Signer | Fork outcome | Why not sent |", "|---|---|---|---|"]
@@ -203,8 +235,11 @@ def render() -> str:
             f"{c['extra_in_lift']} | {c['listing_pages']:,} pages, {c['listing_seconds']} s | "
             f"{'yes' if c['pass'] else '**NO**'} | `{c['_file']}` |"
         )
-    forks = sorted(_load("fork-[0-9]*.json"), key=lambda d: d["pin"]["block_number"])
-    verifies = sorted(_load("verify-[0-9]*.json"), key=lambda d: d["pin"]["block_number"])
+    # *-1002-exact-*.json (a Chopsticks fork, `up --runtime exact`) has another shape (no splice accounting,
+    # other checks): these tables cover the spliced `fast` forks only
+    forks = sorted((d for d in _load("fork-[0-9]*.json") if "accounting" in d), key=lambda d: d["pin"]["block_number"])
+    verifies = sorted((d for d in _load("verify-[0-9]*.json") if "executor" not in d),
+                      key=lambda d: d["pin"]["block_number"])
     if forks:
         out += [
             "",

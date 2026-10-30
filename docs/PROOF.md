@@ -68,6 +68,30 @@ included them, compared with what the V3 testnet recorded. Nothing is sent.
 | 118621-1 | `0x2247c66b758511ac0f1dcae218343c769e1f7d7d311f84a22ee71d9673fdc36f` | #118,620 `0xe7e5645c45500f61cb8a5f6c5dad696dc73614e12dffbcb19f0f5931a6c77754` | 0.01480596072802 tPOT / 0.01480596072802 tPOT | 14/14 | 0 | [node-console](https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x0ae8b2b94d34dc27fd931b8095654675510dc53533582ad0cad19712591db8a9) |
 | 118669-1 | `0xd371c50aa2b41cef899f3542351e23fce01dc4c74f5e0544b9f67a53a3a3ef6a` | #118,668 `0xbdd10d379d427ff812c995d07d973841e317c833daeb3ccc5b4c68893c2ae175` | 0.01710647151751 tPOT / 0.01710647151751 tPOT | 16/16 | 0 | [node-console](https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0x05ee11c4b3835f6b535a3f8fac442fc9a4c95c4b24353c89ed1a8eac1d12eca7) |
 
+### Fork Receipt v2: a Revive contract on the V3 testnet (`forklift receipt --target v3`)
+
+`forklift/contracts/ForkReceipt.yul` (interface `IForkReceipt.sol`), EVM bytecode run by V3's Revive pallet.
+`attest` stores the manifest root and key count under the pinned block hash and emits all three plus the
+attester. Each write was dry-run through `ReviveApi` first; the deposit column is the dry run, the funder
+delta is what the chain charged (deposit held + fee). `stored` is `receipt(blockHash)` read at the attest block.
+
+Contract `0x52f0edd92af9ff410ca63ccc83735552e1b2abc7` · attester `5EnCf9PauY6RtW5jCTxCXQFCMEo5U2kP3pLexZahX1HCejvg` = `0x2c85e86717368d596e379155a3ec4ad1e46ebe7a` · recorded 2026-10-30T21:36:32Z · exit 0
+
+| Step | Call | V3 testnet block (extrinsic) | Tx hash | Finalized | Deposit (dry run) | Fee | Funder delta | Explorer |
+|---|---|---|---|---|---|---|---|---|
+| deploy | `Revive.instantiate_with_code` | #257,997 (257997-1) | `0x54365766d8182b7ca54a1ac8a5abaecd9ac490bf4933ae039775f561f2c8480d` | yes | 18.882 tPOT | 0.02150851782764 tPOT | -18.90350851782764 tPOT | [node-console](https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xc2f6afd8e06b5a3479e289a9c111a1395f5bb232326f9dff279407e80560aa74) |
+| attest | `Revive.call` | #258,000 (258000-1) | `0x8e1588a185686bd52ac764c3beffa5aa39ea985efb55745dc76e609be9d96710` | yes | 7.683 tPOT | 0.02490827958021 tPOT | -7.70790827958021 tPOT | [node-console](https://node-console.portaldot.dev/?rpc=wss%3A%2F%2Ftest-node-v3.portaldot.dev#/explorer/query/0xd44873179ac7e0dcbc609de0816a4e5f888ba02ccd88cefee9e55f313ba3fd8a) |
+
+| Field | Manifest (`v3-read (spec 3002)` #118,061) | Emitted event | Stored `receipt()` |
+|---|---|---|---|
+| block hash | `0xec57106c405af29ab9a5a75f9281050bd1f2755c4592ba3b55e0d19d4603d8ac` | `0xec57106c405af29ab9a5a75f9281050bd1f2755c4592ba3b55e0d19d4603d8ac` | (the lookup key) |
+| manifest root | `0xfe4962de728b8a17601f3e97dc884a4c21be38a981b8c36cef47f02248c430a4` | `0xfe4962de728b8a17601f3e97dc884a4c21be38a981b8c36cef47f02248c430a4` | `0xfe4962de728b8a17601f3e97dc884a4c21be38a981b8c36cef47f02248c430a4` |
+| keys lifted | 5,508 | 5,508 | 5,508 |
+| attester (H160) | `0x2c85e86717368d596e379155a3ec4ad1e46ebe7a` | `0x2c85e86717368d596e379155a3ec4ad1e46ebe7a` | |
+
+Re-read any of them by extrinsic id: `forklift tx <block>-<index> --target v3` (decodes the Receipt
+event and reads `receipt()` at the finalized head).
+
 ### Predictions not sent
 
 | Call | Signer | Fork outcome | Why not sent |
