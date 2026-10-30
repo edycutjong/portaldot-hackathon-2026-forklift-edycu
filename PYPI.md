@@ -14,10 +14,14 @@ and rehearse a transaction on it before you send it. Built for the Portaldot Hac
 
 ## Install
 
+Not on PyPI yet (the first upload waits for the pending publisher to be registered). Install from the repository:
+
 ```sh
-pip install portaldot-forklift     # Python 3.11+
+pip install git+https://github.com/edycutjong/portaldot-hackathon-2026-forklift-edycu   # Python 3.11+
 forklift --help
 ```
+
+Once published: `pip install portaldot-forklift`.
 
 The V3 path runs Chopsticks through `npx`, so it needs Node.js 18+. The mainnet `--runtime fast` path downloads the
 official `portaldot_dev` node binary and checks its sha256 first.

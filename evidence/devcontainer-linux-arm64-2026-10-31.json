@@ -1,0 +1,22 @@
+{
+  "what": "Local exercise of .devcontainer/devcontainer.json with the devcontainer CLI (npx @devcontainers/cli@latest up / exec) on Docker Desktop, Linux aarch64. Not a GitHub Codespaces run.",
+  "recorded": "2026-10-31 (WIB), forklift 0.1.0 source tree at 73d0e73's parent plus the P24 files",
+  "attempts": [
+    {
+      "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm (Debian 12, glibc 2.36)",
+      "postCreateCommand": "succeeded (pip install -e '.[dev]', Chopsticks 1.5.2 fetched via npx, forklift --version)",
+      "forklift up --target v3": "failed, exit 3: Chopsticks exited with code 1: DriverPackageNotInstalledError: SQLite package has not been found installed",
+      "cause": "node -e require('sqlite3') -> /lib/aarch64-linux-gnu/libm.so.6: version `GLIBC_2.38' not found (also GLIBCXX_3.4.31); sqlite3@6.0.1 prebuilt binary needs glibc 2.38",
+      "decision": "image rejected"
+    },
+    {
+      "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04 + features python 3.12 + node 22 (the committed config)",
+      "python": "3.12.16 at /usr/local/python/current/bin/python",
+      "postCreateCommand": "succeeded",
+      "forklift up --target v3 --at head --name v3 --ws-port 9944": "exit 0; fork-v3 started at the lifted block #258,650 (8,511 keys), genesis 0xd4f9acbc...5283bd, :code 0xedc03c9dc81d39fe..., ready in 9.83 s",
+      "forklift verify --name v3 --sample 20": "result OK (exit 0); :code 0xedc03c9d...c7c2 ok (pinned V3 runtime)",
+      "forklift down --name v3": "stopped"
+    }
+  ],
+  "not_tested": "The build on GitHub Codespaces itself (x86_64 hosted VM); the mainnet --runtime fast path (portaldot_dev binary is x86_64 macOS/Linux-download, not run in the container)."
+}

@@ -112,7 +112,7 @@ Forklift is five steps.
 - `--json` output and documented exit codes ([`docs/EXIT-CODES.md`](docs/EXIT-CODES.md)); 324 offline tests plus 10 live
   tests.
 
-**Planned (not built, not claimed):** a hosted fork, a PyPI package and a CI action.
+**Planned (not built, not claimed):** a paid hosted fork and a PyPI upload. Built since: the CI action and a Codespaces devcontainer (see *CI action, Codespaces, PyPI* below); the package builds, but the pending publisher is not registered, so nothing is on PyPI.
 
 ### Blockchain Relevance
 
@@ -347,8 +347,9 @@ command's own exit code. This repo's CI runs it against the live V3 testnet (the
 
 [`.devcontainer/devcontainer.json`](.devcontainer/devcontainer.json) opens the repo in GitHub Codespaces (Ubuntu 24.04,
 Python 3.12, Node 22; it installs Forklift and warms the pinned Chopsticks). Built and exercised locally with the
-devcontainer CLI on Linux arm64: `forklift up --target v3`, `verify --sample 20` exit 0, `down` (the Codespaces build
-itself has not been run). Debian 12 images do not work: Chopsticks' sqlite3 binary needs glibc 2.38. The package
+devcontainer CLI on Linux arm64: `forklift up --target v3`, `verify --sample 20` exit 0, `down`
+([`evidence/devcontainer-linux-arm64-2026-10-31.json`](evidence/devcontainer-linux-arm64-2026-10-31.json); the Codespaces build
+itself has not been run). A Debian 12 image failed in the same test: Chopsticks' sqlite3 binary needs glibc 2.38 (error recorded there). The package
 (`portaldot-forklift`, [`PYPI.md`](PYPI.md)) builds and passes `twine check --strict`;
 [`publish.yml`](.github/workflows/publish.yml) uploads it with PyPI Trusted Publishing (OIDC, no token) when a release is
 published. It is **not on PyPI yet**: the upload fails closed until the pending publisher is registered on pypi.org.
