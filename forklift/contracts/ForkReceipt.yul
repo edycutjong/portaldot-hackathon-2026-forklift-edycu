@@ -8,9 +8,9 @@
 //   receipt(bytes32 blockHash) view returns (bytes32 manifestRoot, uint64 keysLifted)
 //     (0, 0) when nothing was attested for that block hash
 //
-// Written in Yul, not compiled from ForkReceipt.sol, because Revive charges a storage deposit per
-// code byte (V3: 13.11 tPOT + 0.078 tPOT per byte, measured): the resolc (PolkaVM) build of
-// ForkReceipt.sol needs 625.49 tPOT, the solc build 88.22 tPOT, this one fits a 29.5 tPOT funder.
+// Written in Yul, not plain Solidity, because Revive holds a storage deposit per code byte (V3: 13.11 tPOT
+// + 0.078 tPOT per runtime byte, evidence/revive-deposits-v3.json): scripts/ForkReceiptSolidity.sol needs
+// 625.488 tPOT built with resolc (PolkaVM) and 88.224 tPOT built with solc; this one fit a 29.527 tPOT funder.
 // Size cuts, each a byte cost: the event is anonymous (no 33-byte signature topic), value transfers are
 // not refused, and keysLifted is not range-checked (Forklift is the writer; it sends a u64).
 // A later attest for the same block hash overwrites the earlier one; the events keep every attest.

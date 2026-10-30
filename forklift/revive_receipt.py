@@ -10,7 +10,8 @@ Every write is dry-run first through the chain's own runtime API (``ReviveApi_in
 ``ReviveApi_call``): the weight and storage deposit come from that dry run, and the funder's free
 balance is checked against the deposits before anything is signed. Revive holds a storage deposit
 per code byte and per storage slot, which is why the contract is hand-written Yul (84 bytes of
-init code): the resolc (PolkaVM) build of a Solidity version needs ~625 tPOT of deposit on V3.
+init code): the resolc (PolkaVM) build of a plain-Solidity version needs 625.488 tPOT of deposit on V3
+(``scripts/revive_deposits.py``).
 
 Writes go through Forklift's testnet client (``author_submitExtrinsic`` only, pinned writable
 genesis only); runtime-API reads through ``state_call``. The SDK composes, signs and decodes.

@@ -1,6 +1,8 @@
 """Fork Receipt v2 (Revive contract on V3): ABI encoding, the deployed bytecode, ReviveApi decoding (offline)."""
 
 import re
+import shutil
+import subprocess
 from importlib import resources
 
 import pytest
@@ -54,6 +56,19 @@ def test_init_code_is_the_committed_build_and_carries_both_selectors():
     assert code[:10].hex() == "604a80600a5f395ff3fe" and len(runtime) == 0x4a
     assert rr.selector(rr.ATTEST) in runtime and rr.selector(rr.RECEIPT) in runtime
     assert bytes([0xa1]) in runtime  # LOG1: the anonymous event, block hash as its only topic
+
+
+def test_init_code_is_the_solc_build_of_the_yul():
+    solc = shutil.which("solc")
+    if solc is None:
+        pytest.skip("solc not installed (0.8.30: https://binaries.soliditylang.org)")
+    version = subprocess.run([solc, "--version"], capture_output=True, text=True, check=True).stdout
+    if "0.8.30" not in version:
+        pytest.skip("the committed build is solc 0.8.30's")
+    src = resources.files("forklift.contracts").joinpath("ForkReceipt.yul")
+    out = subprocess.run([solc, "--strict-assembly", "--optimize", "--evm-version", "cancun", "--bin", str(src)],
+                         capture_output=True, text=True, check=True).stdout
+    assert bytes.fromhex(out.strip().splitlines()[-1]) == rr.init_code()
 
 
 def test_attest_data_is_abi_encoded():
