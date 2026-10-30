@@ -42,7 +42,11 @@ FORCE_NONE = b"\x02"  # pallet_staking::Forcing::ForceNone
 DEV_KEY = bytes.fromhex("d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d")
 DEV_KEY_SS58 = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"  # public address  gitleaks:allow
 
-RUNTIMES = ("fast",)  # "exact" (mainnet :code + --execution Wasm) is a later build step
+RUNTIMES = ("fast",)  # spliced into portaldot_dev; "exact" runs mainnet's own :code under Chopsticks (up.py)
+
+# The dev key's balance on the exact fork: the same free balance it has in portaldot_dev 2.0.0's dev genesis
+# (5,000,000,000,000,000,000 planck), without that genesis's staking locks, since nothing is staked here.
+EXACT_DEV_FREE = 5_000_000_000_000_000_000
 
 _DEV_PREFIXES = tuple(twox128(p) for p in DEV_KEPT_PALLETS)
 _RESET_PREFIXES = tuple(twox128(p) for p in RESET_PALLETS)
@@ -119,6 +123,42 @@ class Splice:
     issuance: dict
     dev_code_hash: str
     rules: dict = field(default_factory=dict)
+
+
+def account_info_1002(free: int, *, providers: int = 1) -> bytes:
+    """A spec-1002 ``AccountInfo``: nonce, consumers, providers, sufficients (u32 each), then free, reserved,
+    misc_frozen, fee_frozen (u128 each)."""
+    return (0).to_bytes(4, "little") * 2 + providers.to_bytes(4, "little") + (0).to_bytes(4, "little") \
+        + u128(free) + u128(0) * 3
+
+
+def exact_overrides(mainnet: dict[str, str]) -> list[Override]:
+    """The state overrides of ``--runtime exact``: the four of ``fast`` without ``:code``.
+
+    Same keys, same purpose (root, no era rotation, a funded dev key, issuance = sum of balances), so a call
+    rehearsed on both forks differs by the runtime only. Applied on top of the pinned block, never into it.
+    """
+    alice_key = _h(account_key(DEV_KEY))
+    ti_key = _h(TOTAL_ISSUANCE)
+    if ti_key not in mainnet:
+        raise SpliceError("the lift has no Balances.TotalIssuance")
+    old_total = sum(balance_of(_b(mainnet[alice_key]))) if alice_key in mainnet else 0
+    added = EXACT_DEV_FREE - old_total
+    ti_fork = int.from_bytes(_b(mainnet[ti_key]), "little") + added
+    return [
+        Override(_h(SUDO_KEY), "Sudo.Key", _h(DEV_KEY),
+                 f"root on the fork: the dev key {DEV_KEY_SS58} (//Alice) replaces mainnet's sudo key",
+                 mainnet.get(_h(SUDO_KEY))),
+        Override(_h(FORCE_ERA), "Staking.ForceEra", _h(FORCE_NONE),
+                 "ForceNone: the same era policy as the fast fork, so no era rotates while rehearsing",
+                 mainnet.get(_h(FORCE_ERA))),
+        Override(alice_key, "System.Account[dev key]", _h(account_info_1002(EXACT_DEV_FREE)),
+                 f"the dev key holds {EXACT_DEV_FREE} planck free, as in the dev genesis, so the sudo key can pay fees",
+                 mainnet.get(alice_key)),
+        Override(ti_key, "Balances.TotalIssuance", _h(u128(ti_fork)),
+                 f"mainnet issuance + {added} planck added with the dev key's account, so issuance = sum of balances",
+                 mainnet[ti_key]),
+    ]
 
 
 def splice_state(mainnet: dict[str, str], dev: dict[str, str], *, runtime: str = "fast") -> Splice:

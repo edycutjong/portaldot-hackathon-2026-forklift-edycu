@@ -1,4 +1,4 @@
-"""Fork the V3 testnet with Chopsticks, at the block Forklift lifted.
+"""Fork the V3 testnet (or, for ``--runtime exact``, mainnet) with Chopsticks, at the block Forklift lifted.
 
 There is no public V3 node binary or chain spec, so the 1002 path (splice the
 lift into ``portaldot_dev``'s chain spec and boot it) cannot run V3's runtime.
@@ -29,6 +29,10 @@ from forklift.rpc import RpcClient, RpcError, RpcUnavailable
 
 PACKAGE = "@acala-network/chopsticks@1.5.2"
 UNRESOLVED_IMPORT = "ext_statement_store_submit_statement_version_1"
+# Which host function each chain's runtime imports that Chopsticks 1.5.2 does not provide (why the flag is on).
+# Mainnet 1002, measured 2026-10-31 at #2,725,953: without the flag chain_getHeader fails on the rent-era
+# Contracts pallet's sandbox import and dev_newBlock builds nothing.
+UNRESOLVED_IMPORTS = {"v3": UNRESOLVED_IMPORT, "mainnet": "ext_sandbox_instance_teardown_version_1"}
 
 
 def chopsticks_args(chain: Chain, block_hash: str, ws_port: int, db: Path) -> list[str]:
