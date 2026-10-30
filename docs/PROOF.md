@@ -92,6 +92,14 @@ Contract `0x52f0edd92af9ff410ca63ccc83735552e1b2abc7` · attester `5EnCf9PauY6Rt
 Re-read any of them by extrinsic id: `forklift tx <block>-<index> --target v3` (decodes the Receipt
 event and reads `receipt()` at the finalized head).
 
+Revive deposits on V3, from `ReviveApi_instantiate` dry runs at #258,049 (`scripts/revive_deposits.py`, `evidence/revive-deposits-v3.json`): 13.11 tPOT + 0.078 tPOT per byte of runtime code; 3.8415 tPOT per 32-byte slot written.
+
+| Build | Bytes | Deposit (dry run) | Note |
+|---|---|---|---|
+| receipt-v2 (forklift/contracts/ForkReceipt.bin) | 84 | 10.242 tPOT | code already on chain: its 8.64 tPOT code deposit not charged again |
+| plain Solidity, resolc 1.5.0 (PolkaVM) | 7,851 | 625.488 tPOT |  |
+| plain Solidity, solc 0.8.30 --optimize (EVM) | 991 | 88.224 tPOT |  |
+
 ### Predictions not sent
 
 | Call | Signer | Fork outcome | Why not sent |

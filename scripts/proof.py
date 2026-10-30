@@ -166,6 +166,17 @@ def render_v3() -> list[str]:
                     f"| attester (H160) | `{r['attester_h160']}` | `{d.get('attester')}` | |", ""]
         out += ["Re-read any of them by extrinsic id: `forklift tx <block>-<index> --target v3` (decodes the Receipt",
                 "event and reads `receipt()` at the finalized head).", ""]
+    for d in _load("revive-deposits-v3.json"):
+        sf, lf = d["code_size_fit"], d["slot_fit"]
+        out += [f"Revive deposits on V3, from `ReviveApi_instantiate` dry runs at #{d['at']['number']:,} "
+                f"(`scripts/revive_deposits.py`, `{d['_file']}`): {_tpot(sf['fixed_planck'])} + "
+                f"{_tpot(sf['per_unit_planck'])} per byte of runtime code; {_tpot(lf['per_unit_planck'])} per 32-byte slot written.", "",
+                "| Build | Bytes | Deposit (dry run) | Note |", "|---|---|---|---|"]
+        for b in d["builds"]:
+            note = (f"code already on chain: its {_tpot(b['stored_code_deposit_planck'])} code deposit not charged again"
+                    if b.get("code_already_stored") else "" if b["ok"] else f"dry run failed: `{b['error']}`")
+            out.append(f"| {b['label']} | {b['bytes']:,} | {_tpot(b['storage_deposit_planck'])} | {note} |")
+        out.append("")
     unsent = [r for r in rehearsals if not r.get("actual")]
     if unsent:
         out += ["### Predictions not sent", "", "| Call | Signer | Fork outcome | Why not sent |", "|---|---|---|---|"]
