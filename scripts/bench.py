@@ -275,7 +275,7 @@ def render(b: dict, evidence_name: str) -> str:
         "",
         "```bash",
         "forklift up --target v3 --at head --name v3 --ws-port 59944   # the fork verify and rehearse run against",
-        "python scripts/bench.py --runs 7                              # roughly 15 to 17 minutes; then: forklift down --name v3",
+        "python scripts/bench.py --runs 7                              # about 12.5 minutes of timed runs plus the untimed fork setup before each rehearse run; then: forklift down --name v3",
         "```",
         "",
         "The earlier single lift run (2026-10-14, `evidence/bench-lift-2026-10-14.json`) reported 19.85 s on the lift's own "

@@ -60,7 +60,7 @@ Each run is a **fresh `forklift` process**; a number is the wall-clock seconds f
 
 ```bash
 forklift up --target v3 --at head --name v3 --ws-port 59944   # the fork verify and rehearse run against
-python scripts/bench.py --runs 7                              # roughly 15 to 17 minutes; then: forklift down --name v3
+python scripts/bench.py --runs 7                              # about 12.5 minutes of timed runs plus the untimed fork setup before each rehearse run; then: forklift down --name v3
 ```
 
 The earlier single lift run (2026-10-14, `evidence/bench-lift-2026-10-14.json`) reported 19.85 s on the lift's own clock (compare the 'keys + values' row above) and 20.38 s in-process with the metadata and MMR reads, with no process start-up; it is kept as history. Numbers differ per run, per machine and per load; the claim here is the spread measured, not a guarantee.
